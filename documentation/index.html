@@ -1,0 +1,1351 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Onest Schooled | Documentation</title>
+  <link rel="shortcut icon" href="images/favicon.png" type="image/x-icon" />
+  <link rel="stylesheet" href="assets/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="assets/css/font-awesome.css" />
+  <link rel="stylesheet" href="assets/css/style.css" />
+  <link rel="preconnect" href="https://fonts.gstatic.com/" />
+  <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap" rel="stylesheet" />
+</head>
+
+<body>
+  <header>
+    <nav class="navbar navbar-expand-lg navbar-light bg-white">
+      <div class="container-fluid">
+        <a class="navbar-brand order-2 mr-auto ml-3 ml-lg-0" href="#">
+          <img src="images/logo-light.png" alt="" />
+        </a>
+        <button class="navbar-toggler order-1" type="button" data-toggle="collapse">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="order-3">
+          <ul class="navbar-nav ml-auto">
+            <li class="nav-item active">
+              <a class="btn custom-btn gradient-btn" href="#" target="_blank">V1.7.1</a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <main class="container-fluid">
+    <aside class="left-menu">
+      <nav>
+        <ul>
+          <!-- Menu Title -->
+          <li class="left-menu-title">
+            <h6>
+              <a href="#getting-started">Getting started</a>
+            </h6>
+          </li>
+
+          <li class="left-menu-item">
+            <a href="#getting-started">
+              <span>Welcome</span>
+            </a>
+          </li>
+
+          <li class="left-menu-item">
+            <a href="#keyfeatures">
+              <span>Key Features</span>
+            </a>
+          </li>
+
+          <li class="left-menu-item">
+            <a href="#server-requirements">
+              <span>Server Requirements</span>
+            </a>
+          </li>
+
+          <li class="left-menu-item">
+            <a href="#file-permissions">
+              <span>File Permissions</span>
+            </a>
+          </li>
+
+
+          <li class="left-menu-title">
+            <h6>
+              <a href="#database">Database</a>
+            </h6>
+          </li>
+
+
+          <li class="left-menu-item">
+            <a href="#create-database">
+              <span>Create Database</span>
+            </a>
+          </li>
+
+
+          <li class="left-menu-title">
+            <h6>
+              <a href="#installation">Installation</a>
+            </h6>
+          </li>
+          <li class="left-menu-item">
+            <a href="#installation">
+              <span>Installation</span>
+            </a>
+          </li>
+          <li class="left-menu-item">
+            <a href="#file-setup">
+              <span>File setup</span>
+            </a>
+          </li>
+          <li class="left-menu-title">
+            <h6>
+              <a href="#superAdminPanel">Admin Dashboard</a>
+            </h6>
+          </li>
+          <li class="left-menu-item">
+            <a href="#Login">
+              <span>Login</span>
+            </a>
+          </li>
+          <li class="left-menu-item">
+            <a href="#ForgetPassword">
+              <span>Forget Password</span>
+            </a>
+          </li>
+          <li class="left-menu-item">
+            <a href="#AdminDashboard">
+              <span>Dashboard</span>
+            </a>
+          </li>
+          <li class="left-menu-item">
+            <a href="#profile">
+              <span>Profile</span>
+            </a>
+          </li>
+          <li class="left-menu-item">
+            <a href="#online_admission">
+              <span>Online Admission</span>
+            </a>
+          </li>
+          <li class="left-menu-item">
+            <a href="#promote_student">
+              <span>Promote Student</span>
+            </a>
+          </li>
+          <li class="left-menu-item">
+            <a href="#class_setup">
+              <span>Class Setup</span>
+            </a>
+          </li>
+          <li class="left-menu-item">
+            <a href="#subject_assign">
+              <span>Subject Assign</span>
+            </a>
+          </li>
+          <li class="left-menu-item">
+            <a href="#class_routine">
+              <span>Class Routine</span>
+            </a>
+          </li>
+          <li class="left-menu-item">
+            <a href="#fees_master">
+              <span>Fees Master</span>
+            </a>
+          </li>
+          <li class="left-menu-item">
+            <a href="#fees_assign">
+              <span>Fees Assign</span>
+            </a>
+          </li>
+          <li class="left-menu-item">
+            <a href="#fees_collect">
+              <span>Fees Collect</span>
+            </a>
+          </li>
+          <li class="left-menu-item">
+            <a href="#exam_assign">
+              <span>Exam Assign</span>
+            </a>
+          </li>
+          <li class="left-menu-item">
+            <a href="#exam_routine">
+              <span>Exam Routine</span>
+            </a>
+          </li>
+          <li class="left-menu-item">
+            <a href="#mark_register">
+              <span>Mark Register</span>
+            </a>
+          </li>
+          <li class="left-menu-item">
+            <a href="#attendance">
+              <span>Attendance</span>
+            </a>
+          </li>
+          <li class="left-menu-item">
+            <a href="#issue_book">
+              <span>Issue Book</span>
+            </a>
+          </li>
+          <li class="left-menu-item">
+            <a href="#task_schedules">
+              <span>Task Schedules</span>
+            </a>
+          </li>
+
+
+          <li class="left-menu-title">
+            <h6>
+              <a href="#student_parent_panel">Student & Parent Panel</a>
+            </h6>
+          </li>
+          <li class="left-menu-item">
+            <a href="#dashboard">
+              <span>Dashboard</span>
+            </a>
+          </li>
+          <li class="left-menu-item">
+            <a href="#subject_list">
+              <span>Subject List</span>
+            </a>
+          </li>
+          <li class="left-menu-item">
+            <a href="#classRoutine">
+              <span>Class Routine</span>
+            </a>
+          </li>
+          <li class="left-menu-item">
+            <a href="#fees">
+              <span>Fees</span>
+            </a>
+          </li>
+          <li class="left-menu-item">
+            <a href="#fees_pay">
+              <span>Fees Pay</span>
+            </a>
+          </li>
+          <li class="left-menu-item">
+            <a href="#examRoutine">
+              <span>Exam Routine</span>
+            </a>
+          </li>
+          <li class="left-menu-item">
+            <a href="#marksheet">
+              <span>Marksheet</span>
+            </a>
+          </li>
+          <li class="left-menu-item">
+            <a href="#Attendance">
+              <span>Attendance</span>
+            </a>
+          </li>
+
+
+          <li class="left-menu-title">
+            <h6>
+              <a href="#settings">Settings</a>
+            </h6>
+          </li>
+          <li class="left-menu-item">
+            <a href="#general_settings">
+              <span>General Settings</span>
+            </a>
+          </li>
+          <li class="left-menu-item">
+            <a href="#payment_gateway_settings">
+              <span>Payment Gateway Settings</span>
+            </a>
+          </li>
+          <li class="left-menu-item">
+            <a href="#language">
+              <span>Language</span>
+            </a>
+          </li>
+          <li class="left-menu-item">
+            <a href="#session">
+              <span>Sessions</span>
+            </a>
+          </li>
+          <li class="left-menu-item">
+            <a href="#softwareUpdate">
+              <span>Softwate Update</span>
+            </a>
+          </li>
+
+
+
+          <li class="left-menu-title">
+            <h6>
+              <a href="#others"><span>Orhers</span></a>
+            </h6>
+          </li>
+          <li class="left-menu-title">
+            <h6>
+              <a href="#helpSupport"><span>Help & Support</span></a>
+            </h6>
+          </li>
+          <li class="left-menu-title">
+            <h6>
+              <a href="#ThankYou">Thank You</a>
+            </h6>
+          </li>
+        </ul>
+      </nav>
+    </aside>
+
+    <aside class="main-content-area">
+      <div class="main-content container-fluid">
+
+        <!-- ============== Getting started ============================ -->
+
+        <div class="mt-40">
+          <h3 id="getting-started" class="first-title">
+            Welcome to <strong>Onest Schooled</strong>
+            <h4>School Management System</h4>
+          </h3>
+        </div>
+
+        <section>
+          <p>
+            <strong>Onest Schooled </strong> is a powerful and feature-rich school management system that is built using
+            the Laravel 9 framework. It offers a wide range of features including online admission, student info,
+            academic, fees, examination, transaction, attendance, report, language, homework, staff manage,
+            subscription, contact message, website setup, gallery, library and settings integration. <br>
+            With <strong>Onest Schooled </strong>, users can easily apply online admission and show reports.
+            The system supports multiple language. <br>
+            Overall, <strong>Onest Schooled </strong> is an excellent choice for individuals and organizations looking for
+            a comprehensive school management system that is packed with features and easy to use..
+          </p>
+        </section>
+
+        <section>
+          <div class="content-wrapper px-4 py-2">
+            <h4 id="keyfeatures" class="second-title">
+              Key Features
+            </h4>
+            <div class="content-header"></div>
+            <ul>
+              <li>
+                <span class="me-1"><i class="fa fa-paper-plane" aria-hidden="true"></i></span>
+                Easy installation process
+              </li>
+              <li>
+                <span class="me-1"><i class="fa fa-paper-plane" aria-hidden="true"></i></span>
+                Fully responsive and dynamic user panel
+              </li>
+              <li>
+                <span class="me-1"><i class="fa fa-paper-plane" aria-hidden="true"></i></span>
+                Easy to signup & sign in
+              </li>
+              <li>
+                <span class="me-1"><i class="fa fa-paper-plane" aria-hidden="true"></i></span>
+                Forgot password
+              </li>
+              <li>
+                <span class="me-1"><i class="fa fa-paper-plane" aria-hidden="true"></i></span>
+                Good-looking & user-friendly front-end
+              </li>
+              <li>
+                <span class="me-1"><i class="fa fa-paper-plane" aria-hidden="true"></i></span>
+                Easy to manage site contents
+              </li>
+              <li>
+                <span class="me-1"><i class="fa fa-paper-plane" aria-hidden="true"></i></span>
+                Managing Users and Roles
+              </li>
+              <li>
+                <span class="me-1"><i class="fa fa-paper-plane" aria-hidden="true"></i></span>
+                Student management
+              </li>
+              <li>
+                <span class="me-1"><i class="fa fa-paper-plane" aria-hidden="true"></i></span>
+                Staff management
+              </li>
+              <li>
+                <span class="me-1"><i class="fa fa-paper-plane" aria-hidden="true"></i></span>
+                Academic management
+              </li>
+              <li>
+                <span class="me-1"><i class="fa fa-paper-plane" aria-hidden="true"></i></span>
+                Fees management
+              </li>
+              <li>
+                <span class="me-1"><i class="fa fa-paper-plane" aria-hidden="true"></i></span>
+                Examination management
+              </li>
+              <li>
+                <span class="me-1"><i class="fa fa-paper-plane" aria-hidden="true"></i></span>
+                Attendance management
+              </li>
+              <li>
+                <span class="me-1"><i class="fa fa-paper-plane" aria-hidden="true"></i></span>
+                Library management
+              </li>
+              <li>
+                <span class="me-1"><i class="fa fa-paper-plane" aria-hidden="true"></i></span>
+                Managing Language
+              </li>
+              <li>
+                <span class="me-1"><i class="fa fa-paper-plane" aria-hidden="true"></i></span>
+                Managing Settings
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        <section>
+          <div class="content-wrapper px-4 py-2">
+            <h4 id="server-requirements" class="second-title">
+              Server Requirements
+            </h4>
+            <div class="content-header"></div>
+            <blockquote class="quote-indigo mt-0">
+              <h5>Note!</h5>
+              <p>
+                To begin installation
+                <a href="#">Onest Schooled</a> your server must have to satisfy
+                some requiremnts as well as some extensions.
+              </p>
+            </blockquote>
+            <ul>
+              <li>
+                <span class="me-1"><i class="fa fa-paper-plane" aria-hidden="true"></i></span>
+                PHP &gt;= 8.1
+              </li>
+              <li>
+                <span class="me-1"><i class="fa fa-paper-plane" aria-hidden="true"></i></span>
+                MySQLi
+              </li>
+              <li>
+                <span class="me-1"><i class="fa fa-paper-plane" aria-hidden="true"></i></span>
+                GD
+              </li>
+              <li>
+                <span class="me-1"><i class="fa fa-paper-plane" aria-hidden="true"></i></span>
+                cURL
+              </li>
+              <li>
+                <span class="me-1"><i class="fa fa-paper-plane" aria-hidden="true"></i></span>
+                date. timezone
+              </li>
+              <li>
+                <span class="me-1"><i class="fa fa-paper-plane" aria-hidden="true"></i></span>
+                BCMath PHP Extension
+              </li>
+              <li>
+                <span class="me-1"><i class="fa fa-paper-plane" aria-hidden="true"></i></span>
+                allow_url_fopen
+              </li>
+              <li>
+                <span class="me-1"><i class="fa fa-paper-plane" aria-hidden="true"></i></span>
+                Ctype PHP Extension
+              </li>
+              <li>
+                <span class="me-1"><i class="fa fa-paper-plane" aria-hidden="true"></i></span>
+                Fileinfo PHP Extension
+              </li>
+              <li>
+                <span class="me-1"><i class="fa fa-paper-plane" aria-hidden="true"></i></span>
+                JSON PHP Extension
+              </li>
+              <li>
+                <span class="me-1"><i class="fa fa-paper-plane" aria-hidden="true"></i></span>
+                Mbstring PHP Extension
+              </li>
+              <li>
+                <span class="me-1"><i class="fa fa-paper-plane" aria-hidden="true"></i></span>
+                OpenSSL PHP Extension
+              </li>
+              <li>
+                <span class="me-1"><i class="fa fa-paper-plane" aria-hidden="true"></i></span>
+                PDO PHP Extension
+              </li>
+              <li>
+                <span class="me-1"><i class="fa fa-paper-plane" aria-hidden="true"></i></span>
+                Tokenizer PHP Extension
+              </li>
+              <li>
+                <span class="me-1"><i class="fa fa-paper-plane" aria-hidden="true"></i></span>
+                XML PHP Extension
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        <section>
+          <div class="content-wrapper px-4 py-2">
+            <h4 id="file-permissions" class="second-title">
+              File Writable Permissions
+            </h4>
+            <div class="content-header"></div>
+            <blockquote class="quote-danger mt-0">
+              <h5>Attention!</h5>
+              <p>
+                Please make sure you have set the
+                <span class="text-danger">writable permission</span> on the
+                following folders/files:
+              </p>
+            </blockquote>
+            <ul>
+              <li>
+                <span class="me-1"><i class="fa fa-paper-plane" aria-hidden="true"></i></span>
+                /routes
+              </li>
+              <li>
+                <span class="me-1"><i class="fa fa-paper-plane" aria-hidden="true"></i></span>
+                /resources
+              </li>
+              <li>
+                <span class="me-1"><i class="fa fa-paper-plane" aria-hidden="true"></i></span>
+                /public
+              </li>
+              <li>
+                <span class="me-1"><i class="fa fa-paper-plane" aria-hidden="true"></i></span>
+                /storage
+              </li>
+              <li>
+                <span class="me-1"><i class="fa fa-paper-plane" aria-hidden="true"></i></span>
+                .env
+              </li>
+            </ul>
+          </div>
+        </section>
+        <!-- ============== Getting started ============================ -->
+
+
+        <!-- ============== Database ============================ -->
+        <div class="mt-70 border-top">
+          <h3 id="database" class="first-title">Database</h3>
+        </div>
+
+        <section>
+          <h4 id="create-database" class="second-title">Create Database</h4>
+          <div class="content-wrapper px-4 py-2">
+            <div class="content-header"></div>
+            <blockquote class="quote-danger">
+              <h5>Attention!</h5>
+              <p>
+                Do not use a password that contains a #(Hash) character (It
+                will be treated as a comment).
+              </p>
+            </blockquote>
+            <p>
+              You’ll need to create a new database along with a user to access
+              it. Follow the steps below:
+            </p>
+            <ul>
+              <li>
+                <span class="me-1"><i class="fa fa-paper-plane" aria-hidden="true"></i></span>
+                Create a new database a name e.g <code>onest_school</code>
+              </li>
+              <li>
+                <span class="me-1"><i class="fa fa-paper-plane" aria-hidden="true"></i></span>
+                Create a database user and set up a password like <code>P@$$w0rD!!23</code> <i> (make sure enough strong
+                  password)</i>
+              </li>
+              <li>
+                <span class="me-1"><i class="fa fa-paper-plane" aria-hidden="true"></i></span>
+                Add the user to the database and give the user All privileges to the database
+              </li>
+            </ul>
+            <p class="d-none">
+              Most hosting companies provide an interface to handle this or
+              you can run the SQL statements below.
+            </p>
+            <div class="language-bash highlighter-rouge d-none">
+              <div class="highlight">
+                <pre class="highlight" style="position: relative"><code class="d-flex flex-column p-2 text-dark"><span class="nt">CREATE DATABASE onno_db;</span>
+                <span class="nt">CREATE USER 'hrm_db' IDENTIFIED BY 'hrm_db@@'; </span>
+                <span class="nt">GRANT ALL PRIVILEGES ON onno_db.* to hrm_db@'%' identified by 'hrm_db@@'; </span>
+                <span class="nt">FLUSH PRIVILEGES;</span></code></pre>
+              </div>
+            </div>
+          </div>
+        </section>
+        <!-- ============== Database ============================ -->
+
+
+        <!-- ============== Installation ============================ -->
+        <div class="mt-70 border-top">
+          <h3 id="installation" class="first-title">Installation</h3>
+        </div>
+
+        <section>
+          <div class="content-wrapper px-4 py-2">
+            <div class="content-header"></div>
+
+            <blockquote class="quote-danger">
+              <h5>Attention!</h5>
+              <p>
+                Before going for installation make sure to
+                <a href="#server-requirements">fulfill the requirements</a> and <a href="#file-permissions">writable
+                  permissions</a> and <a href="#create-database">created database, Database user</a>.
+              </p>
+            </blockquote>
+          </div>
+          <h4 id="installation" class="second-title">Installation</h4>
+          <div class="content-wrapper px-4 py-2">
+            <p>Just simply follow the steps, and our installer will handle
+              all the process of installation. You don't need to do anything
+              manually.
+            </p>
+            <ul>
+              <li>
+                <span class="me-1"><i class="fa fa-paper-plane" aria-hidden="true"></i></span>
+                Step:1 Download Main_File.zip from
+                <a href="https://codecanyon.net/downloads">CodeCanyon</a>
+              </li>
+              <li>
+                <span class="me-1"><i class="fa fa-paper-plane" aria-hidden="true"></i></span>
+                Step:2 Extract Main_File.zip
+              </li>
+              <li>
+                <span class="me-1"><i class="fa fa-paper-plane" aria-hidden="true"></i></span>
+                Step:3 Go inside the "source_code" folder and make zip all files & folders.
+              </li>
+              <li>
+                <span class="me-1"><i class="fa fa-paper-plane" aria-hidden="true"></i></span>
+                Step:4 Upload the zip file to your server public_html or www or root directory.
+              </li>
+              <li>
+                <span class="me-1"><i class="fa fa-paper-plane" aria-hidden="true"></i></span>
+                Step:5 Extract the uploaded zip file
+              </li>
+              <li>
+                <span class="me-1"><i class="fa fa-paper-plane" aria-hidden="true"></i></span>
+                Step:6 Make sure you have uplaoded .env file from source_code to your server public_html or www or root
+                directory.
+              </li>
+              <li>
+                <span class="me-1"><i class="fa fa-paper-plane" aria-hidden="true"></i></span>
+                Step:7 Open the browser and hit your server URL. Example: https://examplenews.com/
+              </li>
+              <li>
+                <span class="me-1"><i class="fa fa-paper-plane" aria-hidden="true"></i></span>
+                Step:8 Welcome to installation, click <code>Get Started</code> button
+                <img src="./screenshots/01.png" class="mt-20 mb-20">
+              </li>
+              <li>
+                <span class="me-1"><i class="fa fa-paper-plane" aria-hidden="true"></i></span>
+                Step:9 Check server environments, permissions & if all okay then click <code>continue</code>
+                <img src="./screenshots/02.png" class="mt-20 mb-20">
+              </li>
+              <li>
+                <span class="me-1"><i class="fa fa-paper-plane" aria-hidden="true"></i></span>
+                Step:10 Now verify your licence code.
+                <img src="./screenshots/03.png" class="mt-20 mb-20">
+              </li>
+              <li>
+                <span class="me-1"><i class="fa fa-paper-plane" aria-hidden="true"></i></span>
+                Step:11 Now enter your database name, username, password. Then check force delete previous table if have
+                previous tables in database
+                <img src="./screenshots/04.png" class="mt-20 mb-20">
+              </li>
+              <li>
+                <span class="me-1"><i class="fa fa-paper-plane" aria-hidden="true"></i></span>
+                Step:12 Now enter superadmin login credentials as you want
+                <img src="./screenshots/05.png" class="mt-20 mb-20">
+              </li>
+              <li>
+                <span class="me-1"><i class="fa fa-paper-plane" aria-hidden="true"></i></span>
+                Step:13 Congrates! You have successfully intalled. click <code>go home</code> button
+                <img src="./screenshots/06.png" class="mt-20 mb-20">
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        <section>
+          <div class="content-wrapper px-4 py-2">
+            <div class="content-header"></div>
+
+            <blockquote class="quote-danger">
+              <h5>Attention!</h5>
+              <p>
+                Before going for installation make sure to
+                <a href="#server-requirements">fulfill the requirements</a> and <a href="#file-permissions">writable
+                  permissions</a>.
+              </p>
+            </blockquote>
+          </div>
+          <h4 id="file-setup" class="second-title">File Setup</h4>
+          <div class="content-wrapper px-4 py-2">
+            <p>Just simply follow the steps, and our installer will handle
+              all the process of installation. You don't need to do anything
+              manually.
+            </p>
+            <ul>
+              <li>
+                <span class="me-1"><i class="fa fa-paper-plane" aria-hidden="true"></i></span>
+                Step:1 Download Main_File.zip from
+                <a href="https://codecanyon.net/downloads">CodeCanyon</a>
+              </li>
+              <li>
+                <span class="me-1"><i class="fa fa-paper-plane" aria-hidden="true"></i></span>
+                Extract Main_File.zip
+              </li>
+              <li>
+                <span class="me-1"><i class="fa fa-paper-plane" aria-hidden="true"></i></span>
+                Go inside the "source_code" folder and make unzip all files & folders.
+              </li>
+              <li>
+                <span class="me-1"><i class="fa fa-paper-plane" aria-hidden="true"></i></span>
+                Upload the zip file to your server public_html or www or root directory.
+              </li>
+              <li>
+                <span class="me-1"><i class="fa fa-paper-plane" aria-hidden="true"></i></span>
+                Open the browser and hit your server URL. Example: https://examplenews.com/
+              </li>
+            </ul>
+
+          </div>
+        </section>
+        <!-- ============== Installation ============================ -->
+
+
+        <!-- ============== admin_panel ============================ -->
+        <div class="mt-70 border-top" id="superAdminPanel">
+          <h3 id="Change" class="first-title">
+            Admin Panel Usage Guidelines
+          </h3>
+        </div>
+
+        <section>
+          <div class="content-wrapper px-4 py-2">
+            <div class="content-header"></div>
+          </div>
+          <h4 id="Login" class="second-title">Login</h4>
+          <div class="content-wrapper px-4 py-2 row mb-3">
+            <p>By registration, you are accessing your facility we are protecting your information and facilities you
+              can access them by login to your account
+              In this section, you will have a login page where you have to provide your email and password to access
+              your facilities.
+            </p>
+            <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+              <img src="./screenshots/07.png" alt="Home Page" alt="Pre-Installation" />
+            </div>
+          </div>
+        </section>
+        <section>
+          <div class="content-wrapper px-4 py-2">
+            <div class="content-header"></div>
+          </div>
+          <h4 id="ForgetPassword" class="second-title">Forget Password</h4>
+          <div class="content-wrapper px-4 py-2 row mb-3">
+            <p>It is possible that many times you will forget your password so we have a forgot password option where
+              you have to provide your email to get
+              reset the password link in your email.
+            </p>
+            <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+              <img src="./screenshots/08.png" alt="Home Page" alt="Pre-Installation" />
+            </div>
+          </div>
+        </section>
+        <section>
+          <div class="content-wrapper px-4 py-2">
+            <div class="content-header"></div>
+          </div>
+          <h4 id="AdminDashboard" class="second-title">Admin Dashboard</h4>
+          <div class="col-md-12">
+            <div class="row">
+              <div class="content-wrapper px-4 py-2 row mb-3">
+                <p>
+                  This is the super admin dashboard where the admin can see all status and revenue at a glance. We have
+                  dark mode available for
+                  every page. For login to admin, use credential while installing the project.
+                </p>
+                <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+                  <img src="./screenshots/09.png" alt="Home Page" />
+                </div>
+                <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+                  <img src="./screenshots/10.png" alt="Home Page" />
+                </div>
+                <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+                  <img src="./screenshots/13.png" alt="Home Page" />
+                </div>
+                <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+                  <img src="./screenshots/14.png" alt="Home Page" />
+                </div>
+                <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+                  <img src="./screenshots/11.png" alt="Home Page" />
+                </div>
+                <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+                  <img src="./screenshots/12.png" alt="Home Page" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+        <section>
+          <div class="content-wrapper px-4 py-2">
+            <div class="content-header"></div>
+          </div>
+          <h4 id="profile" class="second-title">Profile</h4>
+          <div class="content-wrapper px-4 py-2 row mb-3">
+            <p>In this section, you can show/change personal information.
+            </p>
+            <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+              <img src="./screenshots/15.png" alt="Home Page" alt="Pre-Installation" />
+            </div>
+            <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+              <img src="./screenshots/16.png" alt="Home Page" alt="Pre-Installation" />
+            </div>
+          </div>
+        </section>
+        <section>
+          <div class="content-wrapper px-4 py-2">
+            <div class="content-header"></div>
+          </div>
+          <h4 id="online_admission" class="second-title">Online Admission</h4>
+          <div class="content-wrapper px-4 py-2 row mb-3">
+            <p>In this section, If someone applies for admission, they can be managed from here.
+            </p>
+            <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+              <img src="./screenshots/17.png" alt="Home Page" alt="Pre-Installation" />
+            </div>
+            <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+              <img src="./screenshots/18.png" alt="Home Page" alt="Pre-Installation" />
+            </div>
+          </div>
+        </section>
+        <section>
+          <div class="content-wrapper px-4 py-2">
+            <div class="content-header"></div>
+          </div>
+          <h4 id="promote_student" class="second-title">Promote Student</h4>
+          <div class="content-wrapper px-4 py-2 row mb-3">
+            <p>In this section, A student can be promoted from one session to another or from one class to another.
+            </p>
+            <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+              <img src="./screenshots/19.png" alt="Home Page" alt="Pre-Installation" />
+            </div>
+            <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+              <img src="./screenshots/20.png" alt="Home Page" alt="Pre-Installation" />
+            </div>
+          </div>
+        </section>
+        <section>
+          <div class="content-wrapper px-4 py-2">
+            <div class="content-header"></div>
+          </div>
+          <h4 id="class_setup" class="second-title">Class Setup</h4>
+          <div class="content-wrapper px-4 py-2 row mb-3">
+            <p>Classes can be set here, and it will be possible to have multiple sections in each class. All of these
+              can be managed from here.
+            </p>
+            <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+              <img src="./screenshots/21.png" alt="Home Page" alt="Pre-Installation" />
+            </div>
+            <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+              <img src="./screenshots/22.png" alt="Home Page" alt="Pre-Installation" />
+            </div>
+          </div>
+        </section>
+        <section>
+          <div class="content-wrapper px-4 py-2">
+            <div class="content-header"></div>
+          </div>
+          <h4 id="subject_assign" class="second-title">Subject Assign</h4>
+          <div class="content-wrapper px-4 py-2 row mb-3">
+            <p>Subjects can be set here, and teachers can be assigned to specific subjects/classes. All of these can be
+              managed from here.
+            </p>
+            <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+              <img src="./screenshots/23.png" alt="Home Page" alt="Pre-Installation" />
+            </div>
+            <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+              <img src="./screenshots/24.png" alt="Home Page" alt="Pre-Installation" />
+            </div>
+          </div>
+        </section>
+        <section>
+          <div class="content-wrapper px-4 py-2">
+            <div class="content-header"></div>
+          </div>
+          <h4 id="class_routine" class="second-title">Class Routine</h4>
+          <div class="content-wrapper px-4 py-2 row mb-3">
+            <p>Class routines can be set here, specifying when and which teacher will deliver classes for each subject.
+            </p>
+            <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+              <img src="./screenshots/25.png" alt="Home Page" alt="Pre-Installation" />
+            </div>
+            <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+              <img src="./screenshots/26.png" alt="Home Page" alt="Pre-Installation" />
+            </div>
+          </div>
+        </section>
+        <section>
+          <div class="content-wrapper px-4 py-2">
+            <div class="content-header"></div>
+          </div>
+          <h4 id="fees_master" class="second-title">Fees Master</h4>
+          <div class="content-wrapper px-4 py-2 row mb-3">
+            <p>Here, fees can be added, and they can be divided based on groups.
+            </p>
+            <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+              <img src="./screenshots/27.png" alt="Home Page" alt="Pre-Installation" />
+            </div>
+            <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+              <img src="./screenshots/28.png" alt="Home Page" alt="Pre-Installation" />
+            </div>
+          </div>
+        </section>
+        <section>
+          <div class="content-wrapper px-4 py-2">
+            <div class="content-header"></div>
+          </div>
+          <h4 id="fees_assign" class="second-title">Fees Assign</h4>
+          <div class="content-wrapper px-4 py-2 row mb-3">
+            <p>Here, fees can be assigned to students based on fee groups specified.
+            </p>
+            <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+              <img src="./screenshots/29.png" alt="Home Page" alt="Pre-Installation" />
+            </div>
+            <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+              <img src="./screenshots/30.png" alt="Home Page" alt="Pre-Installation" />
+            </div>
+          </div>
+        </section>
+        <section>
+          <div class="content-wrapper px-4 py-2">
+            <div class="content-header"></div>
+          </div>
+          <h4 id="fees_collect" class="second-title">Fees Collect</h4>
+          <div class="content-wrapper px-4 py-2 row mb-3">
+            <p>Fees assigned to students can be collected from here.
+            </p>
+            <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+              <img src="./screenshots/31.png" alt="Home Page" alt="Pre-Installation" />
+            </div>
+            <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+              <img src="./screenshots/32.png" alt="Home Page" alt="Pre-Installation" />
+            </div>
+          </div>
+        </section>
+        <section>
+          <div class="content-wrapper px-4 py-2">
+            <div class="content-header"></div>
+          </div>
+          <h4 id="exam_assign" class="second-title">Exam Assign</h4>
+          <div class="content-wrapper px-4 py-2 row mb-3">
+            <p>Here, the total marks for each subject's examination can be set, and the tasks related to marks
+              distribution can be performed from here.
+            </p>
+            <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+              <img src="./screenshots/33.png" alt="Home Page" alt="Pre-Installation" />
+            </div>
+            <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+              <img src="./screenshots/34.png" alt="Home Page" alt="Pre-Installation" />
+            </div>
+          </div>
+        </section>
+        <section>
+          <div class="content-wrapper px-4 py-2">
+            <div class="content-header"></div>
+          </div>
+          <h4 id="exam_routine" class="second-title">Exam Routine</h4>
+          <div class="content-wrapper px-4 py-2 row mb-3">
+            <p>Examination routines can be set here, allowing for the management of when and which subjects'
+              examinations will take place.
+            </p>
+            <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+              <img src="./screenshots/35.png" alt="Home Page" alt="Pre-Installation" />
+            </div>
+            <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+              <img src="./screenshots/36.png" alt="Home Page" alt="Pre-Installation" />
+            </div>
+          </div>
+        </section>
+        <section>
+          <div class="content-wrapper px-4 py-2">
+            <div class="content-header"></div>
+          </div>
+          <h4 id="mark_register" class="second-title">Mark Register</h4>
+          <div class="content-wrapper px-4 py-2 row mb-3">
+            <p>Here, marks determined for the examination can be registered based on which financial calculations can be
+              made.
+            </p>
+            <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+              <img src="./screenshots/37.png" alt="Home Page" alt="Pre-Installation" />
+            </div>
+            <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+              <img src="./screenshots/38.png" alt="Home Page" alt="Pre-Installation" />
+            </div>
+          </div>
+        </section>
+        <section>
+          <div class="content-wrapper px-4 py-2">
+            <div class="content-header"></div>
+          </div>
+          <h4 id="attendance" class="second-title">Attendance</h4>
+          <div class="content-wrapper px-4 py-2 row mb-3">
+            <p>Here, daily attendance of students can be taken according to their classes, and notes can be recorded
+              alongside.
+            </p>
+            <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+              <img src="./screenshots/39.png" alt="Home Page" alt="Pre-Installation" />
+            </div>
+            <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+              <img src="./screenshots/40.png" alt="Home Page" alt="Pre-Installation" />
+            </div>
+          </div>
+        </section>
+        <section>
+          <div class="content-wrapper px-4 py-2">
+            <div class="content-header"></div>
+          </div>
+          <h4 id="issue_book" class="second-title">Issue Book</h4>
+          <div class="content-wrapper px-4 py-2 row mb-3">
+            <p>Here, it is possible to manage when and how many books a user has borrowed from the library, as well as
+              when those books need to be returned.
+            </p>
+            <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+              <img src="./screenshots/41.png" alt="Home Page" alt="Pre-Installation" />
+            </div>
+            <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+              <img src="./screenshots/42.png" alt="Home Page" alt="Pre-Installation" />
+            </div>
+          </div>
+        </section>
+        <section>
+          <div class="content-wrapper px-4 py-2">
+            <div class="content-header"></div>
+          </div>
+          <h4 id="task_schedules" class="second-title">Task Schedules</h4>
+          <div class="content-wrapper px-4 py-2 row mb-3">
+            <p>Here, the task of generating a merit list for viewing results is done by compiling everyone's results
+              together.
+            </p>
+            <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+              <img src="./screenshots/43.png" alt="Home Page" alt="Pre-Installation" />
+            </div>
+            <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+              <img src="./screenshots/44.png" alt="Home Page" alt="Pre-Installation" />
+            </div>
+          </div>
+        </section>
+        <!-- ============== admin_panel ============================ -->
+
+
+        <!-- ============== student_parent_panel ============================ -->
+        <div class="mt-70 border-top">
+          <h3 id="student_parent_panel" class="first-title">
+            Student & Parent Panel
+          </h3>
+        </div>
+        <section>
+          <div class="content-wrapper px-4 py-2">
+            <div class="content-header"></div>
+          </div>
+          <h4 id="dashboard" class="second-title">Dashboard</h4>
+          <div class="content-wrapper px-4 py-2 row mb-3">
+            <p>This is the control panel for students and parents, where they can perform various tasks and access
+              everything.
+            </p>
+            <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+              <img src="./screenshots/45.png" alt="Home Page" alt="Pre-Installation" />
+            </div>
+            <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+              <img src="./screenshots/46.png" alt="Home Page" alt="Pre-Installation" />
+            </div>
+          </div>
+        </section>
+        <section>
+          <div class="content-wrapper px-4 py-2">
+            <div class="content-header"></div>
+          </div>
+          <h4 id="subject_list" class="second-title">Subject List</h4>
+          <div class="content-wrapper px-4 py-2 row mb-3">
+            <p>In this section, you can see all assigned subject list.
+            </p>
+            <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+              <img src="./screenshots/47.png" alt="Home Page" alt="Pre-Installation" />
+            </div>
+            <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+              <img src="./screenshots/48.png" alt="Home Page" alt="Pre-Installation" />
+            </div>
+          </div>
+        </section>
+        <section>
+          <div class="content-wrapper px-4 py-2">
+            <div class="content-header"></div>
+          </div>
+          <h4 id="classRoutine" class="second-title">Class Routine</h4>
+          <div class="content-wrapper px-4 py-2 row mb-3">
+            <p>In this section, you can see assigned classes.
+            </p>
+            <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+              <img src="./screenshots/49.png" alt="Home Page" alt="Pre-Installation" />
+            </div>
+            <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+              <img src="./screenshots/50.png" alt="Home Page" alt="Pre-Installation" />
+            </div>
+          </div>
+        </section>
+        <section>
+          <div class="content-wrapper px-4 py-2">
+            <div class="content-header"></div>
+          </div>
+          <h4 id="fees" class="second-title">Fees</h4>
+          <div class="content-wrapper px-4 py-2 row mb-3">
+            <p>In this section, you can see assigned and paid fee list.
+            </p>
+            <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+              <img src="./screenshots/51.png" alt="Home Page" alt="Pre-Installation" />
+            </div>
+            <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+              <img src="./screenshots/52.png" alt="Home Page" alt="Pre-Installation" />
+            </div>
+          </div>
+        </section>
+        <section>
+          <div class="content-wrapper px-4 py-2">
+            <div class="content-header"></div>
+          </div>
+          <h4 id="fees_pay" class="second-title">Fees Pay</h4>
+          <div class="content-wrapper px-4 py-2 row mb-3">
+            <p>
+              After click Pay button from Fees list you will show an Fees Pay Popup Modal.
+            </p>
+            <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+              <img src="./screenshots/66.png" alt="Home Page" alt="Pre-Installation" />
+            </div>
+            <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+              <img src="./screenshots/67.png" alt="Home Page" alt="Pre-Installation" />
+            </div>
+          </div>
+        </section>
+        <section>
+          <div class="content-wrapper px-4 py-2">
+            <div class="content-header"></div>
+          </div>
+          <h4 id="examRoutine" class="second-title">Exam Routine</h4>
+          <div class="content-wrapper px-4 py-2 row mb-3">
+            <p>In this section, you can see assigned exams.
+            </p>
+            <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+              <img src="./screenshots/53.png" alt="Home Page" alt="Pre-Installation" />
+            </div>
+            <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+              <img src="./screenshots/54.png" alt="Home Page" alt="Pre-Installation" />
+            </div>
+          </div>
+        </section>
+        <section>
+          <div class="content-wrapper px-4 py-2">
+            <div class="content-header"></div>
+          </div>
+          <h4 id="marksheet" class="second-title">Marksheet</h4>
+          <div class="content-wrapper px-4 py-2 row mb-3">
+            <p>In this section, you can see exam results.
+            </p>
+            <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+              <img src="./screenshots/55.png" alt="Home Page" alt="Pre-Installation" />
+            </div>
+            <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+              <img src="./screenshots/56.png" alt="Home Page" alt="Pre-Installation" />
+            </div>
+          </div>
+        </section>
+        <section>
+          <div class="content-wrapper px-4 py-2">
+            <div class="content-header"></div>
+          </div>
+          <h4 id="Attendance" class="second-title">Attendance</h4>
+          <div class="content-wrapper px-4 py-2 row mb-3">
+            <p>In this section, you can see monthly attendance report.
+            </p>
+            <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+              <img src="./screenshots/57.png" alt="Home Page" alt="Pre-Installation" />
+            </div>
+            <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+              <img src="./screenshots/58.png" alt="Home Page" alt="Pre-Installation" />
+            </div>
+          </div>
+        </section>
+        <!-- ============== student_parent_panel ============================ -->
+
+
+        <!-- ============== Settings ============================ -->
+        <div class="mt-70 border-top">
+          <h3 id="settings" class="first-title">
+            Settings
+          </h3>
+        </div>
+        <section>
+          <div class="content-wrapper px-4 py-2">
+            <div class="content-header"></div>
+          </div>
+          <h4 id="general_settings" class="second-title">General settings</h4>
+          <div class="content-wrapper px-4 py-2 row mb-3">
+            <p>In this section, you can change general options, for example application name, logo, session, language
+              etc.
+            </p>
+            <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+              <img src="./screenshots/59.png" alt="Home Page" alt="Pre-Installation" />
+            </div>
+            <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+              <img src="./screenshots/60.png" alt="Home Page" alt="Pre-Installation" />
+            </div>
+          </div>
+        </section>
+        <section>
+          <div class="content-wrapper px-4 py-2">
+            <div class="content-header"></div>
+          </div>
+          <h4 id="payment_gateway_settings" class="second-title">Payment Gateway settings</h4>
+          <div class="content-wrapper px-4 py-2 row mb-3">
+            <p>
+              In this section, you can change your payment gateway credentials. If you choose PayPal then show an option Payment Mode (Sandbox/Live). You can set your Sandbox/Live or both credentials.
+            </p>
+            <p>
+              <b>
+                Note: For real transaction you need to set your PayPal Payment Mode to Live not Sandbox.
+              </b>
+            </p>
+            <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+              <img src="./screenshots/68.png" alt="Home Page" alt="Pre-Installation" />
+            </div>
+            <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+              <img src="./screenshots/69.png" alt="Home Page" alt="Pre-Installation" />
+            </div>
+            <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+              <img src="./screenshots/70.png" alt="Home Page" alt="Pre-Installation" />
+            </div>
+            <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+              <img src="./screenshots/71.png" alt="Home Page" alt="Pre-Installation" />
+            </div>
+          </div>
+        </section>
+        <section>
+          <div class="content-wrapper px-4 py-2">
+            <div class="content-header"></div>
+          </div>
+          <h4 id="language" class="second-title">Language</h4>
+          <div class="content-wrapper px-4 py-2 row mb-3">
+            <p>In this section, you can add languages to your application.
+            </p>
+            <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+              <img src="./screenshots/61.png" alt="Home Page" alt="Pre-Installation" />
+            </div>
+            <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+              <img src="./screenshots/62.png" alt="Home Page" alt="Pre-Installation" />
+            </div>
+          </div>
+        </section>
+        <section>
+          <div class="content-wrapper px-4 py-2">
+            <div class="content-header"></div>
+          </div>
+          <h4 id="session" class="second-title">Session</h4>
+          <div class="content-wrapper px-4 py-2 row mb-3">
+            <p>In this section, you can add session to your application.
+            </p>
+            <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+              <img src="./screenshots/63.png" alt="Home Page" alt="Pre-Installation" />
+            </div>
+            <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+              <img src="./screenshots/64.png" alt="Home Page" alt="Pre-Installation" />
+            </div>
+          </div>
+        </section>
+        <section>
+          <div class="content-wrapper px-4 py-2">
+            <div class="content-header"></div>
+          </div>
+          <h4 id="softwareUpdate" class="second-title">Softwate Update</h4>
+          <div class="content-wrapper px-4 py-2 row mb-3">
+            <h4>Steps to follow</h4>
+            <div>
+              <ol>
+                <li>Download & Unzip 'Main_File.zip' file.</li>
+                <li>Zip 'source_code' folder</li>
+                <li>Upload <span class="text-info">source_code.zip</span> to your <span class="text-info">project root directory</span>, <span class="text-danger">extract the zip and confirm replace all</span>.</li>
+                <li>Login as <span class="text-danger">admin</span> and go to <span class="text-info">Setting->Softwate update</span> and click <span class="text-info">Database Update</span> button.</li>
+              </ol>
+            </div>
+            <div class="col-12 col-md-6 col-xl-6 col-lg-6 mb-3">
+              <img src="./screenshots/65.png" alt="Home Page" alt="Pre-Installation" />
+            </div>
+          </div>
+        </section>
+        <!-- ============== Settings ============================ -->
+
+        <div class="mt-70 border-top">
+        </div>
+
+        <!-- ============== Others ============================ -->
+        <section>
+          <div class="content-wrapper px-4 py-2" id="others">
+            <div class="content-header"></div>
+          </div>
+          <h4 class="second-title">Others</h4>
+          <div class="col-md-12">
+            <div class="row">
+              <div class="content-wrapper px-4 py-2 row mb-3">
+                <p>
+                  We are working on some more features. For example: Homework / Assignment, Dormitory Management, Transport Management, Face Attendance ect. Once these features are done, I will be able to provide better service. Apart from the above mentioned features we have many more features. <br>
+                  We have a beautiful frontend. From here you can apply for admission in addition to news, events. Results can be seen. A message can be provided if required.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+        <!-- ============== Others ============================ -->
+        <!-- ============== Help & Support ============================ -->
+        <section>
+          <div class="content-wrapper px-4 py-2">
+            <div class="content-header"></div>
+          </div>
+          <h4 id="helpSupport" class="second-title">Help & Support</h4>
+          <div class="col-md-12">
+            <div class="row">
+              <div class="content-wrapper px-4 py-2 row mb-3">
+                <p>
+                  Mail: <a href="mailto:sales@onesttech.com">sales@onesttech.com</a>
+                </p>
+                <p>WhatsApp: <a
+                    href="https://api.whatsapp.com/send?phone=8801959335555&amp;text=Hello%20this%20is%20the%20starting%20message"
+                    rel="nofollow">+880 1959-335555</a>
+                </p>
+                <p>Skype: <a href="mailto:sales@onesttech.com">sales@onesttech.com</a></p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============== Help & Support ============================ -->
+        <!-- ============== Thank You! ============================ -->
+        <section>
+          <div class="content-wrapper px-4 py-2">
+            <div class="content-header"></div>
+          </div>
+
+          <h4 id="ThankYou" class="second-title">Thank You!</h4>
+
+          <div class="content-wrapper px-4 py-2">
+            <p>
+              Again, thank you for purchasing <b>Onest Schooled</b> If you need some help or support
+              please use the email or
+              contact form via codecanyon <a href="#"> Profile site.</a> Hope you happy with the Onest Schooled,
+              all the best with your business.
+            </p>
+          </div>
+        </section>
+        <!-- ============== Thank You! ============================ -->
+
+      </div>
+    </aside>
+  </main>
+
+  <script src="assets/js/jquery.2.2.4.min.js"></script>
+  <script src="assets/js/jquery.nicescroll.min.js"></script>
+  <script src="assets/js/bootstrap.min.js"></script>
+  <script src="assets/js/custom.js"></script>
+</body>
+
+</html>
