@@ -3,6 +3,7 @@
 namespace Database\Seeders\StudentInfo;
 
 use App\Models\User;
+use App\Models\Role;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Illuminate\Database\Seeder;
@@ -40,6 +41,14 @@ class StudentSeeder extends Seeder
 
                     $dob = date('Y-m-d', strtotime("-".$c.$s.$i." day"));
                     $admissionNo = '2023'.$c.$s.$i;
+                    
+                    // Get student role and its permissions
+                    $role = Role::find(6); // student role id
+                    if (!$role) {
+                        Log::error('StudentSeeder: Student role (ID: 6) not found. Please seed roles first.');
+                        throw new \Exception('Student role not found. Run RoleSeeder first.');
+                    }
+                    
                     $user = User::create([
                         'name'              => 'Student'.$c.$s.$i,
                         'phone'             => '0147852'.$c.$s.$i,
@@ -47,10 +56,10 @@ class StudentSeeder extends Seeder
                         'username'          => 'STU-'.$admissionNo,
                         'email_verified_at' => now(),
                         'password'          => Hash::make('123456'),
-                        'role_id'           => 6,
+                        'role_id'           => $role->id,
                         'date_of_birth'     => $dob,
                         "uuid"              => Str::uuid(),
-                        'permissions'       => []
+                        'permissions'       => $role->permissions
                     ]);
                     $student = Student::create([
                         'user_id'                 => $user->id,

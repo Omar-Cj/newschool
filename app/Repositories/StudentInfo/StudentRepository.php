@@ -179,11 +179,26 @@ class StudentRepository implements StudentInterface
     {
         DB::beginTransaction();
         try {
-            $row                      = $this->model->find($id);
+            $row = $this->model->find($id);
+            
+            if (!$row) {
+                DB::rollback();
+                return $this->responseWithError('Student record not found.', []);
+            }
 
-            $user                     = User::where('id', $row->user_id)->first();
+            $user = User::where('id', $row->user_id)->first();
+            
+            if (!$user) {
+                DB::rollback();
+                return $this->responseWithError('Student user account not found.', []);
+            }
 
-            $role                     = Role::find($user->role_id);
+            $role = Role::find($user->role_id);
+            
+            if (!$role) {
+                DB::rollback();
+                return $this->responseWithError('User role not found.', []);
+            }
 
             $user->name               = $request->first_name . ' ' . $request->last_name;
             $user->email              = $request->email != "" ? $request->email :  NULL;
@@ -228,7 +243,13 @@ class StudentRepository implements StudentInterface
             $row->department_id        = $request->department_id;
             $row->save();
 
-            $session_class                      = SessionClassStudent::where('session_id', setting('session'))->where('student_id', $row->id)->first();
+            $session_class = SessionClassStudent::where('session_id', setting('session'))->where('student_id', $row->id)->first();
+            
+            if (!$session_class) {
+                DB::rollback();
+                return $this->responseWithError('Student class assignment not found for current session.', []);
+            }
+            
             $session_class->classes_id          = $request->class;
             $session_class->section_id          = $request->section != "" ? $request->section :  NULL;
             $session_class->shift_id            = $request->shift != "" ? $request->shift :  NULL;
@@ -240,7 +261,13 @@ class StudentRepository implements StudentInterface
             return $this->responseWithSuccess(___('alert.updated_successfully'), []);
         } catch (\Throwable $th) {
             DB::rollback();
-            return $this->responseWithError(___('alert.something_went_wrong_please_try_again'), []);
+            // Log the actual error for debugging
+            \Log::error('Student update failed: ' . $th->getMessage(), [
+                'student_id' => $id,
+                'error' => $th->getMessage(),
+                'trace' => $th->getTraceAsString()
+            ]);
+            return $this->responseWithError('Update failed: ' . $th->getMessage(), []);
         }
     }
 

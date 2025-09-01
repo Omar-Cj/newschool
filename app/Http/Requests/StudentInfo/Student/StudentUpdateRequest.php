@@ -23,14 +23,23 @@ class StudentUpdateRequest extends FormRequest
      */
     public function rules()
     {
+        // Get the student record to access user_id
+        $student = \App\Models\StudentInfo\Student::find($this->id);
+        $userId = $student ? $student->user_id : null;
+
         $mobile = '';
-        if (Request()->mobile != '') {
-            $mobile = 'max:255|unique:users,phone,' . $this->user_id;
+        if (!empty($this->mobile)) {
+            $mobile = $userId ? 'max:255|unique:users,phone,' . $userId : 'max:255';
         }
 
         $email = '';
-        if (Request()->email != '') {
-            $email = 'max:255|unique:users,email,' . $this->user_id;
+        if (!empty($this->email)) {
+            $email = $userId ? 'max:255|unique:users,email,' . $userId : 'max:255';
+        }
+
+        $username = '';
+        if (!empty($this->username)) {
+            $username = $userId ? 'unique:users,username,' . $userId . ',id' : 'unique:users,username';
         }
 
         return [
@@ -47,7 +56,7 @@ class StudentUpdateRequest extends FormRequest
             'admission_date' => 'required|max:255',
             'parent'         => 'required|max:255',
             'status'         => 'required|max:255',
-            'username'       => 'unique:users,username,' . $this->user_id . ',id',
+            'username'       => $username,
         ];
     }
 }
