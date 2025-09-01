@@ -20,6 +20,31 @@ class Staff extends BaseModel
         'upload_documents' => 'array',
     ];
 
+    protected $fillable = [
+        'user_id',
+        'staff_id',
+        'role_id',
+        'designation_id',
+        'department_id',
+        'gender_id',
+        'upload_id',
+        'first_name',
+        'last_name',
+        'father_name',
+        'mother_name',
+        'email',
+        'dob',
+        'joining_date',
+        'phone',
+        'emergency_contact',
+        'marital_status',
+        'status',
+        'current_address',
+        'permanent_address',
+        'basic_salary',
+        'upload_documents',
+    ];
+
     public function scopeActive($query)
     {
         return $query->where('status', \App\Enums\Status::ACTIVE);

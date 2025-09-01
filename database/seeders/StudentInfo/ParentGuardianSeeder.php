@@ -22,6 +22,7 @@ class ParentGuardianSeeder extends Seeder
                 'name'              => 'Guardian'.$i,
                 'phone'             => '1236585'.$i,
                 'email'             => 'guardian'.$i.'@gmail.com',
+                'username'          => 'PAR-'.str_pad($i, 3, '0', STR_PAD_LEFT),
                 'email_verified_at' => now(),
                 'password'          => Hash::make('123456'),
                 'role_id'           => 7,

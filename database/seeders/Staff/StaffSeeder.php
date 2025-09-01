@@ -26,10 +26,12 @@ class StaffSeeder extends Seeder
             $upload->path = 'frontend/img/instractors/'.$i.'.webp';
             $upload->save();
 
+            $staffId = '100'+$i;
             $user                     = new User();
             $user->name               = 'Teacher '.$i;
             $user->email              = 'teacher'.$i.'@gmail.com';
             $user->phone              = '014789625'.$i;
+            $user->username           = 'TCH-'.$staffId;
             $user->password           = Hash::make('123456');
             $user->email_verified_at  = now();
             $user->role_id            = 5;
@@ -80,7 +82,7 @@ class StaffSeeder extends Seeder
             $staff                          = new Staff();
             $staff->upload_id               = $upload->id;
             $staff->user_id                 = $user->id;
-            $staff->staff_id                = '100'+$i;
+            $staff->staff_id                = $staffId;
             $staff->role_id                 = 5;
             $staff->designation_id          = 2;
             $staff->department_id           = 2;

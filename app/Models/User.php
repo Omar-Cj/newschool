@@ -36,6 +36,7 @@ class User extends Authenticatable
         'upload_id',
         'email_verified_at',
         'phone',
+        'username',
         'permission',
         'last_login',
         'designation_id',
