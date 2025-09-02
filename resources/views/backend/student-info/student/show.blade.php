@@ -14,8 +14,8 @@
                 <!-- Profile Top Section -->
                 <div class="d-flex align-items-center gap-4 mb-4">
                     <div class="rounded-circle overflow-hidden" style="width: 60px; height: 60px;">
-                        <img src="{{ @globalAsset(@$data->user->upload->path, '40X40.webp') }}" alt="{{ @$data->full_name }}"
-                            class="img-fluid rounded-circle">
+                        <img src="{{ @$data->upload ? asset(@$data->upload->path) : asset('backend/uploads/users/user-icon-1.png') }}" alt="{{ @$data->full_name }}"
+                            class="img-fluid rounded-circle" style="width: 60px; height: 60px; object-fit: cover;">
                     </div>
                     <div>
                         <h5 class="mb-1 fw-semibold">{{ @$data->full_name }}</h5>

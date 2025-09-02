@@ -44,14 +44,14 @@ class StudentRepository implements StudentInterface
             ->when(request()->filled('gender'), function ($q) use ($request) {
                 $q->whereHas('student', fn($q) => $q->where('gender_id', $request->gender));
             })
-            ->with('student')
+            ->with(['student.upload', 'student.user'])
             ->get();
     }
 
 
     public function getPaginateAll()
     {
-        return SessionClassStudent::whereHas('student')->where('session_id', setting('session'))->latest()->with('student')->paginate(Settings::PAGINATE);
+        return SessionClassStudent::whereHas('student')->where('session_id', setting('session'))->latest()->with(['student.upload', 'student.user'])->paginate(Settings::PAGINATE);
     }
     public function getSessionStudent($id)
     {
@@ -80,7 +80,7 @@ class StudentRepository implements StudentInterface
             });
         }
 
-        return $students->paginate(Settings::PAGINATE);
+        return $students->with(['student.upload', 'student.user'])->paginate(Settings::PAGINATE);
     }
 
     public function store($request)
@@ -172,7 +172,7 @@ class StudentRepository implements StudentInterface
 
     public function show($id)
     {
-        return $this->model->find($id);
+        return $this->model->with(['upload', 'user'])->find($id);
     }
 
     public function update($request, $id)

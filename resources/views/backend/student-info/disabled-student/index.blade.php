@@ -103,7 +103,7 @@
                                                 <a href="{{ route('student.show',@$item->student->id) }}">
                                                     <div class="user-card">
                                                         <div class="user-avatar">
-                                                            <img src="{{ @globalAsset(@$item->student->user->upload->path) }}"
+                                                            <img src="{{ @globalAsset(@$item->student->upload->path) }}"
                                                                 alt="{{ @$item->student->name }}">
                                                         </div>
                                                         <div class="user-info">

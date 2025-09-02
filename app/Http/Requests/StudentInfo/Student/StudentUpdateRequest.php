@@ -57,6 +57,8 @@ class StudentUpdateRequest extends FormRequest
             'parent'         => 'required|max:255',
             'status'         => 'required|max:255',
             'username'       => $username,
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'previous_school_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
         ];
     }
 }

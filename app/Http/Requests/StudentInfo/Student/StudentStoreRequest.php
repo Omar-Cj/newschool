@@ -53,7 +53,9 @@ class StudentStoreRequest extends FormRequest
             'status' => 'required|max:255',
             'siblings_discount' => 'nullable',
             'username' => 'unique:users,username',
-            'password' => 'min:6'
+            'password' => 'min:6',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'previous_school_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
         ];
     }
 }

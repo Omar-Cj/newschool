@@ -357,6 +357,19 @@
                                                 id="fileBrouse" accept="image/*">
                                         </button>
                                     </div>
+                                    
+                                    {{-- Current Image Preview --}}
+                                    @if(@$data['student']->upload)
+                                        <div class="current-image-preview mb-2">
+                                            <label class="form-label small text-muted">{{ ___('common.current_image') }}</label>
+                                            <div class="current-image-container">
+                                                <img src="{{ asset(@$data['student']->upload->path) }}" 
+                                                     alt="{{ @$data['student']->first_name }}" 
+                                                     class="current-student-image" 
+                                                     style="width: 100px; height: 100px; object-fit: cover; border-radius: 8px; border: 2px solid #e9ecef;">
+                                            </div>
+                                        </div>
+                                    @endif
 
                                 </div>
                                 <div class="col-md-3 parent">
