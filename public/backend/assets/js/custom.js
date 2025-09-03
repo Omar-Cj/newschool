@@ -1637,14 +1637,38 @@ function viewStudentList(id) {
 // view student list
 
 function feesCollect() {
+    console.log('feesCollect() function called');
+    
+    // Validate checkboxes exist
+    var allCheckboxes = $('input[name="fees_assign_childrens[]"]');
+    console.log('Total fee checkboxes found:', allCheckboxes.length);
+    
+    if (allCheckboxes.length === 0) {
+        var noCheckboxesMsg = 'No fee items found. Please refresh the page and try again.';
+        console.error('Validation Error:', noCheckboxesMsg);
+        showErrorMessage(noCheckboxesMsg);
+        return false;
+    }
 
-    var fees_assign_childrens = $('input[name="fees_assign_childrens[]"]').map(function () {
+    // Get selected checkboxes
+    var fees_assign_childrens = allCheckboxes.map(function () {
         if ($(this).is(':checked')) {
             return $(this).val();
         }
     }).get();
+    
+    console.log('Selected fee items:', fees_assign_childrens);
 
-    // Calculate discount amount from selected items (fix for undefined discount_amount)
+    // Validate selection
+    if (fees_assign_childrens.length === 0) {
+        var noSelectionMsg = 'Please select at least one fee item to collect payment.';
+        console.error('Validation Error:', noSelectionMsg);
+        showErrorMessage(noSelectionMsg);
+        updateCollectButton();
+        return false;
+    }
+
+    // Calculate discount amount from selected items
     var discountAmount = 0;
     $('input[name="fees_assign_childrens[]"]:checked').each(function() {
         var row = $(this).closest('tr');
@@ -1653,33 +1677,41 @@ function feesCollect() {
             discountAmount += parseFloat(itemDiscountInput.val()) || 0;
         }
     });
+    console.log('Total discount amount:', discountAmount);
 
-    if (fees_assign_childrens.length === 0) {
-        Toast.fire({
-            icon: 'error',
-            title: 'Please select at least one item'
-        })
-        return;
-    }
-
-    // Get student ID and validate
+    // Get and validate student ID
     var studentId = $("#student_id").val();
+    console.log('Student ID:', studentId);
+    
     if (!studentId) {
-        Toast.fire({
-            icon: 'error',
-            title: 'Student ID is required'
-        })
-        return;
+        var noStudentMsg = 'Student ID is missing. Please refresh the page and try again.';
+        console.error('Validation Error:', noStudentMsg);
+        showErrorMessage(noStudentMsg);
+        return false;
     }
 
+    // Prepare form data
     var formData = {
         fees_assign_childrens: fees_assign_childrens,
         student_id: studentId,
         discount_amount: discountAmount,
     }
+    console.log('Sending form data:', formData);
 
-    console.log(formData);
+    // Show loading message in modal
+    $("#modalCustomizeWidth .modal-dialog").html(`
+        <div class="modal-content">
+            <div class="modal-body text-center p-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-3">Loading payment form...</p>
+                <p class="text-muted">Processing ${fees_assign_childrens.length} selected item(s)</p>
+            </div>
+        </div>
+    `);
 
+    // Send AJAX request
     $.ajax({
         type: "GET",
         dataType: 'html',
@@ -1689,10 +1721,11 @@ function feesCollect() {
         },
         url: $('#url').val() + '/fees-collect/fees-show',
         success: function (data) {
+            console.log('Payment form loaded successfully');
             $("#modalCustomizeWidth .modal-dialog").html(data);
         },
         error: function (xhr, status, error) {
-            console.error('Fees Collect Error:', {
+            console.error('Fees Collect AJAX Error:', {
                 status: status,
                 error: error,
                 response: xhr.responseText
@@ -1710,13 +1743,137 @@ function feesCollect() {
                 errorMessage += 'Please try again or contact support.';
             }
             
-            Toast.fire({
-                icon: 'error',
-                title: errorMessage
-            });
+            showErrorMessage(errorMessage);
+            
+            // Reset modal content
+            $("#modalCustomizeWidth .modal-dialog").html(`
+                <div class="modal-content">
+                    <div class="modal-body text-center p-5">
+                        <i class="fa fa-exclamation-triangle text-danger fa-3x mb-3"></i>
+                        <h5>Error Loading Payment Form</h5>
+                        <p class="text-muted">${errorMessage}</p>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            `);
         }
     });
+    
+    return true;
 }
+
+// Enhanced error message function with multiple notification methods
+function showErrorMessage(message) {
+    console.error('Error Message:', message);
+    
+    // Primary method: Toast notification
+    if (typeof Toast !== 'undefined' && Toast.fire) {
+        Toast.fire({
+            icon: 'error',
+            title: message,
+            timer: 5000
+        });
+    } 
+    // Fallback method: SweetAlert
+    else if (typeof Swal !== 'undefined') {
+        Swal.fire({
+            icon: 'error',
+            title: 'Validation Error',
+            text: message,
+            confirmButtonText: 'OK'
+        });
+    }
+    // Final fallback: Browser alert
+    else {
+        alert('Error: ' + message);
+    }
+}
+
+// Dynamic button state management for fee collection
+function updateCollectButton() {
+    var collectBtn = $('a[onclick*="feesCollect"]');
+    var selectedCount = $('input[name="fees_assign_childrens[]"]:checked').length;
+    var totalCount = $('input[name="fees_assign_childrens[]"]').length;
+    
+    console.log('Updating collect button - Selected:', selectedCount, 'Total:', totalCount);
+    
+    if (selectedCount === 0) {
+        collectBtn.addClass('disabled btn-outline-secondary')
+               .removeClass('ot-btn-primary')
+               .attr('aria-disabled', 'true')
+               .find('span:last').text('Select Items to Collect');
+    } else {
+        collectBtn.removeClass('disabled btn-outline-secondary')
+               .addClass('ot-btn-primary')
+               .removeAttr('aria-disabled')
+               .find('span:last').text(`Collect (${selectedCount} item${selectedCount > 1 ? 's' : ''})`);
+    }
+    
+    // Update selection summary
+    updateSelectionSummary(selectedCount, totalCount);
+}
+
+// Update selection summary display
+function updateSelectionSummary(selectedCount, totalCount) {
+    var summaryElement = $('#fee-selection-summary');
+    if (summaryElement.length === 0) {
+        // Create summary element if it doesn't exist
+        $('.card-header h4').after(`
+            <div id="fee-selection-summary" class="mt-2">
+                <small class="text-muted">
+                    <i class="fa fa-info-circle"></i> 
+                    <span id="selection-text">No items selected</span>
+                </small>
+            </div>
+        `);
+        summaryElement = $('#fee-selection-summary');
+    }
+    
+    var summaryText = selectedCount === 0 ? 'No items selected' : 
+                     selectedCount === totalCount ? `All ${totalCount} items selected` :
+                     `${selectedCount} of ${totalCount} items selected`;
+    
+    summaryElement.find('#selection-text').text(summaryText);
+    
+    if (selectedCount > 0) {
+        summaryElement.removeClass('text-muted').addClass('text-primary');
+    } else {
+        summaryElement.removeClass('text-primary').addClass('text-muted');
+    }
+}
+
+// Initialize fee collection UI enhancements
+$(document).ready(function() {
+    // Only initialize on fee collection page
+    if ($('input[name="fees_assign_childrens[]"]').length > 0) {
+        console.log('Initializing fee collection enhancements');
+        
+        // Set initial button state
+        updateCollectButton();
+        
+        // Monitor individual checkbox changes
+        $(document).on('change', 'input[name="fees_assign_childrens[]"]', function() {
+            updateCollectButton();
+        });
+        
+        // Enhance "All" checkbox functionality
+        $(document).on('change', '.all', function() {
+            var isChecked = $(this).is(':checked');
+            console.log('All checkbox clicked:', isChecked);
+            
+            $('input[name="fees_assign_childrens[]"]').prop('checked', isChecked);
+            updateCollectButton();
+        });
+        
+        // Update "All" checkbox when individual items change
+        $(document).on('change', 'input[name="fees_assign_childrens[]"]', function() {
+            var totalItems = $('input[name="fees_assign_childrens[]"]').length;
+            var checkedItems = $('input[name="fees_assign_childrens[]"]:checked').length;
+            
+            $('.all').prop('checked', totalItems === checkedItems);
+        });
+    }
+});
 
 // end view student list
 

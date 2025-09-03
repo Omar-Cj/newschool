@@ -87,13 +87,24 @@
                 </div>
 
                 <div class="card-header d-flex justify-content-between align-items-center mb-3">
-                    <h4 class="mb-0">{{___('fees.fees_details')}}</h4>
+                    <div>
+                        <h4 class="mb-0">{{___('fees.fees_details')}}</h4>
+                        <!-- Selection summary will be added here by JavaScript -->
+                    </div>
                     @if (hasPermission('fees_collect_update'))
-                        <a href="#" class="btn btn-lg ot-btn-primary" data-bs-toggle="modal"
-                            data-bs-target="#modalCustomizeWidth" onclick="feesCollect()">
-                            <span><i class="fa-solid fa-plus"></i> </span>
-                            <span class="">{{ ___('fees.Collect') }}</span>
-                        </a>
+                        <div class="d-flex flex-column align-items-end">
+                            <a href="#" class="btn btn-lg disabled btn-outline-secondary" 
+                               data-bs-toggle="modal" data-bs-target="#modalCustomizeWidth" 
+                               onclick="return feesCollect();" aria-disabled="true"
+                               title="Select fee items to enable payment collection">
+                                <span><i class="fa-solid fa-credit-card"></i> </span>
+                                <span>Select Items to Collect</span>
+                            </a>
+                            <small class="text-muted mt-1 fee-collection-help">
+                                <i class="fa fa-info-circle"></i> 
+                                Select fee items below to enable payment collection
+                            </small>
+                        </div>
                     @endif
                 </div>
 
@@ -101,8 +112,13 @@
                     <table class="table table-bordered role-table" id="students_table">
                         <thead class="thead">
                             <tr>
-                                <th class="purchase mr-4">{{ ___('common.All') }} <input class="form-check-input all"
-                                        type="checkbox"></th>
+                                <th class="purchase mr-4">
+                                    <div class="d-flex align-items-center">
+                                        <input class="form-check-input all me-2" type="checkbox" 
+                                               title="Select/Deselect all fee items">
+                                        <label class="form-check-label">{{ ___('common.All') }}</label>
+                                    </div>
+                                </th>
                                 <th class="purchase">{{ ___('fees.group') }}</th>
                                 <th class="purchase">{{ ___('fees.type') }}</th>
                                 <th class="purchase">{{ ___('fees.due_date') }}</th>
@@ -122,9 +138,18 @@
                         <tbody class="tbody">
 
                             @foreach (@$data['fees_assigned'] as $item)
-                                <tr>
-                                    <td><input class="form-check-input child" type="checkbox" name="fees_assign_childrens[]"
-                                            value="{{ $item->id }}"></td>
+                                <tr class="fee-item-row" data-fee-id="{{ $item->id }}">
+                                    <td class="text-center">
+                                        <div class="form-check">
+                                            <input class="form-check-input child" type="checkbox" 
+                                                   name="fees_assign_childrens[]" value="{{ $item->id }}" 
+                                                   id="fee_{{ $item->id }}"
+                                                   title="Select this fee item for payment collection">
+                                            <label class="form-check-label visually-hidden" for="fee_{{ $item->id }}">
+                                                Select {{ @$item->feesMaster->type->name }}
+                                            </label>
+                                        </div>
+                                    </td>
                                     <input type="hidden" name="discount_amount" value="{{ calculateDiscount(@$item->feesMaster->amount, @$item->feesDiscount->discount_percentage)}}">
                                     <input type="hidden" name="discount_name" value="{{@$item->feesDiscount->feesDiscount->title}}">
                                     <input type="hidden" name="discount_percentage" value="{{@$item->feesDiscount->discount_percentage}}">
@@ -217,6 +242,8 @@
         </div>
     </div>
 @endsection
+
+
 @push('script')
     @include('backend.partials.delete-ajax')
     <script>
@@ -229,7 +256,6 @@
             };
         }
 
-        // Validate required elements on page load
         $(document).ready(function() {
             // Check for required elements
             if ($('#student_id').length === 0) {
@@ -241,6 +267,16 @@
             if (!$('meta[name="csrf-token"]').length) {
                 console.error('CSRF token meta tag not found');
             }
+            
+            // Prevent form submission when collect button is disabled
+            $(document).on('click', '.disabled[onclick*="feesCollect"]', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                showErrorMessage('Please select at least one fee item to collect payment.');
+                
+                return false;
+            });
         });
     </script>
 @endpush
