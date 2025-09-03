@@ -72,7 +72,7 @@ Route::middleware(saasMiddleware())->group(function () {
 
 
                     Route::any('/search', 'getFeesCollectStudents')->name('fees-collect-search');
-                    Route::get('/fees-show', 'feesShow');
+                    Route::get('/fees-show', 'feesShow')->middleware('PermissionCheck:fees_collect_update');
                 });
 
                 Route::controller(FeesDiscountController::class)->prefix('fees-discount')->group(function () {

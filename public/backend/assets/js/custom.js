@@ -1644,7 +1644,15 @@ function feesCollect() {
         }
     }).get();
 
-    let discountAmount = $('input[name="discount_amount"]').val();
+    // Calculate discount amount from selected items (fix for undefined discount_amount)
+    var discountAmount = 0;
+    $('input[name="fees_assign_childrens[]"]:checked').each(function() {
+        var row = $(this).closest('tr');
+        var itemDiscountInput = row.find('input[name="discount_amount"]');
+        if (itemDiscountInput.length > 0) {
+            discountAmount += parseFloat(itemDiscountInput.val()) || 0;
+        }
+    });
 
     if (fees_assign_childrens.length === 0) {
         Toast.fire({
@@ -1654,9 +1662,19 @@ function feesCollect() {
         return;
     }
 
+    // Get student ID and validate
+    var studentId = $("#student_id").val();
+    if (!studentId) {
+        Toast.fire({
+            icon: 'error',
+            title: 'Student ID is required'
+        })
+        return;
+    }
+
     var formData = {
         fees_assign_childrens: fees_assign_childrens,
-        student_id: $("#student_id").val(),
+        student_id: studentId,
         discount_amount: discountAmount,
     }
 
@@ -1669,13 +1687,33 @@ function feesCollect() {
         headers: {
             'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
         },
-        url: '/fees-collect/fees-show',
+        url: $('#url').val() + '/fees-collect/fees-show',
         success: function (data) {
-            // $("#view-modal").append(data);
             $("#modalCustomizeWidth .modal-dialog").html(data);
         },
-        error: function (data) {
-            console.log(data);
+        error: function (xhr, status, error) {
+            console.error('Fees Collect Error:', {
+                status: status,
+                error: error,
+                response: xhr.responseText
+            });
+            
+            // Show user-friendly error message
+            var errorMessage = 'Failed to load payment form. ';
+            if (xhr.status === 403) {
+                errorMessage += 'Access denied. Please check your permissions.';
+            } else if (xhr.status === 404) {
+                errorMessage += 'Payment service not found.';
+            } else if (xhr.status === 500) {
+                errorMessage += 'Server error. Please try again later.';
+            } else {
+                errorMessage += 'Please try again or contact support.';
+            }
+            
+            Toast.fire({
+                icon: 'error',
+                title: errorMessage
+            });
         }
     });
 }
@@ -2952,7 +2990,7 @@ function feePayByStudentModal(fees_assigned_children_id) {
 
 // start feePayByParentModal function
 function feePayByParentModal(fees_assigned_children_id) {
-    getFeeData(fees_assigned_children_id, '/parent-panel-fees/pay-modal');
+    getFeeData(fees_assigned_children_id, $('#url').val() + '/parent-panel-fees/pay-modal');
 }
 // end feePayByParentModal function
 

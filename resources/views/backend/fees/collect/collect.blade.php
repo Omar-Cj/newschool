@@ -88,7 +88,7 @@
 
                 <div class="card-header d-flex justify-content-between align-items-center mb-3">
                     <h4 class="mb-0">{{___('fees.fees_details')}}</h4>
-                    @if (hasPermission('fees_collect_create'))
+                    @if (hasPermission('fees_collect_update'))
                         <a href="#" class="btn btn-lg ot-btn-primary" data-bs-toggle="modal"
                             data-bs-target="#modalCustomizeWidth" onclick="feesCollect()">
                             <span><i class="fa-solid fa-plus"></i> </span>
@@ -205,11 +205,42 @@
         <div class="modal fade" id="modalCustomizeWidth" tabindex="-1" aria-labelledby="modalWidth"
             aria-hidden="true">
             <div class="modal-dialog modal-xl">
-                {{--  --}}
+                <div class="modal-content">
+                    <div class="modal-body text-center p-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-3">Loading payment form...</p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 @endsection
 @push('script')
     @include('backend.partials.delete-ajax')
+    <script>
+        // Ensure Toast is available for error handling
+        if (typeof Toast === 'undefined') {
+            window.Toast = {
+                fire: function(options) {
+                    alert(options.title || 'An error occurred');
+                }
+            };
+        }
+
+        // Validate required elements on page load
+        $(document).ready(function() {
+            // Check for required elements
+            if ($('#student_id').length === 0) {
+                console.error('Student ID field not found');
+            }
+            if ($('input[name="fees_assign_childrens[]"]').length === 0) {
+                console.warn('No fee assignment checkboxes found - student may not have assigned fees');
+            }
+            if (!$('meta[name="csrf-token"]').length) {
+                console.error('CSRF token meta tag not found');
+            }
+        });
+    </script>
 @endpush
