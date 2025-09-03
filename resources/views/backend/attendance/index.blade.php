@@ -136,10 +136,10 @@
                                             <!--  end -->
 
                                             <div class="remember-me d-flex align-items-center input-check-radio mb-20 gap-4 attendance">
-                                                <div class="form-check d-flex align-items-center mt-6">
+                                                <div class="form-check d-flex align-items-center mt-6" style="background-color: #f0f9f0; padding: 4px 8px; border-radius: 4px; border: 1px solid #d4edda;">
                                                     <input class="form-check-input {{ @$item->attendance == App\Enums\AttendanceType::PRESENT ? 'checkedItem':'' }}" type="radio" id="flexRadioDefault1" name="attendance[{{@$item->student->id}}]"
-                                                        value="{{ App\Enums\AttendanceType::PRESENT }}" {{ @$item->attendance == App\Enums\AttendanceType::PRESENT ? 'checked':'' }}/>
-                                                    <label for="flexRadioDefault1">{{ ___('attendance.Present') }}</label>
+                                                        value="{{ App\Enums\AttendanceType::PRESENT }}" {{ @$item->attendance == App\Enums\AttendanceType::PRESENT ? 'checked':'' }}{{ @$data['status'] == 1  && @$item->attendance == null ? 'checked':'' }}{{ @$data['status'] == 0 ? 'checked':'' }}/>
+                                                    <label for="flexRadioDefault1" style="color: #155724; font-weight: 500;">{{ ___('attendance.Present') }} <small>(Default)</small></label>
                                                 </div>
                                                 <div class="form-check d-flex align-items-center mt-6 ">
                                                     <input class="form-check-input {{ @$item->attendance == App\Enums\AttendanceType::LATE ? 'checkedItem':'' }}" type="radio" id="flexRadioDefault2" name="attendance[{{@$item->student->id}}]"
@@ -148,7 +148,7 @@
                                                 </div>
                                                 <div class="form-check d-flex align-items-center mt-6 ">
                                                     <input class="form-check-input {{ @$item->attendance == App\Enums\AttendanceType::ABSENT ? 'checkedItem':'' }}" type="radio" id="flexRadioDefault3" name="attendance[{{@$item->student->id}}]"
-                                                        value="{{ App\Enums\AttendanceType::ABSENT }}" {{ @$item->attendance == App\Enums\AttendanceType::ABSENT ? 'checked':'' }}{{ @$data['status'] == 1  && @$item->attendance == null ? 'checked':'' }}{{ @$data['status'] == 0 ? 'checked':'' }}/>
+                                                        value="{{ App\Enums\AttendanceType::ABSENT }}" {{ @$item->attendance == App\Enums\AttendanceType::ABSENT ? 'checked':'' }}/>
                                                     <label for="flexRadioDefault3">{{ ___('attendance.Absent') }}</label>
                                                 </div>
                                                 <div class="form-check d-flex align-items-center mt-6 ">
