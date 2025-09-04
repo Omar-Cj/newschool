@@ -39,6 +39,7 @@ class PermissionSeeder extends Seeder
             'fees_master'       => ['read' => 'fees_master_read', 'create' => 'fees_master_create', 'update' => 'fees_master_update', 'delete' => 'fees_master_delete'],
             'fees_assign'       => ['read' => 'fees_assign_read', 'create' => 'fees_assign_create', 'update' => 'fees_assign_update', 'delete' => 'fees_assign_delete'],
             'fees_collect'      => ['read' => 'fees_collect_read', 'create' => 'fees_collect_create', 'update' => 'fees_collect_update', 'delete' => 'fees_collect_delete'],
+            'fees_generation'   => ['read' => 'fees_generate_read', 'create' => 'fees_generate_create', 'update' => 'fees_generate_update', 'delete' => 'fees_generate_delete'],
             'discount_setup'    => ['siblings_discount' => 'siblings_discount', 'early_payment_discount' => 'early_payment_discount'],
             // examinations
             'exam_type'         => ['read' => 'exam_type_read', 'create' => 'exam_type_create', 'update' => 'exam_type_update', 'delete' => 'exam_type_delete'],

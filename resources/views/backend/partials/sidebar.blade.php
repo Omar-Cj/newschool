@@ -329,7 +329,8 @@
                         hasPermission('fees_master_read') ||
                         hasPermission('fees_assign_read') ||
                         hasPermission('discount_setup') ||
-                        hasPermission('fees_collect_read')) &&
+                        hasPermission('fees_collect_read') ||
+                        hasPermission('fees_generate_read')) &&
                         hasFeature('fees'))
                     <li class="sidebar-menu-item {{ set_menu(['fees*']) }}">
                         <a class="parent-item-content has-arrow">
@@ -360,6 +361,11 @@
                             @if (hasPermission('fees_collect_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['fees-collect*']) }}">
                                     <a href="{{ route('fees-collect.index') }}">{{ ___('settings.collect') }}</a>
+                                </li>
+                            @endif
+                            @if (hasPermission('fees_generate_read'))
+                                <li class="sidebar-menu-item {{ set_menu(['fees-generation*']) }}">
+                                    <a href="{{ route('fees-generation.index') }}">{{ ___('fees.Fee Generation') }}</a>
                                 </li>
                             @endif
                                   @if(config('app.app_ver') > 2.0)

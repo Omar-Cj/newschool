@@ -7,6 +7,7 @@ use App\Http\Controllers\Fees\FeesGroupController;
 use App\Http\Controllers\Fees\FeesAssignController;
 use App\Http\Controllers\Fees\FeesMasterController;
 use App\Http\Controllers\Fees\FeesCollectController;
+use App\Http\Controllers\Fees\FeesGenerationController;
 use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
 use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
 
@@ -81,6 +82,23 @@ Route::middleware(saasMiddleware())->group(function () {
                     Route::post('/early-payment-discount', 'storeEarlyPaymentDiscount')->name('fees-discount.early-payment-discount')->middleware('PermissionCheck:early_payment_discount');
                     Route::post('/toggle-applicable', 'toggleApplicable')->name('fees-discount.toggle-applicable');
                     Route::post('/early-payment-toggle', 'toggleEarlyPayment')->name('fees-discount.early-payment-toggle');
+                });
+
+                Route::controller(FeesGenerationController::class)->prefix('fees-generation')->group(function () {
+                    Route::get('/',                     'index')->name('fees-generation.index')->middleware('PermissionCheck:fees_generate_read');
+                    Route::get('/create',               'create')->name('fees-generation.create')->middleware('PermissionCheck:fees_generate_create');
+                    Route::get('/history',              'history')->name('fees-generation.history')->middleware('PermissionCheck:fees_generate_read');
+                    Route::get('/show/{id}',            'show')->name('fees-generation.show')->middleware('PermissionCheck:fees_generate_read');
+                    
+                    // AJAX endpoints
+                    Route::post('/preview',             'preview')->name('fees-generation.preview')->middleware('PermissionCheck:fees_generate_create');
+                    Route::post('/generate',            'generate')->name('fees-generation.generate')->middleware('PermissionCheck:fees_generate_create', 'DemoCheck');
+                    Route::get('/status/{batchId}',     'status')->name('fees-generation.status')->middleware('PermissionCheck:fees_generate_read');
+                    Route::post('/cancel/{id}',         'cancel')->name('fees-generation.cancel')->middleware('PermissionCheck:fees_generate_delete', 'DemoCheck');
+                    
+                    // Helper endpoints
+                    Route::get('/get-sections',         'getSections');
+                    Route::get('/get-student-count',    'getStudentCount');
                 });
             });
         });
