@@ -49,8 +49,8 @@
                                             <div class="col-lg-3 col-md-6 mb-3">
                                                 <label for="classes" class="form-label">{{ ___('academic.class') }} <span class="text-danger">*</span></label>
                                                 <select name="classes[]" id="classes" class="form-control select2" multiple>
-                                                    @foreach($data['classes'] as $class)
-                                                        <option value="{{ $class->id }}">{{ $class->name }}</option>
+                                                    @foreach($data['classes'] as $classSetup)
+                                                        <option value="{{ $classSetup->classes_id }}">{{ $classSetup->class->name ?? 'Unknown Class' }}</option>
                                                     @endforeach
                                                 </select>
                                                 <div class="form-check mt-1">
@@ -102,7 +102,7 @@
                                                 <label for="fees_groups" class="form-label">{{ ___('fees.fee_groups') }}</label>
                                                 <select name="fees_groups[]" id="fees_groups" class="form-control select2" multiple>
                                                     @foreach($data['fees_groups'] as $group)
-                                                        <option value="{{ $group->id }}">{{ $group->name }}</option>
+                                                        <option value="{{ $group->id }}">{{ $group->name ?? 'Unknown Group' }}</option>
                                                     @endforeach
                                                 </select>
                                                 <small class="text-muted">{{ ___('fees.leave_empty_for_all') }}</small>
@@ -187,6 +187,7 @@
                                         </div>
                                     </div>
                                     <div class="row">
+                                        
                                         <div class="col-md-3">
                                             <div class="text-center">
                                                 <h4 id="total-students" class="text-primary">0</h4>

@@ -25,7 +25,10 @@ class ClassesRepository implements ClassesInterface
 
     public function assignedAll()
     {
-        return ClassSetup::active()->where('session_id', setting('session'))->get();
+        return ClassSetup::active()
+            ->with('class')
+            ->where('session_id', setting('session'))
+            ->get();
     }
 
     public function all()

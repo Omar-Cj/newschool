@@ -30,7 +30,7 @@ class FeesMasterRepository implements FeesMasterInterface
 
     public function allGroups()
     {
-        return $this->model->active()->select('fees_group_id')->distinct('fees_group_id')->get();
+        return $this->feesGroup->active()->get();
     }
 
 

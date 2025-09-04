@@ -26,6 +26,32 @@ class ClassSetupRepository implements ClassSetupInterface
         $result = $this->model->active()->where('classes_id', $id)->where('session_id', setting('session'))->first();
         return ClassSetupChildren::with('section')->where('class_setup_id', @$result->id)->select('section_id')->get()->unique('section_id');
     }
+
+    public function getSectionsByClasses($classIds) // multiple class ids
+    {
+        if (empty($classIds)) {
+            return collect();
+        }
+
+        $classSetups = $this->model->active()
+            ->whereIn('classes_id', $classIds)
+            ->where('session_id', setting('session'))
+            ->get();
+
+        $classSetupIds = $classSetups->pluck('id');
+
+        return ClassSetupChildren::with('section')
+            ->whereIn('class_setup_id', $classSetupIds)
+            ->select('section_id', 'class_setup_id')
+            ->get()
+            ->unique('section_id')
+            ->map(function($item) {
+                return [
+                    'id' => $item->section->id,
+                    'name' => $item->section->name
+                ];
+            });
+    }
     public function promoteClasses($id) // session id
     {
         return $this->model->active()->where('session_id', $id)->get();
