@@ -503,7 +503,7 @@ $(document).ready(function() {
                         if (response.data.is_completed || response.data.status === 'failed' || response.data.status === 'cancelled') {
                             clearInterval(progressInterval);
                             $('#cancel-generation-btn').hide();
-                            $('#view-results-btn').show().attr('onclick', `window.location.href='{{ route("fees-generation.show", "") }}/${response.data.id}'`);
+                            $('#view-results-btn').show().attr('onclick', `window.location.href='{{ url("fees-generation/show") }}/${response.data.id}'`);
                         }
                     }
                 })
