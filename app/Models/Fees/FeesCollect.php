@@ -40,6 +40,11 @@ class FeesCollect extends BaseModel
         return $this->belongsTo(\App\Models\Fees\FeesAssignChildren::class, 'fees_assign_children_id');
     }
 
+    public function collectBy(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\User::class, 'fees_collect_by');
+    }
+
     public function scopeBulkGenerated($query)
     {
         return $query->where('generation_method', 'bulk');

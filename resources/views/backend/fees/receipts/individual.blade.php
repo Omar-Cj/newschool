@@ -12,217 +12,245 @@
         }
         
         body {
-            font-family: 'Arial', sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             font-size: 14px;
-            line-height: 1.4;
+            line-height: 1.5;
             color: #333;
             background: #fff;
         }
         
         .receipt-container {
-            max-width: 800px;
+            max-width: 600px;
             margin: 0 auto;
-            padding: 20px;
-            border: 2px solid #2c5aa0;
+            padding: 30px;
             background: #fff;
         }
         
         .header {
             text-align: center;
-            border-bottom: 3px solid #2c5aa0;
             padding-bottom: 20px;
             margin-bottom: 30px;
+            border-bottom: 2px solid #2c5aa0;
         }
         
         .school-logo {
-            width: 80px;
-            height: 80px;
-            margin: 0 auto 10px;
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 15px;
+            border-radius: 8px;
+            overflow: hidden;
         }
         
         .school-name {
-            font-size: 24px;
-            font-weight: bold;
+            font-size: 22px;
+            font-weight: 600;
             color: #2c5aa0;
-            margin-bottom: 5px;
-        }
-        
-        .school-details {
-            font-size: 12px;
-            color: #666;
-            margin-bottom: 15px;
+            margin-bottom: 8px;
         }
         
         .receipt-title {
-            font-size: 20px;
-            font-weight: bold;
-            color: #d32f2f;
-            background: #f8f9fa;
-            padding: 10px;
-            border: 2px solid #d32f2f;
+            font-size: 18px;
+            font-weight: 600;
+            color: #28a745;
             margin-top: 15px;
+            padding: 8px 16px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            display: inline-block;
         }
         
         .receipt-info {
             display: flex;
             justify-content: space-between;
-            margin: 20px 0;
-            background: #f8f9fa;
+            align-items: center;
+            margin: 25px 0;
             padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
             border-left: 4px solid #2c5aa0;
         }
         
         .receipt-number {
-            font-size: 16px;
-            font-weight: bold;
+            font-weight: 600;
             color: #2c5aa0;
         }
         
         .receipt-date {
-            font-size: 14px;
-            color: #666;
+            font-size: 13px;
+            color: #6c757d;
         }
         
         .student-info {
             background: #fff;
-            border: 1px solid #ddd;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
             padding: 20px;
             margin: 20px 0;
-        }
-        
-        .student-info h3 {
-            color: #2c5aa0;
-            font-size: 16px;
-            margin-bottom: 15px;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 5px;
         }
         
         .info-row {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
+            padding: 4px 0;
         }
         
         .info-label {
-            font-weight: bold;
-            color: #555;
-            width: 30%;
+            font-weight: 500;
+            color: #495057;
+            min-width: 120px;
         }
         
         .info-value {
-            color: #333;
-            width: 65%;
+            color: #212529;
+            font-weight: 400;
         }
         
-        .payment-details {
-            margin: 30px 0;
+        .payment-summary {
+            background: #e8f4fd;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 25px 0;
+            text-align: center;
         }
         
-        .payment-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .payment-table th {
-            background: #2c5aa0;
-            color: white;
-            padding: 12px 8px;
-            text-align: left;
-            font-weight: bold;
-            border-bottom: 2px solid #1a4480;
-        }
-        
-        .payment-table td {
-            padding: 12px 8px;
-            border-bottom: 1px solid #ddd;
-            background: #fff;
-        }
-        
-        .payment-table tr:nth-child(even) td {
-            background: #f8f9fa;
-        }
-        
-        .amount-cell {
-            text-align: right;
-            font-weight: bold;
+        .amount-paid {
+            font-size: 28px;
+            font-weight: 700;
             color: #2c5aa0;
-        }
-        
-        .total-row {
-            background: #e3f2fd !important;
-            border-top: 2px solid #2c5aa0;
-        }
-        
-        .total-row td {
-            font-weight: bold;
-            font-size: 16px;
-            color: #2c5aa0;
+            margin-bottom: 8px;
         }
         
         .payment-method {
-            background: #fff3cd;
-            border: 1px solid #ffeaa7;
-            padding: 15px;
-            margin: 20px 0;
-            border-radius: 4px;
+            font-size: 13px;
+            color: #6c757d;
+            margin-top: 10px;
         }
         
-        .payment-method-label {
-            font-weight: bold;
-            color: #856404;
+        .fee-details {
+            margin: 25px 0;
+        }
+        
+        .fee-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .fee-item:last-child {
+            border-bottom: none;
+            padding-top: 12px;
+            border-top: 2px solid #2c5aa0;
+            font-weight: 600;
+            color: #2c5aa0;
+        }
+        
+        .fee-name {
+            font-weight: 500;
+        }
+        
+        .fee-amount {
+            font-weight: 600;
+            color: #495057;
         }
         
         .footer {
             margin-top: 40px;
-            border-top: 2px solid #2c5aa0;
             padding-top: 20px;
+            border-top: 1px solid #dee2e6;
             text-align: center;
         }
         
-        .signature-section {
-            display: flex;
-            justify-content: space-between;
-            margin: 30px 0;
-        }
-        
-        .signature-box {
-            text-align: center;
-            width: 200px;
-        }
-        
-        .signature-line {
-            border-top: 1px solid #333;
-            margin-top: 50px;
-            padding-top: 5px;
+        .generated-info {
             font-size: 12px;
-            color: #666;
-        }
-        
-        .verification-code {
-            background: #f0f0f0;
-            padding: 10px;
-            margin: 15px 0;
-            text-align: center;
-            font-family: monospace;
-            border: 1px dashed #999;
-        }
-        
-        .important-note {
-            background: #fff3cd;
-            border-left: 4px solid #ffc107;
-            padding: 10px 15px;
-            margin: 20px 0;
-            font-size: 12px;
-            color: #856404;
+            color: #6c757d;
+            margin-top: 15px;
         }
         
         @media print {
+            @page {
+                size: A4;
+                margin: 15mm;
+            }
+            
+            body {
+                font-size: 12px;
+                line-height: 1.4;
+                color: #000;
+                background: white !important;
+                -webkit-print-color-adjust: exact;
+                color-adjust: exact;
+            }
+            
             .receipt-container {
+                margin: 0;
+                padding: 0;
+                max-width: none;
                 border: none;
                 box-shadow: none;
+            }
+            
+            .header {
+                border-bottom: 2px solid #2c5aa0 !important;
+                margin-bottom: 20px;
+            }
+            
+            .school-name {
+                color: #2c5aa0 !important;
+            }
+            
+            .receipt-title {
+                color: #28a745 !important;
+                background: #f8f9fa !important;
+            }
+            
+            .receipt-info {
+                background: #f8f9fa !important;
+                border-left: 4px solid #2c5aa0 !important;
+            }
+            
+            .receipt-number {
+                color: #2c5aa0 !important;
+            }
+            
+            .payment-summary {
+                background: #e8f4fd !important;
+                border: 1px solid #2c5aa0 !important;
+            }
+            
+            .amount-paid {
+                font-size: 22px;
+                color: #2c5aa0 !important;
+            }
+            
+            .fee-item:last-child {
+                border-top: 2px solid #2c5aa0 !important;
+                color: #2c5aa0 !important;
+            }
+            
+            .footer {
+                border-top: 1px solid #dee2e6 !important;
+            }
+            
+            /* Hide any elements that shouldn't print */
+            .no-print {
+                display: none !important;
+            }
+            
+            /* Ensure proper page breaks */
+            .receipt-container {
+                page-break-inside: avoid;
+            }
+            
+            /* Optimize text for printing */
+            .info-label {
+                font-weight: 600 !important;
+            }
+            
+            .fee-name {
+                font-weight: 500 !important;
             }
         }
     </style>
@@ -233,24 +261,11 @@
         <div class="header">
             @if($data['school_info']['logo'])
                 <div class="school-logo">
-                    <img src="{{ globalAsset($data['school_info']['logo']) }}" alt="School Logo" style="width: 100%; height: 100%; object-fit: contain;">
+                    <img src="{{ globalAsset($data['school_info']['logo']) }}" alt="School Logo" style="width: 100%; height: 100%; object-fit: cover;">
                 </div>
             @endif
             
             <div class="school-name">{{ $data['school_info']['name'] }}</div>
-            
-            <div class="school-details">
-                @if($data['school_info']['address'])
-                    {{ $data['school_info']['address'] }}<br>
-                @endif
-                @if($data['school_info']['phone'])
-                    Phone: {{ $data['school_info']['phone'] }}
-                @endif
-                @if($data['school_info']['email'])
-                    | Email: {{ $data['school_info']['email'] }}
-                @endif
-            </div>
-            
             <div class="receipt-title">{{ ___('fees.payment_receipt') }}</div>
         </div>
         
@@ -258,120 +273,211 @@
         <div class="receipt-info">
             <div>
                 <div class="receipt-number">{{ ___('fees.receipt_no') }}: {{ $data['receipt_number'] }}</div>
-                <div class="receipt-date">{{ ___('fees.payment_date') }}: {{ dateFormat($data['payment']->date) }}</div>
+                <div class="receipt-date">{{ dateFormat($data['payment']->date) }}</div>
             </div>
             <div>
-                <div class="receipt-date">{{ ___('fees.generated_on') }}: {{ date('d M Y, h:i A') }}</div>
-                <div class="receipt-date">{{ ___('fees.collected_by') }}: {{ $data['payment']->collectBy->name ?? 'N/A' }}</div>
+                <div class="receipt-date">{{ ___('fees.collected_by') }}: {{ $data['payment']->collectBy->name ?? 'System' }}</div>
             </div>
         </div>
         
         {{-- Student Information --}}
         <div class="student-info">
-            <h3>{{ ___('student_info.student_information') }}</h3>
-            
             <div class="info-row">
-                <div class="info-label">{{ ___('student_info.student_name') }}:</div>
+                <div class="info-label">{{ ___('student_info.student_name') }}</div>
                 <div class="info-value">{{ $data['payment']->student->first_name }} {{ $data['payment']->student->last_name }}</div>
             </div>
             
             <div class="info-row">
-                <div class="info-label">{{ ___('student_info.admission_no') }}:</div>
+                <div class="info-label">{{ ___('student_info.admission_no') }}</div>
                 <div class="info-value">{{ $data['payment']->student->admission_no }}</div>
             </div>
             
             <div class="info-row">
-                <div class="info-label">{{ ___('academic.class') }}:</div>
-                <div class="info-value">{{ $data['payment']->student->currentClass->class->name ?? 'N/A' }}</div>
-            </div>
-            
-            <div class="info-row">
-                <div class="info-label">{{ ___('academic.section') }}:</div>
-                <div class="info-value">{{ $data['payment']->student->currentClass->section->name ?? 'N/A' }}</div>
-            </div>
-            
-            <div class="info-row">
-                <div class="info-label">{{ ___('academic.session') }}:</div>
-                <div class="info-value">{{ $data['payment']->student->currentClass->session->name ?? 'N/A' }}</div>
+                <div class="info-label">{{ ___('academic.class') }}</div>
+                <div class="info-value">{{ $data['payment']->student->sessionStudentDetails->class->name ?? 'N/A' }} - {{ $data['payment']->student->sessionStudentDetails->section->name ?? 'N/A' }}</div>
             </div>
         </div>
         
-        {{-- Payment Details --}}
-        <div class="payment-details">
-            <h3 style="color: #2c5aa0; margin-bottom: 15px;">{{ ___('fees.payment_details') }}</h3>
+        {{-- Payment Summary --}}
+        <div class="payment-summary">
+            <div class="amount-paid">{{ $data['school_info']['currency'] }} {{ number_format($data['total_amount'] + $data['total_fine'], 2) }}</div>
+            <div>{{ ___('fees.amount_paid') }}</div>
+            <div class="payment-method">
+                {{ ___('fees.payment_method') }}: {{ ___(\Config::get('site.payment_methods')[$data['payment']->payment_method] ?? 'Cash') }}
+            </div>
+        </div>
+        
+        {{-- Fee Details --}}
+        <div class="fee-details">
+            @foreach($data['all_payments'] as $payment)
+                <div class="fee-item">
+                    <div class="fee-name">{{ $payment->feesAssignChildren->feesMaster->type->name ?? 'Fee Payment' }}</div>
+                    <div class="fee-amount">{{ $data['school_info']['currency'] }} {{ number_format($payment->amount, 2) }}</div>
+                </div>
+                
+                @if(($payment->fine_amount ?? 0) > 0)
+                <div class="fee-item">
+                    <div class="fee-name">{{ $payment->feesAssignChildren->feesMaster->type->name ?? 'Fee' }} - {{ ___('fees.late_fee') }}</div>
+                    <div class="fee-amount">{{ $data['school_info']['currency'] }} {{ number_format($payment->fine_amount, 2) }}</div>
+                </div>
+                @endif
+            @endforeach
             
-            <table class="payment-table">
-                <thead>
-                    <tr>
-                        <th>{{ ___('fees.fee_type') }}</th>
-                        <th>{{ ___('fees.fee_group') }}</th>
-                        <th>{{ ___('fees.due_date') }}</th>
-                        <th>{{ ___('fees.amount') }} ({{ $data['school_info']['currency'] }})</th>
-                        <th>{{ ___('fees.fine') }} ({{ $data['school_info']['currency'] }})</th>
-                        <th>{{ ___('fees.total') }} ({{ $data['school_info']['currency'] }})</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>{{ $data['payment']->feesAssignChildren->feesMaster->type->name ?? 'N/A' }}</td>
-                        <td>{{ $data['payment']->feesAssignChildren->feesMaster->group->name ?? 'N/A' }}</td>
-                        <td>{{ dateFormat($data['payment']->feesAssignChildren->feesMaster->date ?? '') }}</td>
-                        <td class="amount-cell">{{ number_format($data['payment']->amount - $data['payment']->fine_amount, 2) }}</td>
-                        <td class="amount-cell">{{ number_format($data['payment']->fine_amount, 2) }}</td>
-                        <td class="amount-cell">{{ number_format($data['payment']->amount, 2) }}</td>
-                    </tr>
-                    <tr class="total-row">
-                        <td colspan="5">{{ ___('fees.total_paid') }}</td>
-                        <td class="amount-cell">{{ $data['school_info']['currency'] }} {{ number_format($data['payment']->amount, 2) }}</td>
-                    </tr>
-                </tbody>
-            </table>
+            <div class="fee-item">
+                <div class="fee-name">{{ ___('fees.total_paid') }}</div>
+                <div class="fee-amount">{{ $data['school_info']['currency'] }} {{ number_format($data['total_amount'] + $data['total_fine'], 2) }}</div>
+            </div>
         </div>
         
-        {{-- Payment Method --}}
-        <div class="payment-method">
-            <span class="payment-method-label">{{ ___('fees.payment_method') }}:</span>
-            {{ ___(\Config::get('site.payment_methods')[$data['payment']->payment_method] ?? 'Unknown') }}
-            
-            @if($data['payment']->transaction_id)
-                <br><strong>{{ ___('fees.transaction_id') }}:</strong> {{ $data['payment']->transaction_id }}
-            @endif
-        </div>
-        
-        {{-- Amount in Words --}}
-        <div style="background: #f8f9fa; padding: 15px; border-left: 4px solid #28a745; margin: 20px 0;">
-            <strong>{{ ___('fees.amount_in_words') }}:</strong> 
-            <em>{{ ucfirst(numberToWords($data['payment']->amount)) }} {{ ___('fees.only') }}</em>
-        </div>
-        
-        {{-- Verification Code --}}
-        <div class="verification-code">
-            <strong>{{ ___('fees.verification_code') }}:</strong> {{ strtoupper(md5($data['payment']->id . $data['payment']->date)) }}
-        </div>
-        
-        {{-- Important Note --}}
-        <div class="important-note">
-            <strong>{{ ___('common.note') }}:</strong> {{ ___('fees.receipt_note') }}
-        </div>
-        
-        {{-- Footer with Signatures --}}
+        {{-- Footer --}}
         <div class="footer">
-            <div class="signature-section">
-                <div class="signature-box">
-                    <div class="signature-line">{{ ___('fees.student_signature') }}</div>
-                </div>
-                <div class="signature-box">
-                    <div class="signature-line">{{ ___('fees.collector_signature') }}</div>
-                </div>
-                <div class="signature-box">
-                    <div class="signature-line">{{ ___('fees.authorized_signature') }}</div>
-                </div>
-            </div>
-            
-            <div style="margin-top: 30px; font-size: 12px; color: #666;">
-                {{ ___('fees.generated_by_system') }} | {{ date('d M Y, h:i A') }}
+            <div>{{ ___('common.thank_you') }}</div>
+            <div class="generated-info">
+                {{ ___('fees.generated_on') }}: {{ date('d M Y, h:i A') }}
             </div>
         </div>
     </div>
+    
+    <!-- Print Functionality -->
+    <script>
+        let printTriggered = false;
+        
+        // Enhanced auto-trigger print dialog with better timing
+        function triggerPrint() {
+            if (printTriggered) return; // Prevent multiple triggers
+            printTriggered = true;
+            
+            console.log('Triggering print dialog...');
+            
+            try {
+                // Multiple fallback attempts for better reliability
+                setTimeout(() => {
+                    if (document.readyState === 'complete') {
+                        window.print();
+                    } else {
+                        // Wait a bit more if document not fully loaded
+                        setTimeout(() => window.print(), 200);
+                    }
+                }, 300);
+            } catch (error) {
+                console.error('Error triggering print:', error);
+                // Manual print button will still be available as fallback
+            }
+        }
+        
+        // Enhanced load handling with multiple triggers
+        window.addEventListener('load', function() {
+            console.log('Window loaded, checking for print parameter...');
+            const urlParams = new URLSearchParams(window.location.search);
+            
+            if (urlParams.get('print') === '1') {
+                console.log('Print parameter detected, preparing to trigger print...');
+                
+                // Ensure all resources are loaded before printing
+                if (document.readyState === 'complete') {
+                    triggerPrint();
+                } else {
+                    // Wait for complete document ready
+                    document.addEventListener('readystatechange', function() {
+                        if (document.readyState === 'complete') {
+                            triggerPrint();
+                        }
+                    });
+                }
+                
+                // Backup trigger after longer delay
+                setTimeout(() => {
+                    if (!printTriggered) {
+                        console.log('Backup print trigger activated');
+                        triggerPrint();
+                    }
+                }, 1500);
+            }
+        });
+        
+        // Also trigger on DOMContentLoaded as additional fallback
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('print') === '1' && !printTriggered) {
+                console.log('DOMContentLoaded print trigger');
+                setTimeout(triggerPrint, 800);
+            }
+        });
+        
+        // Enhanced print functionality
+        function printReceipt() {
+            console.log('Manual print triggered');
+            try {
+                window.print();
+            } catch (error) {
+                console.error('Manual print failed:', error);
+                alert('Print function is not available in this browser.');
+            }
+        }
+        
+        // Enhanced print button creation
+        document.addEventListener('DOMContentLoaded', function() {
+            // Only add print button for screen view (not print mode)
+            if (!window.matchMedia('print').matches) {
+                const printButton = document.createElement('button');
+                printButton.innerHTML = '🖨️ Print Receipt';
+                printButton.className = 'print-btn no-print';
+                printButton.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: #2c5aa0;
+                    color: white;
+                    border: none;
+                    padding: 12px 20px;
+                    border-radius: 6px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                    z-index: 1000;
+                    transition: background-color 0.3s;
+                `;
+                printButton.onmouseover = () => printButton.style.background = '#1a4480';
+                printButton.onmouseout = () => printButton.style.background = '#2c5aa0';
+                printButton.onclick = printReceipt;
+                document.body.appendChild(printButton);
+                console.log('Print button added to page');
+            }
+        });
+        
+        // Enhanced print event handling
+        window.addEventListener('beforeprint', function() {
+            console.log('Print preview opening...');
+            // Ensure proper styling is applied
+            document.body.classList.add('printing');
+        });
+        
+        window.addEventListener('afterprint', function() {
+            console.log('Print dialog closed');
+            document.body.classList.remove('printing');
+            
+            // Optional: Focus back to main window if it came from print window
+            if (window.opener && !window.opener.closed) {
+                try {
+                    window.opener.focus();
+                } catch (e) {
+                    console.log('Cannot focus opener window');
+                }
+            }
+        });
+        
+        // Enhanced keyboard shortcut for printing
+        document.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+                e.preventDefault();
+                printReceipt();
+            }
+        });
+        
+        // Debug information
+        console.log('Print functionality initialized');
+        console.log('Current URL:', window.location.href);
+        console.log('Document ready state:', document.readyState);
+    </script>
 </body>
 </html>

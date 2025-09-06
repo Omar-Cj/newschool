@@ -1,183 +1,225 @@
 @extends('backend.master')
 
 @section('title')
-    {{ ___('fees.receipt_options') }}
+    {{ ___('fees.payment_receipt') }}
 @endsection
 
 @section('content')
 <div class="page-content">
-    {{-- breadcrumb Area S t a r t --}}
-    <div class="page-header">
-        <div class="row">
-            <div class="col-sm-6">
-                <h4 class="bradecrumb-title mb-1">{{ ___('fees.receipt_options') }}</h4>
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">{{ ___('common.home') }}</a></li>
-                    <li class="breadcrumb-item"><a href="{{ route('fees-collect.index') }}">{{ ___('fees.fees_collect') }}</a></li>
-                    <li class="breadcrumb-item">{{ ___('fees.receipt_options') }}</li>
-                </ol>
+    <style>
+        .receipt-options-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 30px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .receipt-header {
+            text-align: center;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #2c5aa0;
+        }
+        
+        .school-name {
+            font-size: 22px;
+            font-weight: 600;
+            color: #2c5aa0;
+            margin-bottom: 8px;
+        }
+        
+        .payment-success {
+            font-size: 18px;
+            font-weight: 600;
+            color: #28a745;
+            margin-top: 15px;
+            padding: 8px 16px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            display: inline-block;
+        }
+        
+        .payment-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 25px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #2c5aa0;
+        }
+        
+        .payment-number {
+            font-weight: 600;
+            color: #2c5aa0;
+        }
+        
+        .payment-date {
+            font-size: 13px;
+            color: #6c757d;
+        }
+        
+        .student-info {
+            background: #fff;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding: 4px 0;
+        }
+        
+        .info-label {
+            font-weight: 500;
+            color: #495057;
+            min-width: 120px;
+        }
+        
+        .info-value {
+            color: #212529;
+            font-weight: 400;
+        }
+        
+        .amount-display {
+            background: #e8f4fd;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 25px 0;
+            text-align: center;
+        }
+        
+        .amount-paid {
+            font-size: 28px;
+            font-weight: 700;
+            color: #2c5aa0;
+            margin-bottom: 8px;
+        }
+        
+        .download-actions {
+            margin: 30px 0;
+        }
+        
+        .download-btn {
+            display: block;
+            width: 100%;
+            padding: 15px 20px;
+            margin: 10px 0;
+            background: #2c5aa0;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            text-align: center;
+            transition: background-color 0.3s;
+        }
+        
+        .download-btn:hover {
+            background: #1a4480;
+            color: white;
+            text-decoration: none;
+        }
+        
+        .print-btn {
+            background: #28a745;
+        }
+        
+        .print-btn:hover {
+            background: #1e7e34;
+        }
+        
+        .back-btn {
+            background: #6c757d;
+            font-size: 14px;
+            padding: 10px 20px;
+        }
+        
+        .back-btn:hover {
+            background: #545b62;
+        }
+        
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #dee2e6;
+            text-align: center;
+        }
+        
+        .generated-info {
+            font-size: 12px;
+            color: #6c757d;
+            margin-top: 15px;
+        }
+    </style>
+
+    <div class="receipt-options-container">
+        {{-- Header Section --}}
+        <div class="receipt-header">
+            <div class="school-name">{{ setting('application_name') }}</div>
+            <div class="payment-success">{{ ___('fees.payment_completed') }} ✓</div>
+        </div>
+        
+        {{-- Payment Information --}}
+        <div class="payment-info">
+            <div>
+                <div class="payment-number">{{ ___('fees.receipt_no') }}: RCT-{{ date('Y') }}-{{ str_pad($payment->id, 6, '0', STR_PAD_LEFT) }}</div>
+                <div class="payment-date">{{ dateFormat($payment->date) }}</div>
             </div>
         </div>
-    </div>
-    {{-- breadcrumb Area E n d --}}
-
-    <div class="container-fluid">
-        {{-- Success Message --}}
-        @if(session('success'))
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                <i class="fa-solid fa-check-circle me-2"></i>
-                <strong>{{ ___('fees.payment_successful') }}!</strong> {{ session('success') }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        
+        {{-- Student Information --}}
+        <div class="student-info">
+            <div class="info-row">
+                <div class="info-label">{{ ___('student_info.student_name') }}</div>
+                <div class="info-value">{{ $payment->student->first_name }} {{ $payment->student->last_name }}</div>
             </div>
-        @endif
-
-        {{-- Payment Summary Card --}}
-        <div class="card border-success mb-4">
-            <div class="card-header bg-success text-white">
-                <h5 class="mb-0">
-                    <i class="fa-solid fa-check-circle me-2"></i>{{ ___('fees.payment_completed') }}
-                </h5>
+            
+            <div class="info-row">
+                <div class="info-label">{{ ___('student_info.admission_no') }}</div>
+                <div class="info-value">{{ $payment->student->admission_no }}</div>
             </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <h6>{{ ___('student_info.student_information') }}</h6>
-                        <p><strong>{{ ___('student_info.student_name') }}:</strong> {{ $payment->student->first_name }} {{ $payment->student->last_name }}</p>
-                        <p><strong>{{ ___('student_info.admission_no') }}:</strong> {{ $payment->student->admission_no }}</p>
-                        <p><strong>{{ ___('academic.class') }}:</strong> {{ $payment->feesAssignChildren->feesMaster->group->name ?? 'N/A' }}</p>
-                    </div>
-                    <div class="col-md-6">
-                        <h6>{{ ___('fees.payment_details') }}</h6>
-                        <p><strong>{{ ___('fees.payment_date') }}:</strong> {{ dateFormat($payment->date) }}</p>
-                        <p><strong>{{ ___('fees.amount_paid') }}:</strong> 
-                           <span class="h5 text-success">{{ Setting('currency_symbol') }} {{ number_format($payment->amount, 2) }}</span>
-                        </p>
-                        <p><strong>{{ ___('fees.payment_method') }}:</strong> {{ ___(\Config::get('site.payment_methods')[$payment->payment_method] ?? 'Unknown') }}</p>
-                    </div>
-                </div>
+            
+            <div class="info-row">
+                <div class="info-label">{{ ___('academic.class') }}</div>
+                <div class="info-value">{{ $payment->student->sessionStudentDetails->class->name ?? 'N/A' }} - {{ $payment->student->sessionStudentDetails->section->name ?? 'N/A' }}</div>
             </div>
         </div>
-
-        {{-- Receipt Options --}}
-        <div class="row">
-            <div class="col-lg-8">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="mb-0">
-                            <i class="fa-solid fa-download me-2"></i>{{ ___('fees.download_receipts') }}
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row g-4">
-                            {{-- Individual Receipt --}}
-                            <div class="col-md-6">
-                                <div class="card h-100 border-primary">
-                                    <div class="card-body text-center">
-                                        <div class="mb-3">
-                                            <i class="fa-solid fa-file-pdf fa-4x text-primary"></i>
-                                        </div>
-                                        <h6 class="card-title">{{ ___('fees.individual_receipt') }}</h6>
-                                        <p class="card-text">{{ ___('fees.individual_receipt_description') }}</p>
-                                        <a href="{{ route('fees.receipt.individual', $payment->id) }}" 
-                                           class="btn btn-primary w-100" target="_blank">
-                                            <i class="fa-solid fa-download me-2"></i>{{ ___('fees.download_pdf') }}
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {{-- Student Summary Receipt --}}
-                            <div class="col-md-6">
-                                <div class="card h-100 border-info">
-                                    <div class="card-body text-center">
-                                        <div class="mb-3">
-                                            <i class="fa-solid fa-file-lines fa-4x text-info"></i>
-                                        </div>
-                                        <h6 class="card-title">{{ ___('fees.student_summary') }}</h6>
-                                        <p class="card-text">{{ ___('fees.student_summary_description') }}</p>
-                                        <a href="{{ route('fees.receipt.student-summary', $payment->student_id) }}" 
-                                           class="btn btn-info w-100" target="_blank">
-                                            <i class="fa-solid fa-download me-2"></i>{{ ___('fees.download_summary') }}
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {{-- Additional Actions --}}
-                        <div class="row mt-4">
-                            <div class="col-12">
-                                <div class="alert alert-light">
-                                    <h6 class="mb-3">
-                                        <i class="fa-solid fa-tools me-2"></i>{{ ___('fees.additional_actions') }}
-                                    </h6>
-                                    <div class="row">
-                                        <div class="col-md-4">
-                                            <button type="button" class="btn btn-outline-primary w-100" 
-                                                    onclick="printReceipt({{ $payment->id }})">
-                                                <i class="fa-solid fa-print me-2"></i>{{ ___('fees.print_receipt') }}
-                                            </button>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <button type="button" class="btn btn-outline-success w-100" 
-                                                    onclick="emailReceipt({{ $payment->id }})">
-                                                <i class="fa-solid fa-envelope me-2"></i>{{ ___('fees.email_receipt') }}
-                                            </button>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <a href="{{ route('fees-collect.index') }}" class="btn btn-outline-secondary w-100">
-                                                <i class="fa-solid fa-arrow-left me-2"></i>{{ ___('fees.back_to_collection') }}
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Quick Actions Sidebar --}}
-            <div class="col-lg-4">
-                <div class="card">
-                    <div class="card-header">
-                        <h6 class="mb-0">
-                            <i class="fa-solid fa-bolt me-2"></i>{{ ___('fees.quick_actions') }}
-                        </h6>
-                    </div>
-                    <div class="card-body">
-                        <div class="d-grid gap-2">
-                            <a href="{{ route('fees-collect.collect', $payment->student_id) }}" 
-                               class="btn btn-success">
-                                <i class="fa-solid fa-plus me-2"></i>{{ ___('fees.collect_more_fees') }}
-                            </a>
-                            
-                            <a href="{{ route('fees-collect.index') }}" 
-                               class="btn btn-primary">
-                                <i class="fa-solid fa-users me-2"></i>{{ ___('fees.collect_for_another_student') }}
-                            </a>
-                            
-                            <button type="button" class="btn btn-info" onclick="generateGroupReceipt()">
-                                <i class="fa-solid fa-file-invoice me-2"></i>{{ ___('fees.generate_daily_report') }}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                {{-- Payment Verification --}}
-                <div class="card mt-3">
-                    <div class="card-header">
-                        <h6 class="mb-0">
-                            <i class="fa-solid fa-shield-check me-2"></i>{{ ___('fees.payment_verification') }}
-                        </h6>
-                    </div>
-                    <div class="card-body">
-                        <p class="small text-muted">{{ ___('fees.verification_code_info') }}</p>
-                        <div class="bg-light p-2 rounded text-center">
-                            <code>{{ strtoupper(md5($payment->id . $payment->date)) }}</code>
-                        </div>
-                    </div>
-                </div>
+        
+        {{-- Payment Amount --}}
+        <div class="amount-display">
+            <div class="amount-paid">{{ Setting('currency_symbol') }} {{ number_format(($payment->total_amount ?? $payment->amount) + ($payment->total_fine ?? $payment->fine_amount ?? 0), 2) }}</div>
+            <div>{{ ___('fees.amount_paid') }}</div>
+        </div>
+        
+        {{-- Download Actions --}}
+        <div class="download-actions">
+            <a href="{{ route('fees.receipt.individual', $payment->id) }}" 
+               class="download-btn" target="_blank">
+                📄 {{ ___('fees.download_receipt') }}
+            </a>
+            
+            <button type="button" class="download-btn print-btn" 
+                    onclick="printReceipt({{ $payment->id }})">
+                🖨️ {{ ___('fees.print_receipt') }}
+            </button>
+            
+            <a href="{{ route('fees-collect.index') }}" class="download-btn back-btn">
+                ← {{ ___('fees.back_to_collection') }}
+            </a>
+        </div>
+        
+        {{-- Footer --}}
+        <div class="footer">
+            <div>{{ ___('common.thank_you') }}</div>
+            <div class="generated-info">
+                {{ ___('fees.generated_on') }}: {{ date('d M Y, h:i A') }}
             </div>
         </div>
     </div>
@@ -185,23 +227,72 @@
 
 <script>
 function printReceipt(paymentId) {
-    const printWindow = window.open(
-        '{{ route("fees.receipt.individual", ":id") }}'.replace(':id', paymentId),
-        '_blank',
-        'width=800,height=600'
-    );
-    
-    printWindow.onload = function() {
-        printWindow.print();
-    };
+    try {
+        // Build print URL using proper Laravel URL construction
+        const baseUrl = '{{ url("fees/receipt/individual") }}';
+        const printUrl = baseUrl + '/' + paymentId + '?print=1';
+        
+        console.log('Attempting to open print URL:', printUrl);
+        
+        // Open print-ready version of the receipt
+        const printWindow = window.open(printUrl, '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes');
+        
+        if (printWindow) {
+            console.log('Print window opened successfully');
+            printWindow.focus();
+            
+            // Enhanced error detection for the new window
+            printWindow.addEventListener('load', function() {
+                console.log('Print window loaded successfully');
+            });
+            
+            // Detect if window fails to load properly
+            setTimeout(function() {
+                try {
+                    if (printWindow.closed) {
+                        console.warn('Print window was closed prematurely');
+                        return;
+                    }
+                    
+                    // Check if window loaded properly
+                    if (printWindow.document.body && printWindow.document.body.innerHTML.trim() === '') {
+                        console.error('Print window loaded but appears empty');
+                        alert('Print preview failed to load. Please try using the Download Receipt button instead.');
+                    }
+                } catch (e) {
+                    console.log('Cannot access print window content (likely due to same-origin policy)');
+                }
+            }, 2000);
+            
+        } else {
+            console.error('Print window was blocked or failed to open');
+            // Enhanced fallback handling
+            if (confirm('Popup blocker may be preventing the print window from opening. Would you like to try opening in the same tab?')) {
+                window.location.href = printUrl;
+            } else {
+                alert('Please disable popup blocker for this site to use the print feature, or use the Download Receipt button instead.');
+            }
+        }
+    } catch (error) {
+        console.error('Error in printReceipt function:', error);
+        alert('An error occurred while trying to open the print preview. Please try the Download Receipt button instead.');
+    }
 }
 
-function emailReceipt(paymentId) {
-    alert('{{ ___("fees.email_feature_coming_soon") }}');
-}
-
-function generateGroupReceipt() {
-    window.open('{{ route("fees.receipt.daily-collection") }}?date={{ date("Y-m-d") }}&collector_id={{ auth()->id() }}', '_blank');
-}
+// Handle page load effects
+document.addEventListener('DOMContentLoaded', function() {
+    // Add smooth animations
+    const container = document.querySelector('.receipt-options-container');
+    if (container) {
+        container.style.opacity = '0';
+        container.style.transform = 'translateY(20px)';
+        container.style.transition = 'all 0.5s ease';
+        
+        setTimeout(() => {
+            container.style.opacity = '1';
+            container.style.transform = 'translateY(0)';
+        }, 100);
+    }
+});
 </script>
 @endsection

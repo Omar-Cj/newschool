@@ -173,8 +173,6 @@
             @if($total != 0)
         <button type="submit" class="btn ot-btn-primary" id="confirm-payment-btn"
             >{{ ___('ui_element.confirm') }}</button>
-        <button type="button" class="btn btn-success ms-2" id="simple-payment-btn"
-            onclick="submitSimplePayment()">{{ ___('fees.pay_now_alternative') }}</button>
             @endif
     </div>
     </form>
@@ -510,37 +508,6 @@
         window.location.reload();
     }
 
-    // Simple payment submission without AJAX (fallback)
-    function submitSimplePayment() {
-        console.log('Using simple payment submission...');
-        
-        // Validate form first
-        const requiredFields = $('#visitForm').find('[required]');
-        let isValid = true;
-        
-        requiredFields.each(function() {
-            if (!$(this).val()) {
-                isValid = false;
-                $(this).addClass('is-invalid');
-            } else {
-                $(this).removeClass('is-invalid');
-            }
-        });
-        
-        if (!isValid) {
-            showAlert('Please fill all required fields', 'error');
-            return;
-        }
-        
-        // Disable button and show loading
-        $('#simple-payment-btn').prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Processing...');
-        
-        // Add a hidden field to indicate simple payment
-        $('#visitForm').append('<input type="hidden" name="simple_payment" value="1">');
-        
-        // Submit form normally (non-AJAX)
-        document.getElementById('visitForm').submit();
-    }
 
     function showAlert(message, type) {
         // Create a more user-friendly alert
