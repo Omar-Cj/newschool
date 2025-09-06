@@ -45,6 +45,8 @@ class FeesCollectRepository implements FeesCollectInterface
     {
         DB::beginTransaction();
         try {
+            $firstPaymentId = null; // Track the first payment ID for receipt
+            
             foreach ($request->fees_assign_childrens as $key=>$item) {
                 // Check if there's an existing bulk-generated fee record for this assignment
                 $existingFee = $this->model::where('fees_assign_children_id', $item)
@@ -78,6 +80,11 @@ class FeesCollectRepository implements FeesCollectInterface
                 }
                 
                 $row->save();
+                
+                // Store the first payment ID for receipt generation
+                if ($firstPaymentId === null) {
+                    $firstPaymentId = $row->id;
+                }
 
                $ac_head =  AccountHead::where('type', 1)->where('status', 1)->first();
 
@@ -122,7 +129,7 @@ class FeesCollectRepository implements FeesCollectInterface
             }
 
             DB::commit();
-            return $this->responseWithSuccess(___('alert.created_successfully'), []);
+            return $this->responseWithSuccess(___('alert.created_successfully'), ['payment_id' => $firstPaymentId]);
         } catch (\Throwable $th) {
             DB::rollBack();
             return $this->responseWithError(___('alert.something_went_wrong_please_try_again'), []);

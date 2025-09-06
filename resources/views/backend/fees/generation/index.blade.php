@@ -220,29 +220,30 @@
                                             </div>
 
                         <div class="row mb-3">
-                            {{-- Month & Year --}}
-                            <div class="col-md-4 mb-3">
-                                                <label for="month" class="form-label">{{ ___('common.month') }} <span class="text-danger">*</span></label>
-                                                <select name="month" id="month" class="form-control" required>
-                                                    @for($i = 1; $i <= 12; $i++)
-                                                        <option value="{{ $i }}" {{ $i == date('n') ? 'selected' : '' }}>
-                                                            {{ DateTime::createFromFormat('!m', $i)->format('F') }}
-                                                        </option>
-                                                    @endfor
-                                                </select>
-                                            </div>
-
-                            <div class="col-md-4 mb-3">
-                                                <label for="year" class="form-label">{{ ___('common.year') }} <span class="text-danger">*</span></label>
-                                                <select name="year" id="year" class="form-control" required>
-                                                    @for($i = date('Y') - 1; $i <= date('Y') + 1; $i++)
-                                                        <option value="{{ $i }}" {{ $i == date('Y') ? 'selected' : '' }}>{{ $i }}</option>
-                                                    @endfor
-                                                </select>
-                                            </div>
+                            {{-- Month & Year Combined --}}
+                            <div class="col-md-6 mb-3">
+                                <label for="month_year" class="form-label">{{ ___('fees.fee_period') }} <span class="text-danger">*</span></label>
+                                <select name="month_year" id="month_year" class="form-control" required>
+                                    @for($i = 1; $i <= 12; $i++)
+                                        @php
+                                            $monthName = DateTime::createFromFormat('!m', $i)->format('F');
+                                            $currentYear = date('Y');
+                                            $value = $i . '-' . $currentYear;
+                                            $isSelected = $i == date('n') ? 'selected' : '';
+                                        @endphp
+                                        <option value="{{ $value }}" {{ $isSelected }}>
+                                            {{ $monthName }} {{ $currentYear }}
+                                        </option>
+                                    @endfor
+                                </select>
+                                <small class="text-muted">{{ ___('fees.current_year_only') }}</small>
+                                {{-- Hidden inputs for backward compatibility --}}
+                                <input type="hidden" name="month" id="month" value="{{ date('n') }}">
+                                <input type="hidden" name="year" id="year" value="{{ date('Y') }}">
+                            </div>
 
                             {{-- Due Date --}}
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-6 mb-3">
                                 <label for="due_date" class="form-label">{{ ___('fees.due_date') }}</label>
                                 <input type="date" name="due_date" id="due_date" class="form-control" min="{{ date('Y-m-d', strtotime('+1 day')) }}">
                             </div>
@@ -520,8 +521,19 @@ $(document).ready(function() {
         updateStudentCount();
     });
 
+    // Handle month-year combined dropdown change
+    $('#month_year').on('change', function() {
+        const value = $(this).val();
+        if (value) {
+            const [month, year] = value.split('-');
+            $('#month').val(month);
+            $('#year').val(year);
+        }
+        updateStudentCount();
+    });
+
     // Update student count when filters change
-    $('#sections, #month, #year, #fees_groups').on('change', function() {
+    $('#sections, #month_year, #fees_groups').on('change', function() {
         updateStudentCount();
     });
 
@@ -767,6 +779,13 @@ $(document).ready(function() {
         $('#classes').val(null).trigger('change');
         $('#sections').val(null).trigger('change');
         $('#fees_groups').val(null).trigger('change');
+        
+        // Reset month-year dropdown to current month
+        const currentMonth = {{ date('n') }};
+        const currentYear = {{ date('Y') }};
+        $('#month_year').val(currentMonth + '-' + currentYear);
+        $('#month').val(currentMonth);
+        $('#year').val(currentYear);
         
         // Reset checkboxes
         $('#select-all-classes').prop('checked', false);

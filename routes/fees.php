@@ -8,6 +8,7 @@ use App\Http\Controllers\Fees\FeesAssignController;
 use App\Http\Controllers\Fees\FeesMasterController;
 use App\Http\Controllers\Fees\FeesCollectController;
 use App\Http\Controllers\Fees\FeesGenerationController;
+use App\Http\Controllers\Fees\ReceiptController;
 use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
 use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
 
@@ -99,6 +100,29 @@ Route::middleware(saasMiddleware())->group(function () {
                     // Helper endpoints
                     Route::get('/get-sections',         'getSections');
                     Route::get('/get-student-count',    'getStudentCount');
+                });
+
+                // Receipt Generation Routes
+                Route::controller(ReceiptController::class)->prefix('fees/receipt')->group(function () {
+                    // Individual receipt generation
+                    Route::get('/individual/{paymentId}',              'generateIndividualReceipt')->name('fees.receipt.individual')->middleware('PermissionCheck:fees_collect_read');
+                    
+                    // Student summary receipt (all payments for a student)
+                    Route::get('/student-summary/{studentId}',         'generateStudentSummaryReceipt')->name('fees.receipt.student-summary')->middleware('PermissionCheck:fees_collect_read');
+                    
+                    // Group receipt for multiple payments
+                    Route::post('/group',                               'generateGroupReceipt')->name('fees.receipt.group')->middleware('PermissionCheck:fees_collect_read');
+                    
+                    // Daily collection receipt for collector
+                    Route::get('/daily-collection',                    'generateDailyCollectionReceipt')->name('fees.receipt.daily-collection')->middleware('PermissionCheck:fees_collect_read');
+                    
+                    // Receipt options modal
+                    Route::get('/options/{paymentId}',                 'showReceiptOptions')->name('fees.receipt.options')->middleware('PermissionCheck:fees_collect_read');
+                    
+                    // Helper endpoints
+                    Route::get('/check-group-availability',            'checkGroupReceiptAvailability')->name('fees.receipt.check-group-availability');
+                    Route::get('/today-payments',                      'getTodayPayments')->name('fees.receipt.today-payments');
+                    Route::post('/email',                              'emailReceipt')->name('fees.receipt.email')->middleware('PermissionCheck:fees_collect_read');
                 });
             });
         });

@@ -73,7 +73,7 @@ class FeesGenerationController extends Controller
                 'sections' => 'nullable|array', 
                 'sections.*' => 'exists:sections,id',
                 'month' => 'required|integer|between:1,12',
-                'year' => 'required|integer|between:2020,2030',
+                'year' => 'required|integer|in:' . date('Y'),
                 'fees_groups' => 'nullable|array',
                 'fees_groups.*' => 'exists:fees_groups,id'
             ]);
@@ -101,7 +101,7 @@ class FeesGenerationController extends Controller
                 'sections' => 'nullable|array',
                 'sections.*' => 'exists:sections,id', 
                 'month' => 'required|integer|between:1,12',
-                'year' => 'required|integer|between:2020,2030',
+                'year' => 'required|integer|in:' . date('Y'),
                 'fees_groups' => 'nullable|array',
                 'fees_groups.*' => 'exists:fees_groups,id',
                 'selected_students' => 'nullable|array',

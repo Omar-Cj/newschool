@@ -64,10 +64,56 @@ class FeesCollectController extends Controller
 
     public function store(Request $request)
     {
+        // Debug logging
+        \Log::info('Fee collection request received', [
+            'is_ajax' => $request->ajax(),
+            'student_id' => $request->student_id,
+            'payment_method' => $request->payment_method
+        ]);
+        
         $result = $this->repo->store($request);
         if($result['status']){
+            // If it's an AJAX request, return JSON with payment details for receipt modal
+            if ($request->ajax()) {
+                $student = $this->studentRepo->show($request->student_id);
+                
+                $response = [
+                    'success' => true,
+                    'message' => $result['message'],
+                    'payment_id' => $result['data']['payment_id'] ?? null,
+                    'payment_details' => [
+                        'student_name' => $student->first_name . ' ' . $student->last_name,
+                        'admission_no' => $student->admission_no,
+                        'student_id' => $student->id,
+                        'payment_date' => date('d M Y'),
+                        'amount' => number_format(array_sum($request->amounts ?? []), 2)
+                    ]
+                ];
+                
+                \Log::info('Fee collection AJAX response', $response);
+                
+                return response()->json($response);
+            }
+            
+            // If it's a simple payment, redirect to receipt page
+            if ($request->has('simple_payment')) {
+                $paymentId = $result['data']['payment_id'] ?? null;
+                if ($paymentId) {
+                    return redirect()->route('fees.receipt.options', $paymentId)
+                        ->with('success', $result['message']);
+                }
+            }
+            
             return back()->with('success', $result['message']);
         }
+        
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => false,
+                'message' => $result['message']
+            ], 422);
+        }
+        
         return back()->with('danger', $result['message']);
     }
 

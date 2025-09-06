@@ -171,8 +171,10 @@
         <button type="button" class="btn btn-outline-secondary py-2 px-4"
             data-bs-dismiss="modal">{{ ___('ui_element.cancel') }}</button>
             @if($total != 0)
-        <button type="submit" class="btn ot-btn-primary"
+        <button type="submit" class="btn ot-btn-primary" id="confirm-payment-btn"
             >{{ ___('ui_element.confirm') }}</button>
+        <button type="button" class="btn btn-success ms-2" id="simple-payment-btn"
+            onclick="submitSimplePayment()">{{ ___('fees.pay_now_alternative') }}</button>
             @endif
     </div>
     </form>
@@ -209,6 +211,355 @@
         $('#totalPayable').text(total.toFixed(2));
     });
 
+    // Enhanced form submission with receipt options
+    $('#visitForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        console.log('Form submission started'); // Debug log
+        
+        // Validate form first
+        const requiredFields = $(this).find('[required]');
+        let isValid = true;
+        
+        requiredFields.each(function() {
+            if (!$(this).val()) {
+                isValid = false;
+                $(this).addClass('is-invalid');
+                console.log('Required field missing:', $(this).attr('name'));
+            } else {
+                $(this).removeClass('is-invalid');
+            }
+        });
+        
+        if (!isValid) {
+            showAlert('{{ ___("common.please_fill_required_fields") }}', 'error');
+            return;
+        }
+        
+        const formData = new FormData(this);
+        const submitBtn = $('#confirm-payment-btn');
+        
+        // Debug form data
+        console.log('Form data being sent:');
+        for (let pair of formData.entries()) {
+            console.log(pair[0] + ': ' + pair[1]);
+        }
+        
+        // Show loading state
+        submitBtn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> {{ ___("fees.processing_payment") }}');
+        
+        $.ajax({
+            url: $(this).attr('action'),
+            method: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            timeout: 30000, // 30 second timeout
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            },
+            beforeSend: function() {
+                console.log('AJAX request starting...');
+            },
+            success: function(response) {
+                console.log('Payment response received:', response); // Debug log
+                
+                if (response && response.success) {
+                    console.log('Payment successful, hiding modal...');
+                    
+                    // Try multiple ways to hide the modal (Bootstrap compatibility)
+                    try {
+                        // Bootstrap 5 method
+                        const modalElement = document.querySelector('.modal.show');
+                        if (modalElement) {
+                            const modal = bootstrap.Modal.getInstance(modalElement);
+                            if (modal) {
+                                modal.hide();
+                            } else {
+                                // Fallback: hide manually
+                                modalElement.style.display = 'none';
+                                modalElement.classList.remove('show');
+                                document.body.classList.remove('modal-open');
+                                const backdrop = document.querySelector('.modal-backdrop');
+                                if (backdrop) backdrop.remove();
+                            }
+                        }
+                    } catch (e) {
+                        console.log('Bootstrap modal method failed, trying jQuery...');
+                        try {
+                            // jQuery/Bootstrap 4 method
+                            $('.modal').modal('hide');
+                        } catch (e2) {
+                            console.log('jQuery modal method failed, using manual method...');
+                            // Manual hide
+                            $('.modal').hide();
+                            $('.modal-backdrop').remove();
+                            $('body').removeClass('modal-open');
+                        }
+                    }
+                    
+                    // Show success message first
+                    showAlert('{{ ___("fees.payment_successful") }}', 'success');
+                    
+                    // Small delay to ensure modal is hidden before showing new one
+                    setTimeout(function() {
+                        if (response.payment_id) {
+                            console.log('Redirecting to receipt options for payment ID:', response.payment_id);
+                            // Direct redirect to receipt options page (more reliable)
+                            window.location.href = '{{ url("/fees/receipt/options") }}/' + response.payment_id;
+                        } else {
+                            console.log('No payment ID, reloading page...');
+                            // Fallback: just show success and reload
+                            setTimeout(function() {
+                                window.location.reload();
+                            }, 2000);
+                        }
+                    }, 1500);
+                } else {
+                    console.log('Payment failed:', response);
+                    showAlert(response?.message || '{{ ___("fees.payment_failed") }}', 'error');
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('AJAX Error Details:');
+                console.error('Status:', status);
+                console.error('Error:', error);
+                console.error('Response:', xhr.responseText);
+                console.error('Status Code:', xhr.status);
+                
+                let message = '{{ ___("fees.payment_processing_error") }}';
+                
+                if (xhr.status === 422) {
+                    // Validation error
+                    const errors = xhr.responseJSON?.errors;
+                    if (errors) {
+                        message = Object.values(errors).flat().join(', ');
+                    } else {
+                        message = xhr.responseJSON?.message || message;
+                    }
+                } else if (xhr.status === 500) {
+                    message = '{{ ___("fees.server_error") }}';
+                } else if (xhr.status === 0) {
+                    message = '{{ ___("fees.network_error") }}';
+                } else if (status === 'timeout') {
+                    message = '{{ ___("fees.request_timeout") }}';
+                }
+                
+                showAlert(message, 'error');
+            },
+            complete: function(xhr, status) {
+                console.log('AJAX request completed with status:', status);
+                // Only reset button state if we're not redirecting
+                if (xhr.status !== 200 || !xhr.responseJSON?.success) {
+                    submitBtn.prop('disabled', false).html('{{ ___("ui_element.confirm") }}');
+                }
+            }
+        });
+    });
+
+    // Show receipt options modal
+    function showReceiptOptionsModal(paymentId, paymentDetails) {
+        try {
+            console.log('Showing receipt modal for payment:', paymentId, paymentDetails); // Debug log
+            
+            const modalHtml = `
+            <div class="modal fade" id="receiptOptionsModal" tabindex="-1" aria-labelledby="receiptOptionsModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header bg-success text-white">
+                            <h4 class="modal-title">
+                                <i class="fa-solid fa-check-circle me-2"></i>{{ ___('fees.payment_successful') }}
+                            </h4>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="alert alert-success d-flex align-items-center mb-4">
+                                <i class="fa-solid fa-check-circle me-3 fa-2x"></i>
+                                <div>
+                                    <h5 class="mb-1">{{ ___('fees.payment_processed_successfully') }}</h5>
+                                    <p class="mb-0">{{ ___('fees.payment_confirmation_message') }}</p>
+                                </div>
+                            </div>
+                            
+                            <div class="card border-primary mb-4">
+                                <div class="card-header bg-primary text-white">
+                                    <h6 class="mb-0"><i class="fa-solid fa-receipt me-2"></i>{{ ___('fees.payment_summary') }}</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <p><strong>{{ ___('student_info.student_name') }}:</strong><br>
+                                               ${paymentDetails.student_name}</p>
+                                            <p><strong>{{ ___('student_info.admission_no') }}:</strong><br>
+                                               ${paymentDetails.admission_no}</p>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <p><strong>{{ ___('fees.payment_date') }}:</strong><br>
+                                               ${paymentDetails.payment_date}</p>
+                                            <p><strong>{{ ___('fees.amount_paid') }}:</strong><br>
+                                               <span class="h5 text-success">{{ Setting('currency_symbol') }} ${paymentDetails.amount}</span></p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="receipt-options">
+                                <h5 class="mb-3"><i class="fa-solid fa-download me-2"></i>{{ ___('fees.receipt_options') }}</h5>
+                                
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="card h-100 border-info">
+                                            <div class="card-body text-center">
+                                                <div class="mb-3">
+                                                    <i class="fa-solid fa-file-pdf fa-3x text-info"></i>
+                                                </div>
+                                                <h6 class="card-title">{{ ___('fees.individual_receipt') }}</h6>
+                                                <p class="card-text small">{{ ___('fees.individual_receipt_description') }}</p>
+                                                <a href="${getReceiptUrl('individual', paymentId)}" 
+                                                   class="btn btn-info btn-sm w-100" target="_blank">
+                                                    <i class="fa-solid fa-download me-2"></i>{{ ___('fees.download_receipt') }}
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-6">
+                                        <div class="card h-100 border-warning">
+                                            <div class="card-body text-center">
+                                                <div class="mb-3">
+                                                    <i class="fa-solid fa-file-lines fa-3x text-warning"></i>
+                                                </div>
+                                                <h6 class="card-title">{{ ___('fees.student_summary') }}</h6>
+                                                <p class="card-text small">{{ ___('fees.student_summary_description') }}</p>
+                                                <a href="${getReceiptUrl('student-summary', paymentDetails.student_id)}" 
+                                                   class="btn btn-warning btn-sm w-100" target="_blank">
+                                                    <i class="fa-solid fa-download me-2"></i>{{ ___('fees.download_summary') }}
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-4">
+                                    <div class="alert alert-info">
+                                        <h6><i class="fa-solid fa-lightbulb me-2"></i>{{ ___('fees.additional_options') }}</h6>
+                                        <div class="row mt-3">
+                                            <div class="col-md-6">
+                                                <button type="button" class="btn btn-outline-primary btn-sm w-100" 
+                                                        onclick="printReceipt(${paymentId})">
+                                                    <i class="fa-solid fa-print me-2"></i>{{ ___('fees.print_receipt') }}
+                                                </button>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <button type="button" class="btn btn-outline-success btn-sm w-100" 
+                                                        onclick="emailReceipt(${paymentId})">
+                                                    <i class="fa-solid fa-envelope me-2"></i>{{ ___('fees.email_receipt') }}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                <i class="fa-solid fa-times me-2"></i>{{ ___('common.close') }}
+                            </button>
+                            <button type="button" class="btn btn-primary" onclick="collectAnotherPayment()">
+                                <i class="fa-solid fa-plus me-2"></i>{{ ___('fees.collect_another_payment') }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Remove existing modal if any
+        $('#receiptOptionsModal').remove();
+        
+        // Add modal to body and show
+        $('body').append(modalHtml);
+        $('#receiptOptionsModal').modal('show');
+        
+        } catch (error) {
+            console.error('Error showing receipt modal:', error);
+            showAlert('{{ ___("fees.receipt_modal_error") }}', 'error');
+        }
+    }
+
+    // Helper functions
+    function getReceiptUrl(type, id) {
+        const baseUrl = '{{ url("/") }}';
+        return `${baseUrl}/fees/receipt/${type}/${id}`;
+    }
+
+    function printReceipt(paymentId) {
+        const printWindow = window.open(getReceiptUrl('individual', paymentId), '_blank', 'width=800,height=600');
+        printWindow.onload = function() {
+            printWindow.print();
+        };
+    }
+
+    function emailReceipt(paymentId) {
+        showAlert('{{ ___("fees.email_feature_coming_soon") }}', 'info');
+    }
+
+    function collectAnotherPayment() {
+        $('#receiptOptionsModal').modal('hide');
+        window.location.reload();
+    }
+
+    // Simple payment submission without AJAX (fallback)
+    function submitSimplePayment() {
+        console.log('Using simple payment submission...');
+        
+        // Validate form first
+        const requiredFields = $('#visitForm').find('[required]');
+        let isValid = true;
+        
+        requiredFields.each(function() {
+            if (!$(this).val()) {
+                isValid = false;
+                $(this).addClass('is-invalid');
+            } else {
+                $(this).removeClass('is-invalid');
+            }
+        });
+        
+        if (!isValid) {
+            showAlert('Please fill all required fields', 'error');
+            return;
+        }
+        
+        // Disable button and show loading
+        $('#simple-payment-btn').prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Processing...');
+        
+        // Add a hidden field to indicate simple payment
+        $('#visitForm').append('<input type="hidden" name="simple_payment" value="1">');
+        
+        // Submit form normally (non-AJAX)
+        document.getElementById('visitForm').submit();
+    }
+
+    function showAlert(message, type) {
+        // Create a more user-friendly alert
+        const alertClass = type === 'success' ? 'alert-success' : type === 'error' ? 'alert-danger' : 'alert-info';
+        const alertHtml = `
+            <div class="alert ${alertClass} alert-dismissible fade show position-fixed" 
+                 style="top: 20px; right: 20px; z-index: 9999; min-width: 300px;" role="alert">
+                <strong>${type === 'success' ? 'Success!' : type === 'error' ? 'Error!' : 'Info!'}</strong> ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        `;
+        
+        $('body').append(alertHtml);
+        
+        // Auto-dismiss after 5 seconds
+        setTimeout(function() {
+            $('.alert').fadeOut();
+        }, 5000);
+    }
 
 </script>
 
