@@ -6,12 +6,14 @@ use App\Models\Fees\FeesGeneration;
 use App\Models\Fees\FeesGenerationLog;
 use App\Models\Fees\FeesCollect;
 use App\Models\Fees\FeesAssign;
+use App\Models\StudentInfo\SessionClassStudent;
 use App\Repositories\Fees\FeesGenerationRepository;
 use App\Repositories\StudentInfo\StudentRepository;
 use App\Interfaces\Fees\FeesAssignInterface;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
 use Carbon\Carbon;
+use App\Enums\Status;
 
 class FeesGenerationService
 {
@@ -32,6 +34,25 @@ class FeesGenerationService
     public function generatePreview(array $filters): array
     {
         $students = $this->getEligibleStudents($filters);
+        
+        if ($students->isEmpty()) {
+            throw new \Exception('No eligible students found for the selected criteria.');
+        }
+
+        // Check if fee groups are selected
+        if (empty($filters['fees_groups'])) {
+            throw new \Exception('Please select at least one fee group.');
+        }
+
+        // Validate that fee masters exist for selected groups
+        $feeMastersCount = \App\Models\Fees\FeesMaster::whereIn('fees_group_id', $filters['fees_groups'])
+            ->where('session_id', setting('session'))
+            ->count();
+            
+        if ($feeMastersCount === 0) {
+            throw new \Exception('No fee masters found for the selected fee groups. Please set up fee masters first.');
+        }
+
         $feesData = $this->calculateFeesForStudents($students, $filters);
         
         return [
@@ -43,9 +64,9 @@ class FeesGenerationService
             'students_preview' => $students->take(10)->map(function ($student) {
                 return [
                     'id' => $student->id,
-                    'name' => $student->name,
-                    'class' => $student->class->name ?? '',
-                    'section' => $student->section->name ?? '',
+                    'name' => $student->full_name ?? ($student->first_name . ' ' . $student->last_name),
+                    'class' => $student->sessionStudentDetails->class->name ?? '',
+                    'section' => $student->sessionStudentDetails->section->name ?? '',
                 ];
             })
         ];
@@ -157,57 +178,70 @@ class FeesGenerationService
 
     private function generateFeesForStudent($student, array $data, string $batchId): array
     {
-        // Get student's fee assignments
-        $assignments = $this->getStudentFeeAssignments($student, $data);
+        // Get or create fee assignments for this student
+        $feeAssignments = $this->getOrCreateStudentFeeAssignments($student, $data);
         
-        if ($assignments->isEmpty()) {
-            throw new \Exception("No fee assignments found for student {$student->name}");
+        if ($feeAssignments->isEmpty()) {
+            throw new \Exception("No fee assignments found or created for student {$student->full_name}");
         }
 
         $totalAmount = 0;
         $details = [];
         $feesCollectIds = [];
 
-        foreach ($assignments as $assignment) {
-            // Check for duplicates
+        foreach ($feeAssignments as $feeAssignment) {
+            // Check for duplicates based on fees_assign_children_id
             $existingFee = FeesCollect::where('student_id', $student->id)
-                ->where('fees_master_id', $assignment->id)
+                ->where('fees_assign_children_id', $feeAssignment->id)
                 ->whereMonth('created_at', $data['month'])
                 ->whereYear('created_at', $data['year'])
                 ->first();
 
             if ($existingFee) {
-                throw new \Exception("Fee already exists for this month");
+                continue; // Skip this fee as it already exists
+            }
+
+            // Get the fee master for amount calculation
+            $feeMaster = $feeAssignment->feesMaster;
+            if (!$feeMaster) {
+                continue; // Skip if fee master not found
             }
 
             // Calculate amount with discounts
-            $amount = $this->calculateFeeAmount($student, $assignment, $data);
+            $amount = $this->calculateFeeAmount($student, $feeMaster, $data);
             
-            // Create fees collect record
+            // Create fees collect record with proper schema
             $feesCollect = FeesCollect::create([
+                'date' => now()->toDateString(),
+                'payment_method' => null, // Will be set when payment is made
+                'fees_assign_children_id' => $feeAssignment->id,
+                'fees_collect_by' => auth()->id(),
                 'student_id' => $student->id,
-                'fees_master_id' => $assignment->id,
+                'session_id' => setting('session') ?? $feeAssignment->feesAssign->session_id,
                 'amount' => $amount['net_amount'],
+                'fine_amount' => 0, // No fine for bulk generation
                 'generation_batch_id' => $batchId,
                 'generation_method' => 'bulk',
                 'due_date' => $data['due_date'] ?? Carbon::parse($data['year'] . '-' . $data['month'] . '-01')->endOfMonth(),
-                'discount_applied' => $amount['discount'],
                 'late_fee_applied' => 0,
-                'status' => 'pending', // Assuming there's a status field
-                'created_at' => now(),
-                'updated_at' => now()
+                'discount_applied' => $amount['discount']
             ]);
 
             $feesCollectIds[] = $feesCollect->id;
             $totalAmount += $amount['net_amount'];
             
             $details[] = [
-                'fees_master_id' => $assignment->id,
-                'fees_name' => $assignment->name ?? 'Fee',
+                'fees_master_id' => $feeMaster->id,
+                'fees_assign_children_id' => $feeAssignment->id,
+                'fees_name' => $feeMaster->name ?? 'Fee',
                 'original_amount' => $amount['original_amount'],
                 'discount' => $amount['discount'],
                 'net_amount' => $amount['net_amount']
             ];
+        }
+
+        if (empty($feesCollectIds)) {
+            throw new \Exception("All fees for this month already exist for student {$student->full_name}");
         }
 
         return [
@@ -217,9 +251,9 @@ class FeesGenerationService
         ];
     }
 
-    private function calculateFeeAmount($student, $assignment, array $data): array
+    private function calculateFeeAmount($student, $feeMaster, array $data): array
     {
-        $originalAmount = $assignment->amount ?? 0;
+        $originalAmount = $feeMaster->amount ?? 0;
         $discount = 0;
 
         // Apply sibling discount if applicable
@@ -254,32 +288,145 @@ class FeesGenerationService
 
     private function getEligibleStudents(array $filters): Collection
     {
-        $query = $this->studentRepo->getBaseQuery()
-            ->with(['class', 'section'])
-            ->where('status', 'active');
+        $currentSession = setting('session');
+        
+        if (!$currentSession) {
+            throw new \Exception('No active session found. Please configure the current academic session.');
+        }
+        
+        $query = SessionClassStudent::query()
+            ->where('session_id', $currentSession)
+            ->with([
+                'student' => function($q) {
+                    $q->where('status', \App\Enums\Status::ACTIVE);
+                },
+                'class',
+                'section'
+            ]);
 
+        // Filter by classes using correct column name (classes_id)
         if (!empty($filters['classes'])) {
-            $query->whereIn('class_id', $filters['classes']);
+            $query->whereIn('classes_id', $filters['classes']);
         }
 
+        // Filter by sections using correct column name (section_id)  
         if (!empty($filters['sections'])) {
             $query->whereIn('section_id', $filters['sections']);
         }
 
-        return $query->get();
-    }
+        // Get session class students and filter out null students
+        $students = $query->get()
+            ->filter(function($sessionStudent) {
+                return $sessionStudent->student && $sessionStudent->student->status == \App\Enums\Status::ACTIVE;
+            })
+            ->pluck('student')
+            ->filter() // Remove any null students
+            ->values(); // Reset array keys
 
-    private function getStudentFeeAssignments($student, array $filters): Collection
-    {
-        $query = FeesAssign::with(['feesAssignChilds.feesMaster'])
-            ->where('classes_id', $student->class_id)
-            ->where('section_id', $student->section_id);
-
-        if (!empty($filters['fees_groups'])) {
-            $query->whereIn('fees_group_id', $filters['fees_groups']);
+        if ($students->isEmpty()) {
+            throw new \Exception('No active students found for the selected criteria. Please check class and section selections.');
         }
 
-        return $query->get()->pluck('feesAssignChilds')->flatten();
+        return $students;
+    }
+
+    private function getOrCreateStudentFeeAssignments($student, array $data): Collection
+    {
+        $currentSession = setting('session');
+        $studentSessionDetails = $student->sessionStudentDetails;
+        
+        if (!$studentSessionDetails) {
+            throw new \Exception("Student {$student->full_name} has no session class enrollment for the current session");
+        }
+
+        if (!$studentSessionDetails->classes_id || !$studentSessionDetails->section_id) {
+            throw new \Exception("Student {$student->full_name} has incomplete class/section information");
+        }
+
+        // Get existing fee assignments for this student
+        $existingAssignments = \App\Models\Fees\FeesAssignChildren::where('student_id', $student->id)
+            ->whereHas('feesAssign', function($query) use ($currentSession) {
+                $query->where('session_id', $currentSession);
+            })
+            ->with(['feesMaster', 'feesAssign']);
+
+        // Filter by fee groups if specified
+        if (!empty($data['fees_groups'])) {
+            $existingAssignments->whereHas('feesMaster', function($query) use ($data) {
+                $query->whereIn('fees_group_id', $data['fees_groups']);
+            });
+        }
+
+        $assignments = $existingAssignments->get();
+
+        // If no assignments exist, create them based on class and section fee setup
+        if ($assignments->isEmpty()) {
+            $assignments = $this->createFeeAssignmentsForStudent($student, $data, $currentSession);
+        }
+
+        if ($assignments->isEmpty()) {
+            throw new \Exception("No fee assignments could be found or created for student {$student->full_name}");
+        }
+
+        return $assignments;
+    }
+
+    private function createFeeAssignmentsForStudent($student, array $data, $sessionId): Collection
+    {
+        $studentSessionDetails = $student->sessionStudentDetails;
+        
+        // Find fee assign record for this student's class/section/session
+        $feesAssign = \App\Models\Fees\FeesAssign::where('session_id', $sessionId)
+            ->where('classes_id', $studentSessionDetails->classes_id)
+            ->where('section_id', $studentSessionDetails->section_id)
+            ->first();
+
+        if (!$feesAssign) {
+            // Create fee assign record if it doesn't exist
+            $feesAssign = \App\Models\Fees\FeesAssign::create([
+                'session_id' => $sessionId,
+                'classes_id' => $studentSessionDetails->classes_id,
+                'section_id' => $studentSessionDetails->section_id,
+                'category_id' => $student->student_category_id,
+                'gender_id' => $student->gender_id,
+                'fees_group_id' => !empty($data['fees_groups']) ? $data['fees_groups'][0] : null,
+            ]);
+        }
+
+        // Get fee masters for the selected fee groups
+        $feeMastersQuery = \App\Models\Fees\FeesMaster::where('session_id', $sessionId);
+        
+        if (!empty($data['fees_groups'])) {
+            $feeMastersQuery->whereIn('fees_group_id', $data['fees_groups']);
+        }
+
+        $feeMasters = $feeMastersQuery->get();
+        $assignments = collect();
+
+        foreach ($feeMasters as $feeMaster) {
+            // Check if assignment already exists
+            $existingAssignment = \App\Models\Fees\FeesAssignChildren::where('fees_assign_id', $feesAssign->id)
+                ->where('fees_master_id', $feeMaster->id)
+                ->where('student_id', $student->id)
+                ->first();
+
+            if (!$existingAssignment) {
+                $assignment = \App\Models\Fees\FeesAssignChildren::create([
+                    'fees_assign_id' => $feesAssign->id,
+                    'fees_master_id' => $feeMaster->id,
+                    'student_id' => $student->id,
+                ]);
+                
+                // Load relationships
+                $assignment->load(['feesMaster', 'feesAssign']);
+                $assignments->push($assignment);
+            } else {
+                $existingAssignment->load(['feesMaster', 'feesAssign']);
+                $assignments->push($existingAssignment);
+            }
+        }
+
+        return $assignments;
     }
 
     private function calculateFeesForStudents(Collection $students, array $filters): array
@@ -289,20 +436,31 @@ class FeesGenerationService
         $feesBreakdown = [];
 
         $students->each(function ($student) use (&$totalAmount, &$classesBreakdown, &$feesBreakdown, $filters) {
-            $assignments = $this->getStudentFeeAssignments($student, $filters);
             $studentAmount = 0;
-
-            $assignments->each(function ($assignment) use (&$studentAmount, &$feesBreakdown) {
-                $amount = $assignment->feesMaster->amount ?? 0;
-                $studentAmount += $amount;
+            
+            try {
+                // Get fee assignments for this student
+                $feeAssignments = $this->getOrCreateStudentFeeAssignments($student, $filters);
                 
-                $feeName = $assignment->feesMaster->name ?? 'Unknown Fee';
-                $feesBreakdown[$feeName] = ($feesBreakdown[$feeName] ?? 0) + $amount;
-            });
+                $feeAssignments->each(function ($feeAssignment) use (&$studentAmount, &$feesBreakdown) {
+                    $feeMaster = $feeAssignment->feesMaster;
+                    if ($feeMaster) {
+                        $amount = $feeMaster->amount ?? 0;
+                        $studentAmount += $amount;
+                        
+                        $feeName = $feeMaster->name ?? 'Unknown Fee';
+                        $feesBreakdown[$feeName] = ($feesBreakdown[$feeName] ?? 0) + $amount;
+                    }
+                });
+            } catch (\Exception $e) {
+                // Skip students with issues during preview
+                return;
+            }
 
             $totalAmount += $studentAmount;
             
-            $className = $student->class->name ?? 'Unknown Class';
+            // Get class name from student's session details
+            $className = $student->sessionStudentDetails->class->name ?? 'Unknown Class';
             $classesBreakdown[$className] = [
                 'students' => ($classesBreakdown[$className]['students'] ?? 0) + 1,
                 'amount' => ($classesBreakdown[$className]['amount'] ?? 0) + $studentAmount
@@ -318,16 +476,25 @@ class FeesGenerationService
 
     private function checkForDuplicates(Collection $students, array $filters): array
     {
+        $currentSession = setting('session');
+        
+        // Count existing fee collections for the selected month/year and session
         $duplicateCount = FeesCollect::whereIn('student_id', $students->pluck('id'))
-            ->whereMonth('created_at', $filters['month'])
-            ->whereYear('created_at', $filters['year'])
+            ->where('session_id', $currentSession)
+            ->whereMonth('date', $filters['month'])
+            ->whereYear('date', $filters['year'])
+            ->when(!empty($filters['fees_groups']), function($query) use ($filters) {
+                $query->whereHas('feesAssignChildren.feesMaster', function($subQuery) use ($filters) {
+                    $subQuery->whereIn('fees_group_id', $filters['fees_groups']);
+                });
+            })
             ->count();
 
         return [
             'has_duplicates' => $duplicateCount > 0,
             'count' => $duplicateCount,
             'message' => $duplicateCount > 0 
-                ? "Warning: {$duplicateCount} students already have fees for this month"
+                ? "Warning: {$duplicateCount} fee records already exist for the selected criteria"
                 : null
         ];
     }

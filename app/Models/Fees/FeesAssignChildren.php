@@ -15,6 +15,12 @@ class FeesAssignChildren extends BaseModel
 {
     use HasFactory;
 
+    protected $fillable = [
+        'fees_assign_id',
+        'fees_master_id', 
+        'student_id'
+    ];
+
     public function student()
     {
         return $this->belongsTo(Student::class, 'student_id', 'id');

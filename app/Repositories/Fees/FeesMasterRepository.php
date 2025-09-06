@@ -41,7 +41,11 @@ class FeesMasterRepository implements FeesMasterInterface
 
     public function groupTypes($request)
     {
-        return $this->model->active()->where('fees_group_id', $request->id)->get();
+        return $this->model->active()
+            ->with(['type', 'group'])
+            ->where('fees_group_id', $request->id)
+            ->orderBy('created_at', 'asc')
+            ->get();
     }
 
     public function getPaginateAll()

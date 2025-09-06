@@ -72,9 +72,9 @@
                                     <td>{{ dateFormat(@$item->feesMaster->due_date) }}</td>
                                     <td>
                                         {{ @$item->feesMaster->amount }}
-                                        @if (date('Y-m-d') > $item->feesMaster->date && $item->fees_collect_count == 0)
+                                        @if (date('Y-m-d') > @$item->feesMaster->date && (!@$item->feesCollect || !@$item->feesCollect->isPaid()))
                                             <span class="text-danger">+{{ @$item->feesMaster->fine_amount }}</span>
-                                        @elseif($item->fees_collect_count == 1 && $item->feesMaster->date < $item->feesCollect->date)
+                                        @elseif(@$item->feesCollect && @$item->feesCollect->isPaid() && @$item->feesMaster->date < @$item->feesCollect->date)
                                             <span class="text-danger">+{{ @$item->feesMaster->fine_amount }}</span>
                                         @endif
                                     </td>
@@ -84,8 +84,10 @@
                                         {{ @$item->feesMaster->amount + calculateTax(@$item->feesMaster->amount) - calculateDiscount(@$item->feesMaster->amount, @$item->feesDiscount->discount_percentage) }}
                                     </td>
                                     <td>
-                                        @if ($item->fees_collect_count)
+                                        @if (@$item->feesCollect && @$item->feesCollect->isPaid())
                                             <span class="badge bg-success">{{ ___('fees.Paid') }}</span>
+                                        @elseif (@$item->feesCollect && @$item->feesCollect->isPending())
+                                            <span class="badge bg-warning">{{ ___('fees.Generated - Pending Payment') }}</span>
                                         @else
                                             <span class="badge bg-danger">{{ ___('fees.Unpaid') }}</span>
                                         @endif

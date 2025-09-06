@@ -98,6 +98,13 @@ class FeesAssignController extends Controller
     {
         $data['title']        = ___('fees.fees_assign');
         $data['fees_assign']  = $this->repo->show($id);
+        
+        // Add null safety check
+        if (!$data['fees_assign']) {
+            return redirect()->route('fees-assign.index')
+                ->with('danger', ___('alert.record_not_found'));
+        }
+        
         $data['classes']      = $this->classRepo->assignedAll();
         // $data['sections']     = $this->sectionRepo->all();
         $data['sections']     = $this->classSetupRepo->getSections($data['fees_assign']->classes_id);

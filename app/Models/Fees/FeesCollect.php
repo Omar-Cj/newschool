@@ -35,6 +35,11 @@ class FeesCollect extends BaseModel
         return $this->hasOne(FeesGenerationLog::class);
     }
 
+    public function feesAssignChildren(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Fees\FeesAssignChildren::class, 'fees_assign_children_id');
+    }
+
     public function scopeBulkGenerated($query)
     {
         return $query->where('generation_method', 'bulk');
@@ -67,7 +72,16 @@ class FeesCollect extends BaseModel
 
     public function isPaid(): bool
     {
-        // This would need to be implemented based on your payment tracking logic
-        return false; // Placeholder
+        return $this->payment_method !== null;
+    }
+    
+    public function isGenerated(): bool
+    {
+        return $this->generation_method !== null;
+    }
+    
+    public function isPending(): bool
+    {
+        return !$this->isPaid() && $this->isGenerated();
     }
 }

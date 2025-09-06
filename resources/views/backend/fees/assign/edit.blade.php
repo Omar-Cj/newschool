@@ -37,7 +37,7 @@
                                         <select id="fees_group" class="nice-select niceSelect bordered_style wide @error('fees_group') is-invalid @enderror" name="fees_group">
                                             <option value="">{{ ___('fees.select_fees_group') }}</option>
                                             @foreach ($data['fees_groups'] as $item)
-                                                <option {{ old('class',$data['fees_assign']->fees_group_id) == $item->group->id ? 'selected' : '' }} value="{{ $item->group->id }}">{{ $item->group->name }}
+                                                <option {{ old('class',$data['fees_assign']->fees_group_id) == $item->id ? 'selected' : '' }} value="{{ $item->id }}">{{ $item->name }}</option>
                                             @endforeach
                                         </select>
                                     </div>
@@ -56,7 +56,9 @@
                                         aria-describedby="validationServer04Feedback">
                                         <option value="">{{ ___('student_info.select_class') }}</option>
                                         @foreach ($data['classes'] as $item)
-                                            <option {{ old('class',$data['fees_assign']->classes_id) == $item->id ? 'selected' : '' }} value="{{ $item->class->id }}">{{ $item->class->name }}
+                                            @if($item->class)
+                                                <option {{ old('class',$data['fees_assign']->classes_id) == $item->class->id ? 'selected' : '' }} value="{{ $item->class->id }}">{{ $item->class->name }}</option>
+                                            @endif
                                         @endforeach
                                     </select>
                                     @error('class')
@@ -71,7 +73,9 @@
                                         <select id="section" class="nice-select sections niceSelect bordered_style wide @error('section') is-invalid @enderror" name="section">
                                             <option value="">{{ ___('student_info.select_section') }}</option>
                                             @foreach ($data['sections'] as $item)
-                                                <option {{ old('section',$data['fees_assign']->section_id) == $item->section->id ? 'selected' : '' }} value="{{ $item->section->id }}">{{ $item->section->name }}</option>
+                                                @if($item->section)
+                                                    <option {{ old('section',$data['fees_assign']->section_id) == $item->section->id ? 'selected' : '' }} value="{{ $item->section->id }}">{{ $item->section->name }}</option>
+                                                @endif
                                             @endforeach
                                         </select>
                                     </div>
@@ -200,3 +204,68 @@
         </div>
     </div>
 @endsection
+
+@push('script')
+<script>
+$(document).ready(function() {
+    // Handle fee group selection change
+    $('#fees_group').on('change', function() {
+        var feesGroupId = $(this).val();
+        var typesTableBody = $('#types_table .tbody');
+        
+        // Clear existing fee types
+        typesTableBody.empty();
+        
+        if (feesGroupId) {
+            // Show loading indicator
+            typesTableBody.html('<tr><td colspan="3" class="text-center">{{ ___("common.loading") }}...</td></tr>');
+            
+            // Make AJAX call to get fee types
+            $.ajax({
+                url: '/fees-assign/get-all-type',
+                type: 'GET',
+                data: { id: feesGroupId },
+                success: function(response) {
+                    typesTableBody.html(response);
+                    
+                    // Restore previously selected fee masters if editing
+                    @if(isset($data['assigned_fes_masters']))
+                    var assignedMasters = @json($data['assigned_fes_masters']);
+                    assignedMasters.forEach(function(masterId) {
+                        $('input[name="fees_master_ids[]"][value="' + masterId + '"]').prop('checked', true);
+                    });
+                    @endif
+                    
+                    // Update select all checkbox state
+                    updateSelectAllCheckbox();
+                },
+                error: function(xhr, status, error) {
+                    typesTableBody.html('<tr><td colspan="3" class="text-center text-danger">{{ ___("common.error_loading_data") }}</td></tr>');
+                    console.error('Error loading fee types:', error);
+                }
+            });
+        }
+    });
+    
+    // Handle "select all" checkbox for fee types
+    $(document).on('change', '#all_fees_masters', function() {
+        $('.fees_master').prop('checked', $(this).prop('checked'));
+    });
+    
+    // Update "select all" checkbox based on individual checkboxes
+    $(document).on('change', '.fees_master', function() {
+        updateSelectAllCheckbox();
+    });
+    
+    // Function to update select all checkbox state
+    function updateSelectAllCheckbox() {
+        var totalCheckboxes = $('.fees_master').length;
+        var checkedCheckboxes = $('.fees_master:checked').length;
+        $('#all_fees_masters').prop('checked', totalCheckboxes > 0 && totalCheckboxes === checkedCheckboxes);
+    }
+    
+    // Initialize select all checkbox state on page load
+    updateSelectAllCheckbox();
+});
+</script>
+@endpush

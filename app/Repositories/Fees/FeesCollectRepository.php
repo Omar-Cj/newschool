@@ -272,7 +272,7 @@ class FeesCollectRepository implements FeesCollectInterface
             $total -= calculateDiscount($total, $discount->discount_percentage);
         }
 
-        if (date('Y-m-d') > $feesAssignChildren->feesMaster?->due_date && $feesAssignChildren->fees_collect_count == 0) {
+        if (date('Y-m-d') > $feesAssignChildren->feesMaster?->due_date && (!$feesAssignChildren->feesCollect || !$feesAssignChildren->feesCollect->isPaid())) {
             $total += $feesAssignChildren->feesMaster?->fine_amount;
         }
 
@@ -300,7 +300,7 @@ class FeesCollectRepository implements FeesCollectInterface
             $amount = $feesAssignChildren->feesMaster?->amount;
             $fine_amount = 0;
 
-            if (date('Y-m-d') > $feesAssignChildren->feesMaster?->due_date && $feesAssignChildren->fees_collect_count == 0) {
+            if (date('Y-m-d') > $feesAssignChildren->feesMaster?->due_date && (!$feesAssignChildren->feesCollect || !$feesAssignChildren->feesCollect->isPaid())) {
                 $fine_amount = $feesAssignChildren->feesMaster?->fine_amount;
                 $amount += $fine_amount;
             }

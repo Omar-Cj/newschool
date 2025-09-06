@@ -191,7 +191,11 @@ class FeesAssignRepository implements FeesAssignInterface
 
     public function groupTypes($request)
     {
-        return FeesMaster::active()->where('fees_group_id', $request->id)->get();
+        return FeesMaster::active()
+            ->with(['type', 'group'])
+            ->where('fees_group_id', $request->id)
+            ->orderBy('created_at', 'asc')
+            ->get();
     }
 
 

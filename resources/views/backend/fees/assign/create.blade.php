@@ -35,7 +35,7 @@
                                     aria-describedby="validationServer04Feedback">
                                     <option value="">{{ ___('fees.select_fees_group') }}</option>
                                     @foreach ($data['fees_groups'] as $item)
-                                        <option {{ old('fees_group') == $item->group->id ? 'selected':'' }} value="{{ $item->group->id }}">{{ $item->group->name }}</option>
+                                        <option {{ old('fees_group') == $item->id ? 'selected':'' }} value="{{ $item->id }}">{{ $item->name }}</option>
                                     @endforeach
                                 </select>
                                 @error('fees_group')
@@ -51,7 +51,9 @@
                                     aria-describedby="validationServer04Feedback">
                                     <option value="">{{ ___('student_info.select_class') }}</option>
                                     @foreach ($data['classes'] as $item)
-                                        <option {{ old('class') == $item->class->id ? 'selected' : '' }} value="{{ $item->class->id }}">{{ $item->class->name }}
+                                        @if($item->class)
+                                            <option {{ old('class') == $item->class->id ? 'selected' : '' }} value="{{ $item->class->id }}">{{ $item->class->name }}</option>
+                                        @endif
                                     @endforeach
                                     </option>
                                 </select>
@@ -161,3 +163,49 @@
         </div>
     </div>
 @endsection
+
+@push('script')
+<script>
+$(document).ready(function() {
+    // Handle fee group selection change
+    $('#fees_group').on('change', function() {
+        var feesGroupId = $(this).val();
+        var typesTableBody = $('#types_table .tbody');
+        
+        // Clear existing fee types
+        typesTableBody.empty();
+        
+        if (feesGroupId) {
+            // Show loading indicator
+            typesTableBody.html('<tr><td colspan="3" class="text-center">{{ ___("common.loading") }}...</td></tr>');
+            
+            // Make AJAX call to get fee types
+            $.ajax({
+                url: '/fees-assign/get-all-type',
+                type: 'GET',
+                data: { id: feesGroupId },
+                success: function(response) {
+                    typesTableBody.html(response);
+                },
+                error: function(xhr, status, error) {
+                    typesTableBody.html('<tr><td colspan="3" class="text-center text-danger">{{ ___("common.error_loading_data") }}</td></tr>');
+                    console.error('Error loading fee types:', error);
+                }
+            });
+        }
+    });
+    
+    // Handle "select all" checkbox for fee types
+    $(document).on('change', '#all_fees_masters', function() {
+        $('.fees_master').prop('checked', $(this).prop('checked'));
+    });
+    
+    // Update "select all" checkbox based on individual checkboxes
+    $(document).on('change', '.fees_master', function() {
+        var totalCheckboxes = $('.fees_master').length;
+        var checkedCheckboxes = $('.fees_master:checked').length;
+        $('#all_fees_masters').prop('checked', totalCheckboxes === checkedCheckboxes);
+    });
+});
+</script>
+@endpush
