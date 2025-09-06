@@ -64,7 +64,7 @@
                                         </tr>
                                         <tr>
                                             <td><strong>{{ ___('fees.total_amount') }}:</strong></td>
-                                            <td>{{ currency($data['generation']->total_amount ?? 0) }}</td>
+                                            <td>{{ setting('currency_symbol') }} {{ number_format($data['generation']->total_amount ?? 0, 2) }}</td>
                                         </tr>
                                     </table>
                                 </div>
@@ -141,7 +141,7 @@
                                                             {{ __(ucfirst($log->status)) }}
                                                         </span>
                                                     </td>
-                                                    <td>{{ currency($log->amount ?? 0) }}</td>
+                                                    <td>{{ setting('currency_symbol') }} {{ number_format($log->amount ?? 0, 2) }}</td>
                                                     <td>
                                                         @if($log->error_message)
                                                             <span class="text-danger" title="{{ $log->error_message }}">
