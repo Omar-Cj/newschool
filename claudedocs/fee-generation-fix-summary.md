@@ -1,4 +1,5 @@
-    # Fee Generation System - Fix Summary
+    
+# Fee Generation System - Fix Summary
 
 ## Issue Resolved
 The fee generation system was failing when users clicked "Generate All" after previewing students. The primary issue was a **database schema mismatch** in the `FeesGenerationService`.

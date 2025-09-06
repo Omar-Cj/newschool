@@ -108,7 +108,7 @@
                     @foreach (@$data['fees_assign_children'] as $item)
 
 
-                    @if($item->fees_collect_count == 0)
+                    @if(!($item->fees_collect_count && $item->feesCollect && $item->feesCollect->isPaid()))
                     @php
                         $earlyPaymentDiscount =  calculateDiscount(@$item->feesMaster->amount, $data['early_payment_discount_percentage']?? 0);
                         $siblingsDiscount = calculateDiscount(@$item->feesMaster->amount, $data['siblings_discount_percentage']);

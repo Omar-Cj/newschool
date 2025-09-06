@@ -75,7 +75,7 @@
                                             <td>{{ @$item->feesMaster->amount }}
                                                 <span class="text-danger"> + {{ calculateTax(@$item->feesMaster->amount) }}</span>
 
-                                                @if (date('Y-m-d') > $item->feesMaster->due_date && $item->fees_collect_count == 0)
+                                                @if (date('Y-m-d') > $item->feesMaster->due_date && !($item->fees_collect_count && $item->feesCollect && $item->feesCollect->isPaid()))
                                                     <span class="text-danger">+ {{ @$item->feesMaster->fine_amount }}</span>
                                                 @elseif($item->fees_collect_count == 1 && $item->feesMaster->due_date < $item->feesCollect->date)
                                                     <span class="text-danger">+ {{ @$item->feesMaster->fine_amount }}</span>
@@ -85,8 +85,10 @@
                                                 {{@$item->feesMaster->amount + calculateTax(@$item->feesMaster->amount)}}
                                             </td>
                                             <td>
-                                                @if ($item->fees_collect_count)
+                                                @if ($item->fees_collect_count && $item->feesCollect && $item->feesCollect->isPaid())
                                                     <span class="badge-basic-success-text">{{ ___('fees.Paid') }}</span>
+                                                @elseif ($item->fees_collect_count && $item->feesCollect && $item->feesCollect->isGenerated())
+                                                    <span class="badge-basic-warning-text">{{ ___('fees.Generated - Pending Payment') }}</span>
                                                 @else
                                                     <span class="badge-basic-danger-text">{{ ___('fees.Unpaid') }}</span>
                                                 @endif
@@ -115,7 +117,7 @@
                                                 @endif
                                             </td>
                                             <td>
-                                                @if (!$item->fees_collect_count)
+                                                @if (!($item->fees_collect_count && $item->feesCollect && $item->feesCollect->isPaid()))
                                                     <a
                                                         href="#"
                                                         class="btn btn-sm ot-btn-primary px-3"

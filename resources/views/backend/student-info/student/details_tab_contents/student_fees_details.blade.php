@@ -12,12 +12,26 @@
 
                         <div class="col-md-2 col-6 mb-3">
                             <div class="fw-bold text-muted">{{ ___('student.Total Fees') }}</div>
-                            <div class="h6">{{ $currency }} {{ @$data->feesMasters->sum('amount') }}</div>
+                            @php
+                                $totalFees = 0;
+                                foreach ($fees['fees_assigned'] as $assignment) {
+                                    $totalFees += $assignment->feesMaster->amount ?? 0;
+                                }
+                            @endphp
+                            <div class="h6">{{ $currency }} {{ $totalFees }}</div>
                         </div>
 
                         <div class="col-md-2 col-6 mb-3">
                             <div class="fw-bold text-muted">{{ ___('student.Total Paid') }}</div>
-                            <div class="h6">{{ $currency }} {{ @$data->feesPayments->sum('amount') }}</div>
+                            @php
+                                $totalPaid = 0;
+                                foreach ($fees['fees_assigned'] as $assignment) {
+                                    if ($assignment->feesCollect && $assignment->feesCollect->isPaid()) {
+                                        $totalPaid += $assignment->feesCollect->amount;
+                                    }
+                                }
+                            @endphp
+                            <div class="h6">{{ $currency }} {{ $totalPaid }}</div>
                         </div>
 
                         <div class="col-md-2 col-6 mb-3">

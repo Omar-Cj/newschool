@@ -75,10 +75,17 @@ class FeeAPIController extends Controller
                                         ->where('section_id', @$sessionClassStudent->section_id);
                                     })
                                     ->when(request()->filled('status') && Str::lower(request('status')) == 'paid', function ($q) {
-                                        $q->whereHas('feesCollect');
+                                        $q->whereHas('feesCollect', function($subQuery) {
+                                            $subQuery->whereNotNull('payment_method');
+                                        });
                                     })
                                     ->when(request()->filled('status') && Str::lower(request('status')) == 'unpaid', function ($q) {
-                                        $q->whereDoesntHave('feesCollect');
+                                        $q->where(function($subQuery) {
+                                            $subQuery->whereDoesntHave('feesCollect')
+                                                     ->orWhereHas('feesCollect', function($feeQuery) {
+                                                         $feeQuery->whereNull('payment_method');
+                                                     });
+                                        });
                                     })
                                     ->paginate(10);
 

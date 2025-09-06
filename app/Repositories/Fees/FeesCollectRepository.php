@@ -46,15 +46,37 @@ class FeesCollectRepository implements FeesCollectInterface
         DB::beginTransaction();
         try {
             foreach ($request->fees_assign_childrens as $key=>$item) {
-                $row                   = new $this->model;
-                $row->date             = $request->date;
-                $row->payment_method   = $request->payment_method;
-                $row->fees_assign_children_id   = $item;
-                $row->amount           = $request->amounts[$key] + $request->fine_amounts[$key] ?? 0;
-                $row->fine_amount      = $request->fine_amounts[$key];
-                $row->fees_collect_by  = Auth::user()->id;
-                $row->student_id       = $request->student_id;
-                $row->session_id       = setting('session');
+                // Check if there's an existing bulk-generated fee record for this assignment
+                $existingFee = $this->model::where('fees_assign_children_id', $item)
+                    ->where('student_id', $request->student_id)
+                    ->where('session_id', setting('session'))
+                    ->where('generation_method', 'bulk')
+                    ->whereNull('payment_method')
+                    ->first();
+
+                if ($existingFee) {
+                    // Update existing bulk-generated fee record
+                    $row = $existingFee;
+                    $row->date = $request->date;
+                    $row->payment_method = $request->payment_method;
+                    $row->amount = $request->amounts[$key] + $request->fine_amounts[$key] ?? 0;
+                    $row->fine_amount = $request->fine_amounts[$key];
+                    $row->fees_collect_by = Auth::user()->id;
+                    // Keep existing generation_method as 'bulk'
+                } else {
+                    // Create new fee record (for manual collection)
+                    $row = new $this->model;
+                    $row->date = $request->date;
+                    $row->payment_method = $request->payment_method;
+                    $row->fees_assign_children_id = $item;
+                    $row->amount = $request->amounts[$key] + $request->fine_amounts[$key] ?? 0;
+                    $row->fine_amount = $request->fine_amounts[$key];
+                    $row->fees_collect_by = Auth::user()->id;
+                    $row->student_id = $request->student_id;
+                    $row->session_id = setting('session');
+                    $row->generation_method = 'manual';
+                }
+                
                 $row->save();
 
                $ac_head =  AccountHead::where('type', 1)->where('status', 1)->first();

@@ -17,11 +17,13 @@ class StudentFeeResource extends JsonResource
     {
         $fineAmount = 0;
 
-        if(date('Y-m-d') > @$this->feesMaster->due_date) {
+        // Only apply fine to unpaid fees that are overdue
+        if(date('Y-m-d') > @$this->feesMaster->due_date && (!@$this->feesCollect || !@$this->feesCollect->isPaid())) {
             $fineAmount = (float) @$this->feesMaster->fine_amount;
         }
 
-        $status = @$this->feesCollect->created_at ? 'Paid' : 'Unpaid';
+        $status = (@$this->feesCollect && @$this->feesCollect->isPaid()) ? 'Paid' : 
+                  ((@$this->feesCollect && @$this->feesCollect->isGenerated()) ? 'Generated - Pending Payment' : 'Unpaid');
 
         return [
             'fee_assign_children_id'    => $this->id,

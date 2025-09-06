@@ -165,7 +165,23 @@ class StudentController extends Controller
         $fees['fees_masters'] = $data->feesMasters;
         $fees['fees_payments'] = $data->feesPayments;
         $fees['fees_discounts'] = $data->feesDiscounts;
-        $fees['fees_due'] = $data->feesMasters->sum('amount') - ($data->feesPayments->sum('amount') + $data->feesDiscounts->sum('discount_amount'));
+        // Calculate fees due based on actual fee assignments (avoid duplicates)
+        $feesAssigned = $this->feesAssignedRepo->feesAssigned($id);
+        $totalFees = 0;
+        $totalPaid = 0;
+        $totalDiscounts = $data->feesDiscounts->sum('discount_amount');
+        
+        foreach ($feesAssigned as $assignment) {
+            $feeAmount = $assignment->feesMaster->amount ?? 0;
+            $totalFees += $feeAmount;
+            
+            // Only count as paid if payment_method exists
+            if ($assignment->feesCollect && $assignment->feesCollect->isPaid()) {
+                $totalPaid += $assignment->feesCollect->amount;
+            }
+        }
+        
+        $fees['fees_due'] = $totalFees - ($totalPaid + $totalDiscounts);
         $fees['fees_assigned']  = $this->feesAssignedRepo->feesAssigned($id);
 
         $attendances['total_attendance'] = Attendance::where('student_id', $id)->where('session_id', setting('session'))->get();

@@ -158,7 +158,7 @@
                                     <td>{{ dateFormat(@$item->feesMaster->due_date) }}</td>
                                     <td>{{ @$item->feesMaster->amount }}
 
-                                        @if (date('Y-m-d') > $item->feesMaster->date && $item->fees_collect_count == 0)
+                                        @if (date('Y-m-d') > $item->feesMaster->date && !($item->fees_collect_count && $item->feesCollect && $item->feesCollect->isPaid()))
                                             <span class="text-danger">+ {{ @$item->feesMaster->fine_amount }}</span>
                                         @elseif($item->fees_collect_count == 1 && $item->feesMaster->date < $item->feesCollect->date)
                                             <span class="text-danger">+ {{ @$item->feesMaster->fine_amount }}</span>
@@ -171,8 +171,10 @@
                                     <td>{{ calculateTax(@$item->feesMaster->amount) }}</td>
                                     <td>{{ @$item->feesMaster->amount + calculateTax(@$item->feesMaster->amount) - calculateDiscount(@$item->feesMaster->amount, @$item->feesDiscount->discount_percentage)}}</td>
                                     <td>
-                                        @if ($item->fees_collect_count)
+                                        @if ($item->fees_collect_count && $item->feesCollect && $item->feesCollect->isPaid())
                                             <span class="badge-basic-success-text">{{ ___('fees.Paid') }}</span>
+                                        @elseif ($item->fees_collect_count && $item->feesCollect && $item->feesCollect->isGenerated())
+                                            <span class="badge-basic-warning-text">{{ ___('fees.Generated - Pending Payment') }}</span>
                                         @else
                                             <span class="badge-basic-danger-text">{{ ___('fees.Unpaid') }}</span>
                                         @endif
@@ -203,7 +205,7 @@
                                                     <i class="fa-solid fa-ellipsis"></i>
                                                 </button>
                                                 <ul class="dropdown-menu dropdown-menu-end ">
-                                                    @if ($item->fees_collect_count)
+                                                    @if ($item->fees_collect_count && $item->feesCollect && $item->feesCollect->isPaid())
                                                         <li>
                                                             <a class="dropdown-item" href="javascript:void(0);"
                                                                 onclick="delete_row('fees-collect/delete', {{ @$item->feesCollect->id }}, true)">
