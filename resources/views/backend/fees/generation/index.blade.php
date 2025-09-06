@@ -224,19 +224,47 @@
                             <div class="col-md-6 mb-3">
                                 <label for="month_year" class="form-label">{{ ___('fees.fee_period') }} <span class="text-danger">*</span></label>
                                 <select name="month_year" id="month_year" class="form-control" required>
-                                    @for($i = 1; $i <= 12; $i++)
-                                        @php
-                                            $monthName = DateTime::createFromFormat('!m', $i)->format('F');
-                                            $currentYear = date('Y');
-                                            $value = $i . '-' . $currentYear;
-                                            $isSelected = $i == date('n') ? 'selected' : '';
-                                        @endphp
-                                        <option value="{{ $value }}" {{ $isSelected }}>
-                                            {{ $monthName }} {{ $currentYear }}
+                                    @php
+                                        $currentMonth = (int)date('n');
+                                        $currentYear = (int)date('Y');
+                                        $currentMonthValue = $currentMonth . '-' . $currentYear;
+                                        
+                                        // Generate 5 months: 2 past + current + 2 future
+                                        $months = [];
+                                        for($offset = -2; $offset <= 2; $offset++) {
+                                            $targetDate = mktime(0, 0, 0, $currentMonth + $offset, 1, $currentYear);
+                                            $month = (int)date('n', $targetDate);
+                                            $year = (int)date('Y', $targetDate);
+                                            $monthName = date('F', $targetDate);
+                                            
+                                            $months[] = [
+                                                'value' => $month . '-' . $year,
+                                                'label' => $monthName . ' ' . $year,
+                                                'month' => $month,
+                                                'year' => $year,
+                                                'is_current' => ($offset === 0),
+                                                'is_past' => ($offset < 0),
+                                                'is_future' => ($offset > 0)
+                                            ];
+                                        }
+                                    @endphp
+                                    
+                                    @foreach($months as $monthData)
+                                        <option value="{{ $monthData['value'] }}" {{ $monthData['is_current'] ? 'selected' : '' }}
+                                            @if($monthData['is_past']) class="text-muted" @endif
+                                            @if($monthData['is_current']) class="fw-bold text-primary" @endif
+                                            @if($monthData['is_future']) class="text-info" @endif>
+                                            @if($monthData['is_past'])
+                                                📅 {{ $monthData['label'] }} (Past)
+                                            @elseif($monthData['is_current'])
+                                                🔥 {{ $monthData['label'] }} (Current)
+                                            @else
+                                                ⏭️ {{ $monthData['label'] }} (Future)
+                                            @endif
                                         </option>
-                                    @endfor
+                                    @endforeach
                                 </select>
-                                <small class="text-muted">{{ ___('fees.current_year_only') }}</small>
+                                <small class="text-muted">{{ ___('fees.showing_current_plus_nearby_months') }}</small>
                                 {{-- Hidden inputs for backward compatibility --}}
                                 <input type="hidden" name="month" id="month" value="{{ date('n') }}">
                                 <input type="hidden" name="year" id="year" value="{{ date('Y') }}">
@@ -780,10 +808,19 @@ $(document).ready(function() {
         $('#sections').val(null).trigger('change');
         $('#fees_groups').val(null).trigger('change');
         
-        // Reset month-year dropdown to current month
+        // Reset month-year dropdown to current month (find the option marked as current)
         const currentMonth = {{ date('n') }};
         const currentYear = {{ date('Y') }};
-        $('#month_year').val(currentMonth + '-' + currentYear);
+        const currentMonthValue = currentMonth + '-' + currentYear;
+        
+        // Find and select the current month option
+        $('#month_year option').each(function() {
+            if ($(this).val() === currentMonthValue) {
+                $(this).prop('selected', true);
+                return false; // Break the loop
+            }
+        });
+        
         $('#month').val(currentMonth);
         $('#year').val(currentYear);
         
@@ -881,4 +918,56 @@ $(document).ready(function() {
     });
 });
 </script>
+@endpush
+
+@push('style')
+<style>
+    /* Enhanced month selector styling */
+    #month_year option {
+        padding: 8px 12px;
+        font-size: 14px;
+    }
+    
+    #month_year option.text-muted {
+        color: #6c757d !important;
+        font-style: italic;
+    }
+    
+    #month_year option.fw-bold.text-primary {
+        color: #0d6efd !important;
+        font-weight: bold !important;
+        background-color: #e7f3ff;
+    }
+    
+    #month_year option.text-info {
+        color: #0dcaf0 !important;
+    }
+    
+    /* Enhance the dropdown appearance */
+    #month_year {
+        font-size: 14px;
+        padding: 10px;
+        border-radius: 6px;
+        border: 1px solid #ced4da;
+        transition: all 0.3s ease;
+    }
+    
+    #month_year:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+    }
+    
+    /* Month period label enhancement */
+    .form-label {
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: #495057;
+    }
+    
+    /* Small helper text styling */
+    .text-muted {
+        font-size: 12px;
+        margin-top: 4px;
+    }
+</style>
 @endpush
