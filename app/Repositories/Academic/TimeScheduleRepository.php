@@ -42,8 +42,9 @@ class TimeScheduleRepository implements TimeScheduleInterface
             $result = $this->time->where('type', $request->type)->get();
 
             foreach ($result as $key => $value) {
-                if($value->start_time <= $request->start_time && $request->start_time <= $value->end_time || $value->start_time <= $request->end_time && $request->end_time <= $value->end_time) {
-                    return $this->responseWithError(___('alert.Already assigned.'), []);
+                // Check for actual time overlap (not just touching boundaries)
+                if (($request->start_time < $value->end_time && $request->end_time > $value->start_time)) {
+                    return $this->responseWithError(___('alert.Time slot overlaps with existing schedule: ' . $value->start_time . ' - ' . $value->end_time), []);
                 }
             }
 
@@ -70,8 +71,9 @@ class TimeScheduleRepository implements TimeScheduleInterface
             $result = $this->time->where('type', $request->type)->get();
 
             foreach ($result as $key => $value) {
-                if($value->start_time <= $request->start_time && $request->start_time <= $value->end_time && $value->id != $id || $value->start_time <= $request->end_time && $request->end_time <= $value->end_time && $value->id != $id) {
-                    return $this->responseWithError(___('alert.Already assigned.'), []);
+                // Skip the current record being updated and check for actual time overlap
+                if ($value->id != $id && ($request->start_time < $value->end_time && $request->end_time > $value->start_time)) {
+                    return $this->responseWithError(___('alert.Time slot overlaps with existing schedule: ' . $value->start_time . ' - ' . $value->end_time), []);
                 }
             }
             
