@@ -37,6 +37,7 @@
             <div class="card-body">
                 <form action="{{ route('student.store') }}" enctype="multipart/form-data" method="post" id="visitForm">
                     @csrf
+                    <input type="hidden" id="url" value="{{ url('') }}">
                     <div class="row mb-3">
                         <div class="col-lg-12">
                             <div class="row">
@@ -44,7 +45,7 @@
                                     <label for="exampleDataList" class="form-label ">{{ ___('student_info.admission_no') }}
                                         <span class="fillable">*</span></label>
                                     <input class="form-control ot-input @error('admission_no') is-invalid @enderror"
-                                        type="number" name="admission_no" list="datalistOptions" id="exampleDataList"
+                                        type="number" name="admission_no" list="datalistOptions" id="exampleDataList_admission_no"
                                         placeholder="{{ ___('student_info.enter_admission_no') }}"
                                         value="{{ old('admission_no') }}">
                                     @error('admission_no')
@@ -57,7 +58,7 @@
                                     <label for="exampleDataList" class="form-label ">{{ ___('student_info.roll_no') }}
                                         <span class="fillable">*</span></label>
                                     <input class="form-control ot-input @error('roll_no') is-invalid @enderror"
-                                        name="roll_no" list="datalistOptions" id="exampleDataList" type="number"
+                                        name="roll_no" list="datalistOptions" id="exampleDataList_roll_no" type="number"
                                         placeholder="{{ ___('student_info.enter_roll_no') }}"
                                         value="{{ old('roll_no') }}">
                                     @error('roll_no')
@@ -70,7 +71,7 @@
                                     <label for="exampleDataList" class="form-label ">{{ ___('student_info.first_name') }}
                                         <span class="fillable">*</span></label>
                                     <input class="form-control ot-input @error('first_name') is-invalid @enderror"
-                                        name="first_name" list="datalistOptions" id="exampleDataList"
+                                        name="first_name" list="datalistOptions" id="exampleDataList_first_name"
                                         placeholder="{{ ___('student_info.enter_first_name') }}"
                                         value="{{ old('first_name') }}">
                                     @error('first_name')
@@ -83,7 +84,7 @@
                                     <label for="exampleDataList" class="form-label ">{{ ___('student_info.last_name') }}
                                         <span class="fillable">*</span></label>
                                     <input class="form-control ot-input @error('last_name') is-invalid @enderror"
-                                        name="last_name" list="datalistOptions" id="exampleDataList"
+                                        name="last_name" list="datalistOptions" id="exampleDataList_last_name"
                                         placeholder="{{ ___('student_info.enter_last_name') }}"
                                         value="{{ old('last_name') }}">
                                     @error('last_name')
@@ -103,7 +104,7 @@
                                     <label for="exampleDataList" class="form-label ">{{ ___('student_info.mobile') }} <span
                                             class="fillable"></span></label>
                                     <input class="form-control ot-input @error('mobile') is-invalid @enderror"
-                                        name="mobile" list="datalistOptions" id="exampleDataList" type="number"
+                                        name="mobile" list="datalistOptions" id="exampleDataList_mobile" type="number"
                                         placeholder="{{ ___('student_info.enter_mobile') }}" value="{{ old('mobile') }}">
                                     @error('mobile')
                                         <div id="validationServer04Feedback" class="invalid-feedback">
@@ -115,7 +116,7 @@
                                     <label for="exampleDataList" class="form-label ">{{ ___('common.email') }} <span
                                             class="fillable"></span></label>
                                     <input class="form-control ot-input @error('email') is-invalid @enderror"
-                                        name="email" list="datalistOptions" id="exampleDataList" type="email"
+                                        name="email" list="datalistOptions" id="exampleDataList_email" type="email"
                                         placeholder="{{ ___('student_info.enter_email') }}" value="{{ old('email') }}">
                                     @error('email')
                                         <div id="validationServer04Feedback" class="invalid-feedback">
@@ -155,11 +156,11 @@
                                 <input type="hidden" id="siblings_discount" name="siblings_discount" value="0">
                                 <div class="col-md-3">
 
-                                    <label for="validationServer04" class="form-label">{{ ___('student_info.class') }}
+                                    <label for="getSections" class="form-label">{{ ___('student_info.class') }}
                                         <span class="fillable">*</span></label>
                                     <select id="getSections"
                                         class="nice-select niceSelect bordered_style wide @error('class') is-invalid @enderror"
-                                        name="class" id="validationServer04"
+                                        name="class" 
                                         aria-describedby="validationServer04Feedback">
                                         <option value="">{{ ___('student_info.select_class') }}</option>
                                         @foreach ($data['classes'] as $item)
@@ -178,11 +179,11 @@
                                 </div>
 
                                 <div class="col-md-3">
-                                    <label for="validationServer04" class="form-label">{{ ___('student_info.section') }}
+                                    <label for="sectionSelect" class="form-label">{{ ___('student_info.section') }}
                                         <span class="fillable">*</span></label>
-                                    <select id="getSections"
+                                    <select id="sectionSelect"
                                         class="nice-select sections niceSelect bordered_style wide @error('section') is-invalid @enderror"
-                                        name="section" id="validationServer04"
+                                        name="section"
                                         aria-describedby="validationServer04Feedback">
                                         <option value="">{{ ___('student_info.select_section') }}</option>
                                     </select>
@@ -199,7 +200,7 @@
                                         <span class="fillable"></span></label>
                                     <select
                                         class="nice-select niceSelect bordered_style wide @error('shift') is-invalid @enderror"
-                                        name="shift" id="validationServer04"
+                                        name="shift" id="validationServer04_shift"
                                         aria-describedby="validationServer04Feedback">
                                         <option value="">{{ ___('student_info.select_shift') }}</option>
                                         @foreach ($data['shifts'] as $item)
@@ -220,7 +221,7 @@
                                         <span class="fillable">*</span></label>
                                     <input type="date"
                                         class="form-control ot-input @error('date_of_birth') is-invalid @enderror"
-                                        name="date_of_birth" list="datalistOptions" id="exampleDataList"
+                                        name="date_of_birth" list="datalistOptions" id="exampleDataList_date_of_birth"
                                         placeholder="{{ ___('common.date_of_birth') }}"
                                         value="{{ old('date_of_birth') }}">
                                     @error('date_of_birth')
@@ -236,7 +237,7 @@
                                         <span class="fillable"></span></label>
                                     <select
                                         class="nice-select niceSelect bordered_style wide @error('religion') is-invalid @enderror"
-                                        name="religion" id="validationServer04"
+                                        name="religion" id="validationServer04_religion"
                                         aria-describedby="validationServer04Feedback">
                                         <option value="">{{ ___('student_info.select_religion') }}</option>
                                         @foreach ($data['religions'] as $item)
@@ -258,7 +259,7 @@
                                             class="fillable"></span></label>
                                     <select
                                         class="nice-select niceSelect bordered_style wide @error('gender') is-invalid @enderror"
-                                        name="gender" id="validationServer04"
+                                        name="gender" id="validationServer04_gender"
                                         aria-describedby="validationServer04Feedback">
                                         <option value="">{{ ___('student_info.select_gender') }}</option>
                                         @foreach ($data['genders'] as $item)
@@ -280,7 +281,7 @@
                                             class="fillable"></span></label>
                                     <select
                                         class="nice-select niceSelect bordered_style wide @error('category') is-invalid @enderror"
-                                        name="category" id="validationServer04"
+                                        name="category" id="validationServer04_category"
                                         aria-describedby="validationServer04Feedback">
                                         <option value="">{{ ___('student_info.select_category') }}</option>
                                         @foreach ($data['categories'] as $item)
@@ -302,7 +303,7 @@
                                         <span class="fillable"></span></label>
                                     <select
                                         class="nice-select niceSelect bordered_style wide @error('blood') is-invalid @enderror"
-                                        name="blood" id="validationServer04"
+                                        name="blood" id="validationServer04_blood"
                                         aria-describedby="validationServer04Feedback">
                                         <option value="">{{ ___('student_info.select_blood') }}</option>
                                         @foreach ($data['bloods'] as $item)
@@ -324,7 +325,7 @@
                                             class="fillable">*</span></label>
                                     <input type="date"
                                         class="form-control ot-input @error('admission_date') is-invalid @enderror"
-                                        name="admission_date" list="datalistOptions" id="exampleDataList"
+                                        name="admission_date" list="datalistOptions" id="exampleDataList_admission_date"
                                         placeholder="{{ ___('student_info.admission_date') }}"
                                         value="{{ old('admission_date') }}">
                                     @error('admission_date')
@@ -354,7 +355,7 @@
                                         <span class="fillable">*</span></label>
                                     <select
                                         class="parent nice-select niceSelect bordered_style wide @error('parent') is-invalid @enderror"
-                                        name="parent" id="validationServer04"
+                                        name="parent" id="validationServer04_parent"
                                         aria-describedby="validationServer04Feedback">
                                         <option value="">{{ ___('student_info.select_parent') }}</option>
                                         @foreach ($data['parentGuardians'] as $parentGuardian)
@@ -457,7 +458,7 @@
                                             class="fillable">*</span></label>
                                     <select
                                         class="nice-select niceSelect bordered_style wide @error('status') is-invalid @enderror"
-                                        name="status" id="validationServer04"
+                                        name="status" id="validationServer04_status"
                                         aria-describedby="validationServer04Feedback">
                                         <option {{ old('status') ? 'selected' : '' }}
                                             value="{{ App\Enums\Status::ACTIVE }}">{{ ___('common.active') }}
@@ -538,10 +539,10 @@
                                         <label class="form-label" for="password"
                                             class="form-label">{{ ___('frontend.Password') }}
                                         </label> <br>
-                                        <input type="radio" name="password_type" value="default" id=""
+                                        <input type="radio" name="password_type" value="default" id="password_type_default"
                                             checked> <span class="mr-4">{{ ___('frontend.Default Password') }}
                                             (123456)</span>
-                                        <input type="radio" name="password_type" value="custom" id="">
+                                        <input type="radio" name="password_type" value="custom" id="password_type_custom">
                                         <span>{{ ___('frontend.Custom Password') }}</span>
                                     </div>
                                 </div>
@@ -605,6 +606,48 @@
                                                 </div>
                                             </div>
                                         </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {{-- Student Services Management Section --}}
+                            <div class="row mt-4">
+                                <div class="col-md-12">
+                                    <div class="d-flex align-items-center gap-4 flex-wrap">
+                                        <h3 class="m-0 flex-fill">
+                                            {{ ___('fees.service_subscriptions') ?? 'Fee Service Subscriptions' }}
+                                        </h3>
+                                        <button type="button" class="btn btn-lg ot-btn-primary radius_30px small_add_btn" onclick="addNewService()">
+                                            <span><i class="fa-solid fa-plus"></i> </span>
+                                            {{ ___('common.add') }} {{ ___('fees.service') ?? 'Service' }}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered role-table" id="servicesTable">
+                                            <thead class="thead">
+                                                <tr>
+                                                    <th scope="col">{{ ___('fees.service_type') ?? 'Service Type' }}</th>
+                                                    <th scope="col">{{ ___('fees.category') ?? 'Category' }}</th>
+                                                    <th scope="col">{{ ___('fees.amount') ?? 'Amount' }}</th>
+                                                    <th scope="col">{{ ___('fees.due_date') ?? 'Due Date' }}</th>
+                                                    <th scope="col">{{ ___('fees.discount') ?? 'Discount' }}</th>
+                                                    <th scope="col">{{ ___('common.status') ?? 'Status' }}</th>
+                                                    <th scope="col">{{ ___('common.action') ?? 'Action' }}</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="servicesTableBody">
+                                                <tr id="no-services-row">
+                                                    <td colspan="7" class="text-center text-muted">
+                                                        {{ ___('fees.no_services_assigned') ?? 'No services assigned yet. Select a class to auto-populate mandatory services or click "Add Service" to add manually.' }}
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
                                     </div>
                                 </div>
                             </div>
@@ -678,7 +721,420 @@
 
 @push('script')
     <script>
+        // Prevent Firebase messaging errors from breaking the page
+        window.addEventListener('error', function(e) {
+            if (e.message && (e.message.includes('Firebase') || e.message.includes('messaging'))) {
+                console.warn('Firebase messaging error suppressed:', e.message);
+                e.preventDefault();
+                return true;
+            }
+        });
+        
+        window.addEventListener('unhandledrejection', function(e) {
+            if (e.reason && e.reason.toString().includes('Firebase')) {
+                console.warn('Firebase promise rejection suppressed:', e.reason);
+                e.preventDefault();
+                return true;
+            }
+        });
+        // =======================================================================
+        // GLOBAL FUNCTION DEFINITIONS - MUST BE FIRST FOR ONCLICK ACCESSIBILITY
+        // =======================================================================
+        
+        // Define addServiceRow function first
+        function addServiceRow(preSelectedService = null, isMandatory = false) {
+            console.log('addServiceRow called with:', preSelectedService, 'mandatory:', isMandatory);
+            
+            // Validate critical dependencies
+            if (!window.feeTypes) {
+                console.error('Fee types not available - cannot create service row');
+                alert('Service data not loaded. Please refresh the page.');
+                return;
+            }
+            
+            const tableBody = document.getElementById('servicesTableBody');
+            console.log('Table body found:', tableBody);
+            
+            if (!tableBody) {
+                console.error('Services table body not found!');
+                alert('Service table not found on page. Please contact support.');
+                return;
+            }
+            
+            const noServicesRow = document.getElementById('no-services-row');
+            console.log('No services row found:', noServicesRow);
+            
+            if (noServicesRow) {
+                noServicesRow.remove();
+                console.log('Removed no services row');
+            }
+
+            // Initialize counter if not exists
+            if (typeof window.serviceRowCounter === 'undefined') {
+                window.serviceRowCounter = 0;
+            }
+
+            const newRow = document.createElement('tr');
+            newRow.id = `service-row-${window.serviceRowCounter}`;
+            
+            // Build fee type options with error handling
+            let feeTypeOptions = '<option value="">{{ ___('fees.select_service_type') ?? 'Select Service Type' }}</option>';
+            
+            try {
+                if (window.feeTypes && Array.isArray(window.feeTypes) && window.feeTypes.length > 0) {
+                    console.log('Building options from', window.feeTypes.length, 'fee types');
+                    window.feeTypes.forEach(feeType => {
+                        if (feeType && feeType.id && feeType.name) {
+                            const selected = preSelectedService && preSelectedService.id === feeType.id ? 'selected' : '';
+                            feeTypeOptions += `<option value="${feeType.id}" 
+                                                       data-amount="${feeType.amount || 0}"
+                                                       data-category="${feeType.category || 'academic'}"
+                                                       ${selected}>
+                                                   ${feeType.name}
+                                               </option>`;
+                        } else {
+                            console.warn('Invalid fee type object:', feeType);
+                        }
+                    });
+                } else {
+                    console.warn('Fee types array is empty or invalid:', window.feeTypes);
+                    feeTypeOptions += '<option value="" disabled>No services available</option>';
+                }
+            } catch (error) {
+                console.error('Error building fee type options:', error);
+                feeTypeOptions += '<option value="" disabled>Error loading services</option>';
+            }
+
+            const defaultAmount = preSelectedService ? preSelectedService.amount : 0;
+            const defaultCategory = preSelectedService ? (preSelectedService.category || 'Academic') : '-';
+            const mandatoryBadge = isMandatory ? '<span class="badge badge-warning ml-2">Mandatory</span>' : '';
+
+            newRow.innerHTML = `
+                <td>
+                    <select name="services[${window.serviceRowCounter}][fee_type_id]" 
+                            class="form-control ot-input service-type-select" required>
+                        ${feeTypeOptions}
+                    </select>
+                    ${mandatoryBadge}
+                </td>
+                <td>
+                    <span class="service-category">${defaultCategory}</span>
+                </td>
+                <td>
+                    <input type="number" name="services[${window.serviceRowCounter}][amount]" 
+                           class="form-control ot-input service-amount" 
+                           value="${defaultAmount}" step="0.01" min="0" required>
+                </td>
+                <td>
+                    <input type="date" name="services[${window.serviceRowCounter}][due_date]" 
+                           class="form-control ot-input" 
+                           value="">
+                </td>
+                <td>
+                    <div class="d-flex align-items-center gap-2">
+                        <select name="services[${window.serviceRowCounter}][discount_type]" class="form-control ot-input discount-type-select">
+                            <option value="none">{{ ___('fees.no_discount') ?? 'No Discount' }}</option>
+                            <option value="percentage">{{ ___('fees.percentage') ?? 'Percentage' }}</option>
+                            <option value="fixed">{{ ___('fees.fixed_amount') ?? 'Fixed Amount' }}</option>
+                        </select>
+                        <input type="number" name="services[${window.serviceRowCounter}][discount_value]" 
+                               class="form-control ot-input discount-value" 
+                               value="0" step="0.01" min="0" placeholder="0">
+                    </div>
+                </td>
+                <td>
+                    <select name="services[${window.serviceRowCounter}][is_active]" class="form-control ot-input">
+                        <option value="1">{{ ___('common.active') ?? 'Active' }}</option>
+                        <option value="0">{{ ___('common.inactive') ?? 'Inactive' }}</option>
+                    </select>
+                </td>
+                <td>
+                    <button type="button" class="btn btn-sm btn-danger" onclick="removeService(${window.serviceRowCounter})">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </td>
+            `;
+            
+            tableBody.appendChild(newRow);
+
+            // Add event listener to the new service type select
+            const newSelect = newRow.querySelector('.service-type-select');
+            if (newSelect) {
+                newSelect.addEventListener('change', handleServiceTypeChange);
+            }
+
+            window.serviceRowCounter++;
+            console.log('Service row added successfully, new counter:', window.serviceRowCounter);
+        }
+
+        // Global addNewService function - accessible to onclick
+        window.addNewService = function() {
+            console.log('Add new service button clicked');
+            
+            // Validate dependencies before proceeding
+            if (!window.feeTypes) {
+                console.error('Fee types not loaded - cannot add service');
+                alert('Error: Service data not loaded. Please refresh the page and try again.');
+                return;
+            }
+            
+            try {
+                addServiceRow(null, false);
+                console.log('Service row added successfully');
+            } catch (error) {
+                console.error('Error adding service row:', error);
+                alert('Error adding service. Please check the console for details and try again.');
+            }
+        };
+
+        // Fallback function definition - fixed infinite recursion
+        function addNewService() {
+            console.log('Add new service button clicked (fallback)');
+            try {
+                addServiceRow(null, false); // Direct call to avoid infinite recursion
+            } catch (error) {
+                console.error('Error in fallback addNewService:', error);
+                alert('Error adding service. Please refresh the page and try again.');
+            }
+        }
+
+        // Global removeService function
+        window.removeService = function(rowIndex) {
+            console.log('Remove service called for row:', rowIndex);
+            const row = document.getElementById(`service-row-${rowIndex}`);
+            if (row) {
+                row.remove();
+            }
+
+            // Check if no services left, show empty message
+            const tableBody = document.getElementById('servicesTableBody');
+            if (tableBody && tableBody.children.length === 0) {
+                const emptyRow = document.createElement('tr');
+                emptyRow.id = 'no-services-row';
+                emptyRow.innerHTML = `
+                    <td colspan="7" class="text-center text-muted">
+                        {{ ___('fees.no_services_assigned') ?? 'No services assigned yet. Select a class to auto-populate mandatory services or click "Add Service" to add manually.' }}
+                    </td>
+                `;
+                tableBody.appendChild(emptyRow);
+            }
+        };
+
+        // Handle service type change
+        function handleServiceTypeChange(event) {
+            const select = event.target;
+            const selectedOption = select.options[select.selectedIndex];
+            const row = select.closest('tr');
+            
+            if (selectedOption.value) {
+                const amount = selectedOption.getAttribute('data-amount');
+                const category = selectedOption.getAttribute('data-category');
+                
+                // Update amount field
+                const amountInput = row.querySelector('.service-amount');
+                if (amountInput && amount) {
+                    amountInput.value = amount;
+                }
+                
+                // Update category display
+                const categorySpan = row.querySelector('.service-category');
+                if (categorySpan && category) {
+                    categorySpan.textContent = category.charAt(0).toUpperCase() + category.slice(1);
+                }
+            } else {
+                // Reset fields
+                const amountInput = row.querySelector('.service-amount');
+                const categorySpan = row.querySelector('.service-category');
+                
+                if (amountInput) amountInput.value = '0';
+                if (categorySpan) categorySpan.textContent = '-';
+            }
+        }
+
+        // =======================================================================
+        // DEPENDENCY SETUP  
+        // =======================================================================
+        
+        // Initialize global variables first with comprehensive validation
+        window.serviceRowCounter = 0;
+        
+        // Load and validate fee types
+        try {
+            window.feeTypes = @json($data['fee_types'] ?? []);
+            console.log('Fee types raw data:', @json($data['fee_types'] ?? []));
+        } catch (error) {
+            console.error('Error loading fee types:', error);
+            window.feeTypes = [];
+        }
+        
+        // Create and validate class mapping
+        window.classMapping = {};
+        try {
+            @foreach ($data['classes'] as $item)
+                window.classMapping[{{ $item->class->id }}] = "{{ $item->class->name }}";
+            @endforeach
+        } catch (error) {
+            console.error('Error creating class mapping:', error);
+        }
+        
+        // Comprehensive dependency validation and logging
+        console.log('=== DEPENDENCY LOADING REPORT ===');
+        console.log('✓ Service counter initialized:', window.serviceRowCounter);
+        console.log('✓ Fee types loaded:', Array.isArray(window.feeTypes) ? window.feeTypes.length : 'INVALID');
+        console.log('✓ Fee types data:', window.feeTypes);
+        console.log('✓ Class mapping loaded:', Object.keys(window.classMapping).length, 'classes');
+        console.log('✓ Class mapping data:', window.classMapping);
+        
+        // Validate critical dependencies
+        if (!Array.isArray(window.feeTypes)) {
+            console.error('❌ CRITICAL: Fee types is not an array!');
+        } else if (window.feeTypes.length === 0) {
+            console.warn('⚠️  WARNING: No fee types available - service management will be limited');
+        }
+        
+        if (Object.keys(window.classMapping).length === 0) {
+            console.warn('⚠️  WARNING: No class mapping available - automatic services may not work');
+        }
+        
+        console.log('=== END DEPENDENCY REPORT ===');
+
+        // =======================================================================
+        // EVENT HANDLERS & CLASS/SERVICE INTEGRATION
+        // =======================================================================
+
+        // Hook into the existing getSections change event from custom.js
+        // The existing system handles section loading, we just need to add service management
+        $(document).on('change', '#getSections', function() {
+            console.log('getSections change detected for service management');
+            const selectedClassId = $(this).val();
+            console.log('Selected class ID:', selectedClassId);
+            
+            // Add a delay to let the existing custom.js section loading complete first
+            setTimeout(() => {
+                if (selectedClassId) {
+                    detectAndAddMandatoryServices(selectedClassId);
+                } else {
+                    clearAllServices();
+                }
+            }, 1000); // Wait 1 second for existing AJAX section loading from custom.js
+        });
+
+        // Additional handler for nice-select specific events  
+        $(document).on('click', '.nice-select .option', function() {
+            const parentSelect = $(this).closest('.nice-select').next('select#getSections');
+            if (parentSelect.length > 0) {
+                console.log('Nice-select option clicked for class');
+                setTimeout(() => {
+                    const selectedClassId = parentSelect.val();
+                    console.log('Nice-select class ID:', selectedClassId);
+                    if (selectedClassId) {
+                        // Let custom.js handle section loading, then add services
+                        setTimeout(() => {
+                            detectAndAddMandatoryServices(selectedClassId);
+                        }, 1500); // Wait longer for nice-select + custom.js section loading
+                    } else {
+                        clearAllServices();
+                    }
+                }, 100);
+            }
+        });
+
+        // Detect and add mandatory services based on selected class
+        function detectAndAddMandatoryServices(classId) {
+            console.log('detectAndAddMandatoryServices called with classId:', classId);
+            
+            // Get class name from our mapping
+            const className = window.classMapping[classId];
+            console.log('Class name from mapping:', className);
+            
+            if (!className) {
+                console.log('No class name found in mapping, returning');
+                return;
+            }
+
+            // Clear existing services first
+            clearAllServices();
+
+            // Determine academic level from class name
+            const academicLevel = getAcademicLevelFromClassName(className);
+            console.log('Detected academic level:', academicLevel);
+            
+            // Find mandatory services for this level
+            console.log('Available fee types:', window.feeTypes);
+            const mandatoryServices = window.feeTypes.filter(feeType => {
+                const isMandatory = feeType.is_mandatory_for_level;
+                const levelMatch = (feeType.academic_level === academicLevel || feeType.academic_level === 'all');
+                console.log(`Fee type ${feeType.name}: mandatory=${isMandatory}, level=${feeType.academic_level}, matches=${levelMatch}`);
+                return isMandatory && levelMatch;
+            });
+            
+            console.log('Found mandatory services:', mandatoryServices);
+
+            // Add mandatory services automatically
+            mandatoryServices.forEach(service => {
+                console.log('Adding service:', service.name);
+                addServiceRow(service, true); // true = mandatory
+            });
+
+            // Show success message if services were added
+            if (mandatoryServices.length > 0) {
+                console.log('Showing success message');
+                if (typeof toastr !== 'undefined') {
+                    toastr.success(`Added ${mandatoryServices.length} mandatory service(s) for ${className}`);
+                } else {
+                    alert(`Added ${mandatoryServices.length} mandatory service(s) for ${className}`);
+                }
+            } else {
+                console.log('No mandatory services found for this class level');
+            }
+        }
+
+        // Get academic level from class name
+        function getAcademicLevelFromClassName(className) {
+            if (/^Form[1-4]/i.test(className)) {
+                return 'secondary';
+            }
+            if (/^Grade([1-8])/i.test(className)) {
+                const gradeMatch = className.match(/^Grade([1-8])/i);
+                const gradeNumber = parseInt(gradeMatch[1]);
+                return gradeNumber <= 5 ? 'primary' : 'secondary';
+            }
+            if (/^(KG|Kindergarten|Pre)/i.test(className)) {
+                return 'kg';
+            }
+            if (/^(Form[5-6]|Grade(9|1[0-2]))/i.test(className)) {
+                return 'high_school';
+            }
+            if (/form/i.test(className)) {
+                return 'secondary';
+            }
+            if (/grade/i.test(className)) {
+                return 'primary';
+            }
+            return 'primary';
+        }
+
+        // Clear all services
+        function clearAllServices() {
+            const tableBody = document.getElementById('servicesTableBody');
+            if (tableBody) {
+                tableBody.innerHTML = `
+                    <tr id="no-services-row">
+                        <td colspan="7" class="text-center text-muted">
+                            {{ ___('fees.no_services_assigned') ?? 'No services assigned yet. Select a class to auto-populate mandatory services or click "Add Service" to add manually.' }}
+                        </td>
+                    </tr>
+                `;
+                window.serviceRowCounter = 0;
+            }
+        }
+
         $(document).ready(function() {
+            // Test if global functions are available
+            console.log('Document ready - testing global functions:');
+            console.log('addNewService available:', typeof window.addNewService);
+            console.log('removeService available:', typeof window.removeService);
+            
             var fileInp1 = document.getElementById("fileBrouse1");
             if (fileInp1) {
                 fileInp1.addEventListener("change", showFileName);
@@ -726,15 +1182,15 @@
         let availableServices = [];
         let selectedServices = [];
 
-        // Load available services when class is selected
-        $('select[name="class"]').on('change', function() {
-            const classId = $(this).val();
-            if (classId) {
-                loadAvailableServices(classId);
-            } else {
-                $('#service-selection-section').hide();
-            }
-        });
+        // Load available services when class is selected (disabled - replaced by new service management)
+        // $('select[name="class"]').on('change', function() {
+        //     const classId = $(this).val();
+        //     if (classId) {
+        //         loadAvailableServices(classId);
+        //     } else {
+        //         $('#service-selection-section').hide();
+        //     }
+        // });
 
         function loadAvailableServices(classId) {
             // Create a temporary student object to determine academic level
@@ -886,7 +1342,68 @@
             }
         });
 
-         $(document).ready(function () {
+        // =======================================================================
+        // CLEANUP & REMOVE DUPLICATE CODE
+        // =======================================================================
+        // (Previous duplicate code removed - now consolidated above)
+
+        // Note: Section loading is now handled by custom.js
+        // We removed our custom section loading to avoid conflicts
+
+        // =======================================================================
+        // DOCUMENT READY & INITIALIZATION
+        // =======================================================================
+        
+        $(document).ready(function() {
+            console.log('=== DOCUMENT READY - SYSTEM CHECK ===');
+            
+            // Test global function availability
+            console.log('📋 Function Availability:');
+            console.log('  • window.addNewService:', typeof window.addNewService);
+            console.log('  • removeService:', typeof window.removeService);
+            console.log('  • addServiceRow:', typeof addServiceRow);
+            console.log('  • handleServiceTypeChange:', typeof handleServiceTypeChange);
+            
+            // Test DOM elements
+            console.log('🎯 DOM Elements:');
+            console.log('  • Services table body:', !!document.getElementById('servicesTableBody'));
+            console.log('  • Add service button:', !!document.querySelector('[onclick="addNewService()"]'));
+            console.log('  • Class select (#getSections):', !!document.getElementById('getSections'));
+            console.log('  • Section select (.sections):', !!document.querySelector('.sections'));
+            
+            // Test data availability
+            console.log('💾 Data Availability:');
+            console.log('  • Fee types array:', Array.isArray(window.feeTypes) ? '✓' : '❌');
+            console.log('  • Fee types count:', window.feeTypes ? window.feeTypes.length : 'N/A');
+            console.log('  • Class mapping:', Object.keys(window.classMapping || {}).length + ' classes');
+            console.log('  • Service counter:', window.serviceRowCounter);
+            
+            // Final readiness check
+            const isReady = (
+                typeof window.addNewService === 'function' &&
+                typeof window.removeService === 'function' &&
+                Array.isArray(window.feeTypes) &&
+                document.getElementById('servicesTableBody')
+            );
+            
+            console.log('🚀 System Status:', isReady ? '✅ READY' : '❌ NOT READY');
+            
+            if (!isReady) {
+                console.error('❌ SYSTEM NOT READY - Some components are missing!');
+            }
+            
+            // Add event listeners to existing service selects on page load
+            const existingSelects = document.querySelectorAll('.service-type-select');
+            console.log('🔗 Adding event listeners to', existingSelects.length, 'existing service selects');
+            existingSelects.forEach(select => {
+                select.addEventListener('change', handleServiceTypeChange);
+            });
+            
+            console.log('=== END SYSTEM CHECK ===');
+            
+            // =======================================================================
+            // ADDITIONAL DOCUMENT READY FUNCTIONALITY
+            // =======================================================================
             $('.parent').on('change', function () {
                 var parentId = $(this).val();
                 if (parentId) {

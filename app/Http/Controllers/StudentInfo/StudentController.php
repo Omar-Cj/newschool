@@ -115,6 +115,9 @@ class StudentController extends Controller
         $data['genders']         = $this->genderRepo->all();
         $data['categories']      = $this->categoryRepo->all();
         $data['parentGuardians'] = $this->parentGuardianRepo->get();
+        
+        // Load fee types for service management
+        $data['fee_types'] = \App\Models\Fees\FeesType::all();
 
         return view('backend.student-info.student.create', compact('data'));
     }
@@ -189,6 +192,13 @@ class StudentController extends Controller
         $data['genders']               = $this->genderRepo->all();
         $data['categories']            = $this->categoryRepo->all();
         $data['parentGuardians']       = $this->parentGuardianRepo->get();
+        
+        // Load fee types and student services for service management
+        $data['fee_types'] = \App\Models\Fees\FeesType::all();
+        
+        // Load student services with relationships
+        $student = $data['student'];
+        $student->load(['studentServices.feeType']);
 
         return view('backend.student-info.student.edit', compact('data'));
     }

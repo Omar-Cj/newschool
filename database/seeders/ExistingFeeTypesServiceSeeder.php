@@ -151,14 +151,37 @@ class ExistingFeeTypesServiceSeeder extends Seeder
             return 'primary';
         }
 
-        $classNumber = $student->sessionStudentDetails->class->numeric_name ?? 1;
+        $className = $student->sessionStudentDetails->class->name ?? '';
         
-        return match(true) {
-            $classNumber >= 1 && $classNumber <= 5 => 'primary',
-            $classNumber >= 6 && $classNumber <= 10 => 'secondary',
-            $classNumber >= 11 && $classNumber <= 12 => 'high_school',
-            $classNumber < 1 => 'kg',
-            default => 'primary'
-        };
+        // Extract class level from class name patterns
+        if (preg_match('/^Form([1-4])/i', $className, $matches)) {
+            // Form1-Form4 are secondary level
+            return 'secondary';
+        }
+        
+        if (preg_match('/^Grade([1-8])/i', $className, $matches)) {
+            $gradeNumber = (int)$matches[1];
+            // Grade1-Grade5 are primary, Grade6-Grade8 are secondary
+            return $gradeNumber <= 5 ? 'primary' : 'secondary';
+        }
+        
+        if (preg_match('/^(KG|Kindergarten|Pre)/i', $className)) {
+            return 'kg';
+        }
+        
+        if (preg_match('/^(Form5|Form6|Grade9|Grade10|Grade11|Grade12)/i', $className)) {
+            return 'high_school';
+        }
+        
+        // Default fallback based on common patterns
+        if (stripos($className, 'form') !== false) {
+            return 'secondary';
+        }
+        
+        if (stripos($className, 'grade') !== false) {
+            return 'primary';
+        }
+        
+        return 'primary';
     }
 }

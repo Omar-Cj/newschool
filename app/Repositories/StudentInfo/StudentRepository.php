@@ -191,6 +191,11 @@ class StudentRepository implements StudentInterface
                 // Services can be manually assigned later
             }
 
+            // Handle manually added services from the form
+            if ($request->has('services') && is_array($request->services)) {
+                $this->createStudentServices($row, $request->services);
+            }
+
             DB::commit();
             return $this->responseWithSuccess(___('alert.created_successfully'), ['student_id' => $row->id]);
         } catch (\Throwable $th) {
@@ -289,6 +294,11 @@ class StudentRepository implements StudentInterface
             $session_class->roll                = $request->roll_no;
             $session_class->save();
 
+            // Handle student services update
+            if ($request->has('services') && is_array($request->services)) {
+                $this->updateStudentServices($row, $request->services);
+            }
+
             DB::commit();
             return $this->responseWithSuccess(___('alert.updated_successfully'), []);
         } catch (\Throwable $th) {
@@ -346,5 +356,109 @@ class StudentRepository implements StudentInterface
             ->where('classes_id', $class)
             ->with('student')
             ->get();
+    }
+
+    /**
+     * Update student services
+     */
+    private function updateStudentServices(Student $student, array $servicesData)
+    {
+        $currentAcademicYear = session('academic_year_id') ?? \App\Models\Session::active()->value('id');
+        
+        // Get existing services for this academic year
+        $existingServices = $student->studentServices()
+            ->where('academic_year_id', $currentAcademicYear)
+            ->get()
+            ->keyBy('id');
+
+        $processedServiceIds = [];
+
+        foreach ($servicesData as $serviceData) {
+            // Skip empty service data
+            if (empty($serviceData['fee_type_id'])) {
+                continue;
+            }
+
+            $serviceId = $serviceData['id'] ?? null;
+            $processedServiceIds[] = $serviceId;
+
+            // Prepare service data
+            $data = [
+                'student_id' => $student->id,
+                'fee_type_id' => $serviceData['fee_type_id'],
+                'academic_year_id' => $currentAcademicYear,
+                'amount' => $serviceData['amount'] ?? 0,
+                'due_date' => !empty($serviceData['due_date']) ? $serviceData['due_date'] : null,
+                'discount_type' => $serviceData['discount_type'] ?? 'none',
+                'discount_value' => $serviceData['discount_value'] ?? 0,
+                'is_active' => $serviceData['is_active'] ?? true,
+                'subscription_date' => now(),
+                'created_by' => auth()->id() ?? 1,
+            ];
+
+            // Calculate final amount after discount
+            $finalAmount = $data['amount'];
+            if ($data['discount_type'] === 'percentage' && $data['discount_value'] > 0) {
+                $finalAmount = $data['amount'] - ($data['amount'] * $data['discount_value'] / 100);
+            } elseif ($data['discount_type'] === 'fixed' && $data['discount_value'] > 0) {
+                $finalAmount = max(0, $data['amount'] - $data['discount_value']);
+            }
+            $data['final_amount'] = $finalAmount;
+
+            if ($serviceId && $existingServices->has($serviceId)) {
+                // Update existing service
+                $existingServices[$serviceId]->update($data);
+            } else {
+                // Create new service
+                \App\Models\StudentService::create($data);
+            }
+        }
+
+        // Delete services that were removed (not in the processed list)
+        $servicesToDelete = $existingServices->keys()->diff(array_filter($processedServiceIds));
+        if ($servicesToDelete->count() > 0) {
+            \App\Models\StudentService::whereIn('id', $servicesToDelete)->delete();
+        }
+    }
+
+    /**
+     * Create student services for new student
+     */
+    private function createStudentServices(Student $student, array $servicesData)
+    {
+        $currentAcademicYear = session('academic_year_id') ?? \App\Models\Session::active()->value('id');
+
+        foreach ($servicesData as $serviceData) {
+            // Skip empty service data
+            if (empty($serviceData['fee_type_id'])) {
+                continue;
+            }
+
+            // Prepare service data
+            $data = [
+                'student_id' => $student->id,
+                'fee_type_id' => $serviceData['fee_type_id'],
+                'academic_year_id' => $currentAcademicYear,
+                'amount' => $serviceData['amount'] ?? 0,
+                'due_date' => !empty($serviceData['due_date']) ? $serviceData['due_date'] : null,
+                'discount_type' => $serviceData['discount_type'] ?? 'none',
+                'discount_value' => $serviceData['discount_value'] ?? 0,
+                'is_active' => $serviceData['is_active'] ?? true,
+                'subscription_date' => now(),
+                'created_by' => auth()->id() ?? 1,
+            ];
+
+            // Calculate final amount after discount
+            $finalAmount = $data['amount'];
+            if ($data['discount_type'] === 'percentage' && $data['discount_value'] > 0) {
+                $finalAmount = $data['amount'] - ($data['amount'] * $data['discount_value'] / 100);
+            } elseif ($data['discount_type'] === 'fixed' && $data['discount_value'] > 0) {
+                $finalAmount = max(0, $data['amount'] - $data['discount_value']);
+            }
+            $data['final_amount'] = $finalAmount;
+
+            // Create service
+            \App\Models\StudentService::create($data);
+        }
     }
 }

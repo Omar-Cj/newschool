@@ -33,6 +33,7 @@
 
                     <input type="hidden" name="user_id" value="{{ @$data['student']->user_id }}">
                     <input type="hidden" name="id" value="{{ @$data['student']->id }}">
+                    <input type="hidden" id="url" value="{{ url('') }}">
 
                     <div class="row mb-3">
                         <div class="col-lg-12">
@@ -160,7 +161,7 @@
                                         <span class="fillable">*</span></label>
                                     <select id="getSections"
                                         class="nice-select niceSelect bordered_style wide @error('class') is-invalid @enderror"
-                                        name="class" id="validationServer04"
+                                        name="class"
                                         aria-describedby="validationServer04Feedback">
                                         <option value="">{{ ___('student_info.select_class') }}</option>
                                         @foreach ($data['classes'] as $item)
@@ -180,9 +181,9 @@
                                 <div class="col-md-3">
                                     <label for="validationServer04" class="form-label">{{ ___('student_info.section') }}
                                         <span class="fillable">*</span></label>
-                                    <select id="getSections"
+                                    <select id="sectionSelect"
                                         class="nice-select sections niceSelect bordered_style wide @error('section') is-invalid @enderror"
-                                        name="section" id="validationServer04"
+                                        name="section"
                                         aria-describedby="validationServer04Feedback">
                                         <option value="">{{ ___('student_info.select_section') }}</option>
                                         @foreach ($data['sections'] as $item)
@@ -558,6 +559,111 @@
 
                             </div>
 
+                            {{-- Student Services Management Section --}}
+                            <div class="row mt-4">
+                                <div class="col-md-12">
+                                    <div class="d-flex align-items-center gap-4 flex-wrap">
+                                        <h3 class="m-0 flex-fill">
+                                            {{ ___('fees.service_subscriptions') ?? 'Fee Service Subscriptions' }}
+                                        </h3>
+                                        <button type="button" class="btn btn-lg ot-btn-primary radius_30px small_add_btn" onclick="addNewService()">
+                                            <span><i class="fa-solid fa-plus"></i> </span>
+                                            {{ ___('common.add') }} {{ ___('fees.service') ?? 'Service' }}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered role-table" id="servicesTable">
+                                            <thead class="thead">
+                                                <tr>
+                                                    <th scope="col">{{ ___('fees.service_type') ?? 'Service Type' }}</th>
+                                                    <th scope="col">{{ ___('fees.category') ?? 'Category' }}</th>
+                                                    <th scope="col">{{ ___('fees.amount') ?? 'Amount' }}</th>
+                                                    <th scope="col">{{ ___('fees.due_date') ?? 'Due Date' }}</th>
+                                                    <th scope="col">{{ ___('fees.discount') ?? 'Discount' }}</th>
+                                                    <th scope="col">{{ ___('common.status') ?? 'Status' }}</th>
+                                                    <th scope="col">{{ ___('common.action') ?? 'Action' }}</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="servicesTableBody">
+                                                @php
+                                                    $existingServices = $data['student']->studentServices ?? collect();
+                                                    $currentAcademicYear = session('academic_year_id') ?? \App\Models\Session::active()->value('id');
+                                                    $studentServices = $existingServices->where('academic_year_id', $currentAcademicYear);
+                                                @endphp
+
+                                                @forelse($studentServices as $key => $service)
+                                                    <tr id="service-row-{{ $key }}">
+                                                        <td>
+                                                            <select name="services[{{ $key }}][fee_type_id]" class="form-control ot-input service-type-select" required>
+                                                                <option value="">{{ ___('fees.select_service_type') ?? 'Select Service Type' }}</option>
+                                                                @foreach($data['fee_types'] ?? \App\Models\Fees\FeesType::all() as $feeType)
+                                                                    <option value="{{ $feeType->id }}" 
+                                                                            data-amount="{{ $feeType->amount }}"
+                                                                            data-category="{{ $feeType->getFormattedCategory() }}"
+                                                                            {{ $service->fee_type_id == $feeType->id ? 'selected' : '' }}>
+                                                                        {{ $feeType->name }}
+                                                                    </option>
+                                                                @endforeach
+                                                            </select>
+                                                            <input type="hidden" name="services[{{ $key }}][id]" value="{{ $service->id }}">
+                                                        </td>
+                                                        <td>
+                                                            <span class="service-category">{{ $service->feeType->getFormattedCategory() }}</span>
+                                                        </td>
+                                                        <td>
+                                                            <input type="number" name="services[{{ $key }}][amount]" 
+                                                                   class="form-control ot-input service-amount" 
+                                                                   value="{{ $service->amount }}" 
+                                                                   step="0.01" min="0" required>
+                                                        </td>
+                                                        <td>
+                                                            <input type="date" name="services[{{ $key }}][due_date]" 
+                                                                   class="form-control ot-input" 
+                                                                   value="{{ $service->due_date ? \Carbon\Carbon::parse($service->due_date)->format('Y-m-d') : '' }}">
+                                                        </td>
+                                                        <td>
+                                                            <div class="d-flex align-items-center gap-2">
+                                                                <select name="services[{{ $key }}][discount_type]" class="form-control ot-input discount-type-select">
+                                                                    <option value="none" {{ $service->discount_type == 'none' ? 'selected' : '' }}>{{ ___('fees.no_discount') ?? 'No Discount' }}</option>
+                                                                    <option value="percentage" {{ $service->discount_type == 'percentage' ? 'selected' : '' }}>{{ ___('fees.percentage') ?? 'Percentage' }}</option>
+                                                                    <option value="fixed" {{ $service->discount_type == 'fixed' ? 'selected' : '' }}>{{ ___('fees.fixed_amount') ?? 'Fixed Amount' }}</option>
+                                                                </select>
+                                                                <input type="number" name="services[{{ $key }}][discount_value]" 
+                                                                       class="form-control ot-input discount-value" 
+                                                                       value="{{ $service->discount_value }}" 
+                                                                       step="0.01" min="0" placeholder="0">
+                                                            </div>
+                                                        </td>
+                                                        <td>
+                                                            <select name="services[{{ $key }}][is_active]" class="form-control ot-input">
+                                                                <option value="1" {{ $service->is_active ? 'selected' : '' }}>{{ ___('common.active') ?? 'Active' }}</option>
+                                                                <option value="0" {{ !$service->is_active ? 'selected' : '' }}>{{ ___('common.inactive') ?? 'Inactive' }}</option>
+                                                            </select>
+                                                        </td>
+                                                        <td>
+                                                            <button type="button" class="btn btn-sm btn-danger" onclick="removeService({{ $key }})">
+                                                                <i class="fa-solid fa-trash"></i>
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                @empty
+                                                    <tr id="no-services-row">
+                                                        <td colspan="7" class="text-center text-muted">
+                                                            {{ ___('fees.no_services_assigned') ?? 'No services assigned yet. Click "Add Service" to get started.' }}
+                                                        </td>
+                                                    </tr>
+                                                @endforelse
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="row">
                                 <div class="col-md-12">
                                     <div class="d-flex align-items-center gap-4 flex-wrap">
@@ -691,6 +797,141 @@
 
             $('#previous_school').change(checkCheckboxState);
             checkCheckboxState();
+
+            // Service management functionality
+            window.serviceRowCounter = {{ count($studentServices ?? []) }};
+        });
+
+        // Add new service row
+        function addNewService() {
+            const tableBody = document.getElementById('servicesTableBody');
+            const noServicesRow = document.getElementById('no-services-row');
+            
+            if (noServicesRow) {
+                noServicesRow.remove();
+            }
+
+            const newRow = document.createElement('tr');
+            newRow.id = `service-row-${window.serviceRowCounter}`;
+            newRow.innerHTML = `
+                <td>
+                    <select name="services[${window.serviceRowCounter}][fee_type_id]" class="form-control ot-input service-type-select" required>
+                        <option value="">{{ ___('fees.select_service_type') ?? 'Select Service Type' }}</option>
+                        @foreach($data['fee_types'] ?? \App\Models\Fees\FeesType::all() as $feeType)
+                            <option value="{{ $feeType->id }}" 
+                                    data-amount="{{ $feeType->amount }}"
+                                    data-category="{{ $feeType->getFormattedCategory() }}">
+                                {{ $feeType->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </td>
+                <td>
+                    <span class="service-category">-</span>
+                </td>
+                <td>
+                    <input type="number" name="services[${window.serviceRowCounter}][amount]" 
+                           class="form-control ot-input service-amount" 
+                           value="0" step="0.01" min="0" required>
+                </td>
+                <td>
+                    <input type="date" name="services[${window.serviceRowCounter}][due_date]" 
+                           class="form-control ot-input" 
+                           value="">
+                </td>
+                <td>
+                    <div class="d-flex align-items-center gap-2">
+                        <select name="services[${window.serviceRowCounter}][discount_type]" class="form-control ot-input discount-type-select">
+                            <option value="none">{{ ___('fees.no_discount') ?? 'No Discount' }}</option>
+                            <option value="percentage">{{ ___('fees.percentage') ?? 'Percentage' }}</option>
+                            <option value="fixed">{{ ___('fees.fixed_amount') ?? 'Fixed Amount' }}</option>
+                        </select>
+                        <input type="number" name="services[${window.serviceRowCounter}][discount_value]" 
+                               class="form-control ot-input discount-value" 
+                               value="0" step="0.01" min="0" placeholder="0">
+                    </div>
+                </td>
+                <td>
+                    <select name="services[${window.serviceRowCounter}][is_active]" class="form-control ot-input">
+                        <option value="1">{{ ___('common.active') ?? 'Active' }}</option>
+                        <option value="0">{{ ___('common.inactive') ?? 'Inactive' }}</option>
+                    </select>
+                </td>
+                <td>
+                    <button type="button" class="btn btn-sm btn-danger" onclick="removeService(${window.serviceRowCounter})">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </td>
+            `;
+            
+            tableBody.appendChild(newRow);
+            window.serviceRowCounter++;
+
+            // Add event listener to the new service type select
+            const newSelect = newRow.querySelector('.service-type-select');
+            newSelect.addEventListener('change', handleServiceTypeChange);
+        }
+
+        // Remove service row
+        function removeService(rowIndex) {
+            const row = document.getElementById(`service-row-${rowIndex}`);
+            if (row) {
+                row.remove();
+            }
+
+            // Check if no services left, show empty message
+            const tableBody = document.getElementById('servicesTableBody');
+            if (tableBody.children.length === 0) {
+                const emptyRow = document.createElement('tr');
+                emptyRow.id = 'no-services-row';
+                emptyRow.innerHTML = `
+                    <td colspan="7" class="text-center text-muted">
+                        {{ ___('fees.no_services_assigned') ?? 'No services assigned yet. Click "Add Service" to get started.' }}
+                    </td>
+                `;
+                tableBody.appendChild(emptyRow);
+            }
+        }
+
+        // Handle service type change
+        function handleServiceTypeChange(event) {
+            const select = event.target;
+            const selectedOption = select.options[select.selectedIndex];
+            const row = select.closest('tr');
+            
+            if (selectedOption.value) {
+                const amount = selectedOption.getAttribute('data-amount');
+                const category = selectedOption.getAttribute('data-category');
+                
+                // Update amount field
+                const amountInput = row.querySelector('.service-amount');
+                if (amountInput && amount) {
+                    amountInput.value = amount;
+                }
+                
+                // Update category display
+                const categorySpan = row.querySelector('.service-category');
+                if (categorySpan && category) {
+                    categorySpan.textContent = category;
+                }
+            } else {
+                // Reset fields
+                const amountInput = row.querySelector('.service-amount');
+                const categorySpan = row.querySelector('.service-category');
+                
+                if (amountInput) amountInput.value = '0';
+                if (categorySpan) categorySpan.textContent = '-';
+            }
+        }
+
+        // Note: Section loading in edit form is also handled by custom.js
+        // The existing system should work with the restored #getSections ID
+
+        // Add event listeners to existing service selects
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.service-type-select').forEach(select => {
+                select.addEventListener('change', handleServiceTypeChange);
+            });
         });
     </script>
 @endpush
