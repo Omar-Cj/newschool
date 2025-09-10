@@ -563,6 +563,52 @@
                                 </div>
                             </div>
 
+                            {{-- Enhanced Fee Processing System - Service Selection Section --}}
+                            <div class="row mt-24" id="service-selection-section" style="display: none;">
+                                <div class="col-md-12">
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <h4 class="mb-0">{{ ___('fees.optional_services') }}</h4>
+                                            <small class="text-muted">{{ ___('fees.mandatory_services_auto_assigned') }}</small>
+                                        </div>
+                                        <div class="card-body">
+                                            <div id="available-services-container">
+                                                <div class="text-center">
+                                                    <div class="spinner-border" role="status">
+                                                        <span class="sr-only">Loading...</span>
+                                                    </div>
+                                                    <p class="mt-2">{{ ___('fees.loading_services') }}</p>
+                                                </div>
+                                            </div>
+                                            
+                                            <div id="selected-services-summary" class="mt-4 d-none">
+                                                <h5>{{ ___('fees.service_summary') }}</h5>
+                                                <div class="table-responsive">
+                                                    <table class="table table-sm">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>{{ ___('fees.service_name') }}</th>
+                                                                <th>{{ ___('fees.amount') }}</th>
+                                                                <th>{{ ___('fees.type') }}</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody id="service-summary-body">
+                                                        </tbody>
+                                                        <tfoot>
+                                                            <tr class="table-info">
+                                                                <td><strong>{{ ___('fees.total_amount') }}</strong></td>
+                                                                <td><strong id="total-service-amount">0.00</strong></td>
+                                                                <td></td>
+                                                            </tr>
+                                                        </tfoot>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="row mt-24">
                                 <div class="col-md-12">
                                     <div class="d-flex align-items-center gap-4 flex-wrap">
@@ -674,6 +720,170 @@
             });
 
 
+        });
+
+        // Enhanced Fee Processing System - Service Selection Functionality
+        let availableServices = [];
+        let selectedServices = [];
+
+        // Load available services when class is selected
+        $('select[name="class"]').on('change', function() {
+            const classId = $(this).val();
+            if (classId) {
+                loadAvailableServices(classId);
+            } else {
+                $('#service-selection-section').hide();
+            }
+        });
+
+        function loadAvailableServices(classId) {
+            // Create a temporary student object to determine academic level
+            const tempStudentData = {
+                class_id: classId,
+                date_of_birth: $('input[name="date_of_birth"]').val()
+            };
+
+            $.ajax({
+                url: '{{ route("student-services.registration-services") }}',
+                type: 'GET',
+                data: tempStudentData,
+                success: function(response) {
+                    if (response.success) {
+                        availableServices = response.data.services;
+                        displayAvailableServices();
+                        $('#service-selection-section').show();
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Failed to load services:', error);
+                    // Hide service selection if failed to load
+                    $('#service-selection-section').hide();
+                }
+            });
+        }
+
+        function displayAvailableServices() {
+            const container = $('#available-services-container');
+            let html = '';
+
+            if (Object.keys(availableServices).length === 0) {
+                html = '<div class="alert alert-info">{{ ___("fees.no_optional_services") }}</div>';
+            } else {
+                html = '<div class="row">';
+                
+                // Display mandatory services info first
+                let mandatoryInfo = '<div class="col-12 mb-3"><div class="alert alert-info">';
+                mandatoryInfo += '<i class="fa fa-info-circle"></i> {{ ___("fees.mandatory_services_will_be_auto_assigned") }}';
+                mandatoryInfo += '</div></div>';
+                
+                // Group services by category
+                for (const [category, categoryData] of Object.entries(availableServices)) {
+                    if (categoryData.optional && categoryData.optional.length > 0) {
+                        html += `
+                            <div class="col-md-12 mb-4">
+                                <h5 class="text-primary">${category.charAt(0).toUpperCase() + category.slice(1)} {{ ___("fees.optional_services") }}</h5>
+                                <div class="row">
+                        `;
+                        
+                        categoryData.optional.forEach(service => {
+                            html += `
+                                <div class="col-md-6 mb-3">
+                                    <div class="card h-100">
+                                        <div class="card-body">
+                                            <div class="form-check">
+                                                <input class="form-check-input service-checkbox" 
+                                                       type="checkbox" 
+                                                       value="${service.id}" 
+                                                       id="service_${service.id}"
+                                                       data-service='${JSON.stringify(service)}'>
+                                                <label class="form-check-label" for="service_${service.id}">
+                                                    <strong>${service.name}</strong>
+                                                </label>
+                                            </div>
+                                            <p class="card-text mt-2">
+                                                <small class="text-muted">${service.description || ''}</small>
+                                            </p>
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <span class="badge badge-success">{{ setting('currency_symbol') }}${service.amount}</span>
+                                                ${service.due_date ? `<small class="text-muted">Due: ${service.due_date}</small>` : ''}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        
+                        html += `
+                                </div>
+                            </div>
+                        `;
+                    }
+                    
+                    // Show mandatory services info
+                    if (categoryData.mandatory && categoryData.mandatory.length > 0) {
+                        mandatoryInfo += `<div class="text-muted mb-2"><strong>${category}:</strong> `;
+                        mandatoryInfo += categoryData.mandatory.map(s => s.name).join(', ');
+                        mandatoryInfo += '</div>';
+                    }
+                }
+                
+                html = mandatoryInfo + html + '</div>';
+            }
+
+            container.html(html);
+
+            // Attach change event to service checkboxes
+            $('.service-checkbox').on('change', function() {
+                updateSelectedServices();
+            });
+        }
+
+        function updateSelectedServices() {
+            selectedServices = [];
+            let totalAmount = 0;
+
+            $('.service-checkbox:checked').each(function() {
+                const service = JSON.parse($(this).data('service'));
+                selectedServices.push(service);
+                totalAmount += parseFloat(service.amount);
+            });
+
+            updateServiceSummary(totalAmount);
+        }
+
+        function updateServiceSummary(totalAmount) {
+            const summaryContainer = $('#selected-services-summary');
+            const summaryBody = $('#service-summary-body');
+
+            if (selectedServices.length === 0) {
+                summaryContainer.addClass('d-none');
+                return;
+            }
+
+            let summaryHtml = '';
+            selectedServices.forEach(service => {
+                summaryHtml += `
+                    <tr>
+                        <td>${service.name}</td>
+                        <td>{{ setting('currency_symbol') }}${service.amount}</td>
+                        <td><span class="badge badge-info">Optional</span></td>
+                    </tr>
+                `;
+            });
+
+            summaryBody.html(summaryHtml);
+            $('#total-service-amount').text('{{ setting('currency_symbol') }}' + totalAmount.toFixed(2));
+            summaryContainer.removeClass('d-none');
+        }
+
+        // Add selected services to form submission
+        $('form#visitForm').on('submit', function(e) {
+            if (selectedServices.length > 0) {
+                // Add selected service IDs as hidden inputs
+                selectedServices.forEach(service => {
+                    $(this).append(`<input type="hidden" name="selected_services[]" value="${service.id}">`);
+                });
+            }
         });
 
          $(document).ready(function () {

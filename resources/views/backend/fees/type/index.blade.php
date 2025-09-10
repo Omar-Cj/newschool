@@ -39,6 +39,10 @@
                                     <th class="serial">{{ ___('common.sr_no') }}</th>
                                     <th class="purchase">{{ ___('common.name') }}</th>
                                     <th class="purchase">{{ ___('fees.code') }}</th>
+                                    <th class="purchase">{{ ___('fees.academic_level') }}</th>
+                                    <th class="purchase">{{ ___('fees.category') }}</th>
+                                    <th class="purchase">{{ ___('fees.default_amount') }}</th>
+                                    <th class="purchase">{{ ___('fees.mandatory_for_academic_level') }}</th>
                                     <th class="purchase">{{ ___('fees.description') }}</th>
                                     <th class="purchase">{{ ___('common.status') }}</th>
                                     @if (hasPermission('fees_type_update') || hasPermission('fees_type_delete'))
@@ -52,7 +56,31 @@
                                     <td class="serial">{{ ++$key }}</td>
                                     <td>{{ @$row->name }}</td>
                                     <td>{{ @$row->code }}</td>
-                                    <td>{{ wordLimit(@$row->description, 20) }}</td>
+                                    <td>
+                                        <span class="badge badge-soft-info">
+                                            {{ $row->getFormattedAcademicLevel() }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-soft-secondary">
+                                            {{ $row->getFormattedCategory() }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <strong>{{ number_format(@$row->amount, 2) }}</strong>
+                                    </td>
+                                    <td class="text-center">
+                                        @if (@$row->is_mandatory_for_level)
+                                            <span class="badge badge-soft-success">
+                                                <i class="fa-solid fa-check"></i> {{ ___('common.yes') }}
+                                            </span>
+                                        @else
+                                            <span class="badge badge-soft-warning">
+                                                <i class="fa-solid fa-times"></i> {{ ___('common.no') }}
+                                            </span>
+                                        @endif
+                                    </td>
+                                    <td>{{ wordLimit(@$row->description, 15) }}</td>
                                     <td>
                                         @if (@$row->status == App\Enums\Status::ACTIVE)
                                             <span class="badge-basic-success-text">{{ ___('common.active') }}</span>

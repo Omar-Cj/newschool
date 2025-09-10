@@ -24,8 +24,15 @@ class FeesTypeUpdateRequest extends FormRequest
     public function rules()
     {
         return [
-            'name'      => 'required|max:255|unique:fees_types,name,'.Request()->id,
-            'status'    => 'required'
+            'name'                    => 'required|max:255|unique:fees_types,name,'.Request()->id,
+            'code'                    => 'nullable|max:50|unique:fees_types,code,'.Request()->id,
+            'description'             => 'nullable|max:1000',
+            'academic_level'          => 'required|in:all,kg,primary,secondary,high_school',
+            'category'                => 'required|in:academic,transport,meal,accommodation,activity,other',
+            'amount'                  => 'required|numeric|min:0',
+            'due_date_offset'         => 'nullable|integer|min:0|max:365',
+            'is_mandatory_for_level'  => 'nullable|boolean',
+            'status'                  => 'required'
         ];
     }
 }

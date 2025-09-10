@@ -1,54 +1,114 @@
 <div class="p-3">
+    <!-- System Type Indicator -->
+    <div class="alert alert-info d-flex justify-content-between align-items-center">
+        <div>
+            <i class="fa-solid fa-info-circle me-2"></i>
+            @if($fees['system_type'] === 'service_based')
+                <strong>{{ ___('fees.service_based_system') }}</strong> - {{ ___('fees.fees_calculated_from_services') }}
+            @else
+                <strong>{{ ___('fees.legacy_system') }}</strong> - {{ ___('fees.fees_calculated_from_groups') }}
+            @endif
+        </div>
+        @if($fees['system_type'] === 'service_based')
+            <button class="btn btn-sm btn-outline-primary" onclick="manageStudentServices({{ $data->id }})">
+                <i class="fa-solid fa-cogs"></i> {{ ___('fees.manage_services') }}
+            </button>
+        @endif
+    </div>
+
     <div class="row g-4">
         <!-- Overview Section -->
         <div class="col-12">
             <div class="card border shadow-sm">
-                <div class="card-header bg-light">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">{{ ___('student.Fees Overview') }}</h5>
+                    @if($fees['system_type'] === 'service_based')
+                        <span class="badge badge-success">{{ ___('fees.enhanced_system') }}</span>
+                    @else  
+                        <span class="badge badge-secondary">{{ ___('fees.legacy_system') }}</span>
+                    @endif
                 </div>
                 <div class="card-body">
-                    <div class="row text-center">
-                        @php $currency = setting('currency_symbol'); @endphp
+                    @if($fees['system_type'] === 'service_based')
+                        <!-- Service-Based Overview -->
+                        <div class="row text-center">
+                            @php $currency = setting('currency_symbol'); @endphp
 
-                        <div class="col-md-2 col-6 mb-3">
-                            <div class="fw-bold text-muted">{{ ___('student.Total Fees') }}</div>
-                            @php
-                                $totalFees = 0;
-                                foreach ($fees['fees_assigned'] as $assignment) {
-                                    $totalFees += $assignment->feesMaster->amount ?? 0;
-                                }
-                            @endphp
-                            <div class="h6">{{ $currency }} {{ $totalFees }}</div>
+                            <div class="col-md-2 col-6 mb-3">
+                                <div class="fw-bold text-muted">{{ ___('student.Total Services') }}</div>
+                                <div class="h6">{{ count($fees['services'] ?? []) }}</div>
+                            </div>
+
+                            <div class="col-md-2 col-6 mb-3">
+                                <div class="fw-bold text-muted">{{ ___('student.Total Fees') }}</div>
+                                <div class="h6">{{ $currency }} {{ number_format($fees['total_fees'] ?? 0, 2) }}</div>
+                            </div>
+
+                            <div class="col-md-2 col-6 mb-3">
+                                <div class="fw-bold text-muted">{{ ___('student.Total Paid') }}</div>
+                                <div class="h6">{{ $currency }} {{ number_format($fees['total_paid'] ?? 0, 2) }}</div>
+                            </div>
+
+                            <div class="col-md-2 col-6 mb-3">
+                                <div class="fw-bold text-muted">{{ ___('student.Total Due') }}</div>
+                                <div class="h6 text-danger">{{ $currency }} {{ number_format($fees['fees_due'] ?? 0, 2) }}</div>
+                            </div>
+
+                            <div class="col-md-2 col-6 mb-3">
+                                <div class="fw-bold text-muted">{{ ___('student.Total Discounts') }}</div>
+                                <div class="h6 text-success">{{ $currency }} {{ number_format($fees['total_discounts'] ?? 0, 2) }}</div>
+                            </div>
+
+                            <div class="col-md-2 col-6 mb-3">
+                                <div class="fw-bold text-muted">{{ ___('student.Outstanding Services') }}</div>
+                                <div class="h6 text-warning">{{ count($fees['outstanding_services'] ?? []) }}</div>
+                            </div>
                         </div>
+                    @else
+                        <!-- Legacy Overview -->
+                        <div class="row text-center">
+                            @php $currency = setting('currency_symbol'); @endphp
 
-                        <div class="col-md-2 col-6 mb-3">
-                            <div class="fw-bold text-muted">{{ ___('student.Total Paid') }}</div>
-                            @php
-                                $totalPaid = 0;
-                                foreach ($fees['fees_assigned'] as $assignment) {
-                                    if ($assignment->feesCollect && $assignment->feesCollect->isPaid()) {
-                                        $totalPaid += $assignment->feesCollect->amount;
+                            <div class="col-md-2 col-6 mb-3">
+                                <div class="fw-bold text-muted">{{ ___('student.Total Fees') }}</div>
+                                @php
+                                    $totalFees = 0;
+                                    foreach ($fees['fees_assigned'] ?? [] as $assignment) {
+                                        $totalFees += $assignment->feesMaster->amount ?? 0;
                                     }
-                                }
-                            @endphp
-                            <div class="h6">{{ $currency }} {{ $totalPaid }}</div>
-                        </div>
+                                @endphp
+                                <div class="h6">{{ $currency }} {{ number_format($totalFees, 2) }}</div>
+                            </div>
 
-                        <div class="col-md-2 col-6 mb-3">
-                            <div class="fw-bold text-muted">{{ ___('student.Total Due') }}</div>
-                            <div class="h6 text-danger">{{ $currency }} {{ $fees['fees_due'] }}</div>
-                        </div>
+                            <div class="col-md-2 col-6 mb-3">
+                                <div class="fw-bold text-muted">{{ ___('student.Total Paid') }}</div>
+                                @php
+                                    $totalPaid = 0;
+                                    foreach ($fees['fees_assigned'] ?? [] as $assignment) {
+                                        if ($assignment->feesCollect && $assignment->feesCollect->isPaid()) {
+                                            $totalPaid += $assignment->feesCollect->amount;
+                                        }
+                                    }
+                                @endphp
+                                <div class="h6">{{ $currency }} {{ number_format($totalPaid, 2) }}</div>
+                            </div>
 
-                        <div class="col-md-2 col-6 mb-3">
-                            <div class="fw-bold text-muted">{{ ___('student.Total Discount') }}</div>
-                            <div class="h6 text-success">{{ $currency }} {{ @$fees['fees_discounts']->sum('discount_amount') }}</div>
-                        </div>
+                            <div class="col-md-2 col-6 mb-3">
+                                <div class="fw-bold text-muted">{{ ___('student.Total Due') }}</div>
+                                <div class="h6 text-danger">{{ $currency }} {{ number_format($fees['fees_due'] ?? 0, 2) }}</div>
+                            </div>
 
-                        <div class="col-md-2 col-6 mb-3">
-                            <div class="fw-bold text-muted">{{ ___('student.Total Fine') }}</div>
-                            <div class="h6 text-warning">{{ $currency }} {{ @$data->feesMasters->sum('fine_amount') }}</div>
+                            <div class="col-md-2 col-6 mb-3">
+                                <div class="fw-bold text-muted">{{ ___('student.Total Discount') }}</div>
+                                <div class="h6 text-success">{{ $currency }} {{ number_format($fees['total_discounts'] ?? 0, 2) }}</div>
+                            </div>
+
+                            <div class="col-md-2 col-6 mb-3">
+                                <div class="fw-bold text-muted">{{ ___('student.Total Fine') }}</div>
+                                <div class="h6 text-warning">{{ $currency }} {{ number_format(@$data->feesMasters->sum('fine_amount') ?? 0, 2) }}</div>
+                            </div>
                         </div>
-                    </div>
+                    @endif
                 </div>
             </div>
         </div>
@@ -57,76 +117,201 @@
         <div class="col-12">
             <div class="card border shadow-sm">
                 <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">{{ ___('fees.fees_details') }}</h5>
+                    <h5 class="mb-0">
+                        @if($fees['system_type'] === 'service_based')
+                            {{ ___('fees.service_subscriptions') }}
+                        @else
+                            {{ ___('fees.fees_details') }}
+                        @endif
+                    </h5>
+                    @if($fees['system_type'] === 'service_based')
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                <i class="fa-solid fa-filter"></i> {{ ___('common.filter') }}
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="#" onclick="filterServices('all')">{{ ___('common.all') }}</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="filterServices('mandatory')">{{ ___('fees.mandatory_only') }}</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="filterServices('optional')">{{ ___('fees.optional_only') }}</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="filterServices('overdue')">{{ ___('fees.overdue_only') }}</a></li>
+                            </ul>
+                        </div>
+                    @endif
                 </div>
                 <div class="card-body table-responsive">
-                    <table class="table table-bordered table-hover" id="students_table">
-                        <thead class="thead-light">
-                            <tr class="text-center">
-                                <th>{{ ___('common.Si') }}</th>
-                                <th>{{ ___('fees.group') }}</th>
-                                <th>{{ ___('fees.type') }}</th>
-                                <th>{{ ___('fees.due_date') }}</th>
-                                <th>{{ ___('fees.amount') }} ({{ $currency }})</th>
-                                <th>{{ ___('fees.Discount') }} ({{ $currency }})</th>
-                                <th>{{ ___('tax.Tax') }} ({{ $currency }})</th>
-                                <th>{{ ___('fees.Payable') }} ({{ $currency }})</th>
-                                <th>{{ ___('common.status') }}</th>
-                                <th>{{ ___('fees.fine_type') }}</th>
-                                <th>{{ ___('fees.percentage') }}</th>
-                                <th>{{ ___('fees.Fine') }} ({{ $currency }})</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (@$fees['fees_assigned'] ?? [] as $key => $item)
-                                <tr>
-                                    <td>{{ $key + 1 }}</td>
-                                    <td>{{ @$item->feesMaster->group->name }}</td>
-                                    <td>{{ @$item->feesMaster->type->name }}</td>
-                                    <td>{{ dateFormat(@$item->feesMaster->due_date) }}</td>
-                                    <td>
-                                        {{ @$item->feesMaster->amount }}
-                                        @if (date('Y-m-d') > @$item->feesMaster->date && (!@$item->feesCollect || !@$item->feesCollect->isPaid()))
-                                            <span class="text-danger">+{{ @$item->feesMaster->fine_amount }}</span>
-                                        @elseif(@$item->feesCollect && @$item->feesCollect->isPaid() && @$item->feesMaster->date < @$item->feesCollect->date)
-                                            <span class="text-danger">+{{ @$item->feesMaster->fine_amount }}</span>
-                                        @endif
-                                    </td>
-                                    <td>{{ calculateDiscount(@$item->feesMaster->amount, @$item->feesDiscount->discount_percentage) }}</td>
-                                    <td>{{ calculateTax(@$item->feesMaster->amount) }}</td>
-                                    <td>
-                                        {{ @$item->feesMaster->amount + calculateTax(@$item->feesMaster->amount) - calculateDiscount(@$item->feesMaster->amount, @$item->feesDiscount->discount_percentage) }}
-                                    </td>
-                                    <td>
-                                        @if (@$item->feesCollect && @$item->feesCollect->isPaid())
-                                            <span class="badge bg-success">{{ ___('fees.Paid') }}</span>
-                                        @elseif (@$item->feesCollect && @$item->feesCollect->isPending())
-                                            <span class="badge bg-warning">{{ ___('fees.Generated - Pending Payment') }}</span>
-                                        @else
-                                            <span class="badge bg-danger">{{ ___('fees.Unpaid') }}</span>
-                                        @endif
-                                    </td>
-                                    <td>
-                                        @if (@$item->fine_type == 0)
-                                            <span class="badge bg-info">{{ ___('fees.none') }}</span>
-                                        @elseif(@$item->fine_type == 1)
-                                            <span class="badge bg-warning">{{ ___('fees.percentage') }}</span>
-                                        @elseif(@$item->fine_type == 2)
-                                            <span class="badge bg-warning">{{ ___('fees.fixed') }}</span>
-                                        @endif
-                                    </td>
-                                    <td>{{ @$item->feesMaster->percentage }}</td>
-                                    <td>
-                                        @if (date('Y-m-d') > @$item->feesMaster->due_date)
-                                            {{ @$item->feesMaster->fine_amount }}
-                                        @else
-                                            0
-                                        @endif
-                                    </td>
+                    @if($fees['system_type'] === 'service_based')
+                        {{-- Service-Based Table --}}
+                        <table class="table table-bordered table-hover" id="services_table">
+                            <thead class="thead-light">
+                                <tr class="text-center">
+                                    <th>{{ ___('common.Si') }}</th>
+                                    <th>{{ ___('fees.service_name') }}</th>
+                                    <th>{{ ___('fees.category') }}</th>
+                                    <th>{{ ___('fees.type') }}</th>
+                                    <th>{{ ___('fees.due_date') }}</th>
+                                    <th>{{ ___('fees.amount') }} ({{ $currency }})</th>
+                                    <th>{{ ___('fees.discount') }} ({{ $currency }})</th>
+                                    <th>{{ ___('fees.final_amount') }} ({{ $currency }})</th>
+                                    <th>{{ ___('common.status') }}</th>
+                                    <th>{{ ___('common.actions') }}</th>
                                 </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                @foreach ($fees['services'] ?? [] as $key => $service)
+                                    <tr class="service-row" data-service-type="{{ $service->feeType->is_mandatory_for_level ? 'mandatory' : 'optional' }}" data-overdue="{{ $service->due_date < now() ? '1' : '0' }}">
+                                        <td>{{ $key + 1 }}</td>
+                                        <td>
+                                            <strong>{{ $service->feeType->name }}</strong>
+                                            @if($service->feeType->is_mandatory_for_level)
+                                                <span class="badge badge-warning ms-1">{{ ___('fees.mandatory') }}</span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-info">{{ ucfirst($service->feeType->category) }}</span>
+                                        </td>
+                                        <td>{{ ___('fees.service_subscription') }}</td>
+                                        <td>
+                                            {{ $service->due_date ? $service->due_date->format('M d, Y') : 'N/A' }}
+                                            @if($service->due_date && $service->due_date < now())
+                                                <span class="text-danger ms-1">{{ ___('fees.overdue') }}</span>
+                                            @endif
+                                        </td>
+                                        <td>{{ $currency }} {{ number_format($service->amount, 2) }}</td>
+                                        <td>
+                                            @if($service->discount_type)
+                                                {{ $currency }} {{ number_format($service->amount - $service->final_amount, 2) }}
+                                                <small class="text-muted d-block">{{ ucfirst($service->discount_type) }}: {{ $service->discount_value }}{{ $service->discount_type === 'percentage' ? '%' : '' }}</small>
+                                            @else
+                                                {{ $currency }} 0.00
+                                            @endif
+                                        </td>
+                                        <td><strong>{{ $currency }} {{ number_format($service->final_amount, 2) }}</strong></td>
+                                        <td>
+                                            @if($service->is_active)
+                                                <span class="badge bg-success">{{ ___('fees.active') }}</span>
+                                            @else
+                                                <span class="badge bg-secondary">{{ ___('fees.inactive') }}</span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            <div class="btn-group-sm">
+                                                @if($service->discount_type)
+                                                    <button class="btn btn-sm btn-outline-warning" onclick="removeServiceDiscount({{ $service->id }})" title="{{ ___('fees.remove_discount') }}">
+                                                        <i class="fa-solid fa-minus"></i>
+                                                    </button>
+                                                @else
+                                                    <button class="btn btn-sm btn-outline-success" onclick="applyServiceDiscount({{ $service->id }})" title="{{ ___('fees.apply_discount') }}">
+                                                        <i class="fa-solid fa-percentage"></i>
+                                                    </button>
+                                                @endif
+                                                @if(!$service->feeType->is_mandatory_for_level)
+                                                    <button class="btn btn-sm btn-outline-danger" onclick="unsubscribeService({{ $service->id }})" title="{{ ___('fees.unsubscribe') }}">
+                                                        <i class="fa-solid fa-times"></i>
+                                                    </button>
+                                                @endif
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                                @if(empty($fees['services']))
+                                    <tr>
+                                        <td colspan="10" class="text-center text-muted">
+                                            {{ ___('fees.no_services_subscribed') }}
+                                        </td>
+                                    </tr>
+                                @endif
+                            </tbody>
+                        </table>
+
+                        @if(!empty($fees['services_summary']['services_by_category']))
+                            {{-- Service Summary by Category --}}
+                            <div class="mt-4">
+                                <h6>{{ ___('fees.services_by_category') }}</h6>
+                                <div class="row">
+                                    @foreach($fees['services_summary']['services_by_category'] as $category => $summary)
+                                        <div class="col-md-3 mb-2">
+                                            <div class="card border-left-primary">
+                                                <div class="card-body p-2">
+                                                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">{{ ucfirst($category) }}</div>
+                                                    <div class="h6 mb-0">{{ $summary['count'] }} {{ ___('fees.services') }}</div>
+                                                    <small class="text-muted">{{ $currency }} {{ number_format($summary['total_amount'], 2) }}</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
+                    @else
+                        {{-- Legacy System Table --}}
+                        <table class="table table-bordered table-hover" id="students_table">
+                            <thead class="thead-light">
+                                <tr class="text-center">
+                                    <th>{{ ___('common.Si') }}</th>
+                                    <th>{{ ___('fees.group') }}</th>
+                                    <th>{{ ___('fees.type') }}</th>
+                                    <th>{{ ___('fees.due_date') }}</th>
+                                    <th>{{ ___('fees.amount') }} ({{ $currency }})</th>
+                                    <th>{{ ___('fees.Discount') }} ({{ $currency }})</th>
+                                    <th>{{ ___('tax.Tax') }} ({{ $currency }})</th>
+                                    <th>{{ ___('fees.Payable') }} ({{ $currency }})</th>
+                                    <th>{{ ___('common.status') }}</th>
+                                    <th>{{ ___('fees.fine_type') }}</th>
+                                    <th>{{ ___('fees.percentage') }}</th>
+                                    <th>{{ ___('fees.Fine') }} ({{ $currency }})</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (@$fees['fees_assigned'] ?? [] as $key => $item)
+                                    <tr>
+                                        <td>{{ $key + 1 }}</td>
+                                        <td>{{ @$item->feesMaster->group->name }}</td>
+                                        <td>{{ @$item->feesMaster->type->name }}</td>
+                                        <td>{{ dateFormat(@$item->feesMaster->due_date) }}</td>
+                                        <td>
+                                            {{ number_format(@$item->feesMaster->amount ?? 0, 2) }}
+                                            @if (date('Y-m-d') > @$item->feesMaster->date && (!@$item->feesCollect || !@$item->feesCollect->isPaid()))
+                                                <span class="text-danger">+{{ number_format(@$item->feesMaster->fine_amount ?? 0, 2) }}</span>
+                                            @elseif(@$item->feesCollect && @$item->feesCollect->isPaid() && @$item->feesMaster->date < @$item->feesCollect->date)
+                                                <span class="text-danger">+{{ number_format(@$item->feesMaster->fine_amount ?? 0, 2) }}</span>
+                                            @endif
+                                        </td>
+                                        <td>{{ number_format(calculateDiscount(@$item->feesMaster->amount, @$item->feesDiscount->discount_percentage ?? 0), 2) }}</td>
+                                        <td>{{ number_format(calculateTax(@$item->feesMaster->amount), 2) }}</td>
+                                        <td>
+                                            {{ number_format(@$item->feesMaster->amount + calculateTax(@$item->feesMaster->amount) - calculateDiscount(@$item->feesMaster->amount, @$item->feesDiscount->discount_percentage ?? 0), 2) }}
+                                        </td>
+                                        <td>
+                                            @if (@$item->feesCollect && @$item->feesCollect->isPaid())
+                                                <span class="badge bg-success">{{ ___('fees.Paid') }}</span>
+                                            @elseif (@$item->feesCollect && @$item->feesCollect->isPending())
+                                                <span class="badge bg-warning">{{ ___('fees.Generated - Pending Payment') }}</span>
+                                            @else
+                                                <span class="badge bg-danger">{{ ___('fees.Unpaid') }}</span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if (@$item->fine_type == 0)
+                                                <span class="badge bg-info">{{ ___('fees.none') }}</span>
+                                            @elseif(@$item->fine_type == 1)
+                                                <span class="badge bg-warning">{{ ___('fees.percentage') }}</span>
+                                            @elseif(@$item->fine_type == 2)
+                                                <span class="badge bg-warning">{{ ___('fees.fixed') }}</span>
+                                            @endif
+                                        </td>
+                                        <td>{{ @$item->feesMaster->percentage ?? 0 }}</td>
+                                        <td>
+                                            @if (date('Y-m-d') > @$item->feesMaster->due_date)
+                                                {{ number_format(@$item->feesMaster->fine_amount ?? 0, 2) }}
+                                            @else
+                                                0
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    @endif
                 </div>
             </div>
         </div>
@@ -141,3 +326,128 @@
         </div>
     </div>
 </div>
+
+@if($fees['system_type'] === 'service_based')
+<script>
+// Service Management Functions
+function manageStudentServices(studentId) {
+    window.location.href = `/student-services/student/${studentId}/manage`;
+}
+
+function filterServices(filter) {
+    const rows = document.querySelectorAll('.service-row');
+    
+    rows.forEach(row => {
+        let show = true;
+        
+        switch(filter) {
+            case 'mandatory':
+                show = row.dataset.serviceType === 'mandatory';
+                break;
+            case 'optional':
+                show = row.dataset.serviceType === 'optional';
+                break;
+            case 'overdue':
+                show = row.dataset.overdue === '1';
+                break;
+            case 'all':
+            default:
+                show = true;
+                break;
+        }
+        
+        row.style.display = show ? '' : 'none';
+    });
+}
+
+function applyServiceDiscount(serviceId) {
+    const discountType = prompt('{{ ___("fees.enter_discount_type") }} (percentage/fixed):');
+    if (!discountType || !['percentage', 'fixed'].includes(discountType.toLowerCase())) {
+        alert('{{ ___("fees.invalid_discount_type") }}');
+        return;
+    }
+    
+    const discountValue = prompt(`{{ ___("fees.enter_discount_value") }} (${discountType}):`);
+    if (!discountValue || isNaN(discountValue) || discountValue < 0) {
+        alert('{{ ___("fees.invalid_discount_value") }}');
+        return;
+    }
+    
+    const notes = prompt('{{ ___("common.notes") }} (optional):') || '';
+    
+    $.post(`/student-services/service/${serviceId}/discount`, {
+        _token: '{{ csrf_token() }}',
+        discount_type: discountType.toLowerCase(),
+        discount_value: parseFloat(discountValue),
+        notes: notes
+    })
+    .done(function(response) {
+        if (response.success) {
+            alert('{{ ___("fees.discount_applied_successfully") }}');
+            location.reload();
+        } else {
+            alert(response.message || '{{ ___("common.error") }}');
+        }
+    })
+    .fail(function() {
+        alert('{{ ___("common.error") }}');
+    });
+}
+
+function removeServiceDiscount(serviceId) {
+    if (!confirm('{{ ___("fees.confirm_remove_discount") }}')) {
+        return;
+    }
+    
+    const reason = prompt('{{ ___("fees.reason_for_removing_discount") }}:') || '';
+    
+    $.ajax({
+        url: `/student-services/service/${serviceId}/discount`,
+        type: 'DELETE',
+        data: {
+            _token: '{{ csrf_token() }}',
+            reason: reason
+        }
+    })
+    .done(function(response) {
+        if (response.success) {
+            alert('{{ ___("fees.discount_removed_successfully") }}');
+            location.reload();
+        } else {
+            alert(response.message || '{{ ___("common.error") }}');
+        }
+    })
+    .fail(function() {
+        alert('{{ ___("common.error") }}');
+    });
+}
+
+function unsubscribeService(serviceId) {
+    if (!confirm('{{ ___("fees.confirm_unsubscribe_service") }}')) {
+        return;
+    }
+    
+    const reason = prompt('{{ ___("fees.reason_for_unsubscribing") }}:') || '';
+    
+    $.ajax({
+        url: `/student-services/service/${serviceId}/unsubscribe`,
+        type: 'DELETE',
+        data: {
+            _token: '{{ csrf_token() }}',
+            reason: reason
+        }
+    })
+    .done(function(response) {
+        if (response.success) {
+            alert('{{ ___("fees.unsubscribed_successfully") }}');
+            location.reload();
+        } else {
+            alert(response.message || '{{ ___("common.error") }}');
+        }
+    })
+    .fail(function() {
+        alert('{{ ___("common.error") }}');
+    });
+}
+</script>
+@endif

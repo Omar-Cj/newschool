@@ -9,6 +9,7 @@ use App\Http\Controllers\Fees\FeesMasterController;
 use App\Http\Controllers\Fees\FeesCollectController;
 use App\Http\Controllers\Fees\FeesGenerationController;
 use App\Http\Controllers\Fees\ReceiptController;
+use App\Http\Controllers\Fees\StudentServiceController;
 use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
 use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
 
@@ -100,6 +101,12 @@ Route::middleware(saasMiddleware())->group(function () {
                     // Helper endpoints
                     Route::get('/get-sections',         'getSections');
                     Route::get('/get-student-count',    'getStudentCount');
+                    
+                    // Service Manager endpoints
+                    Route::get('/system-status',        'getSystemStatus')->name('fees-generation.system-status');
+                    Route::post('/switch-system',       'switchSystem')->name('fees-generation.switch-system')->middleware('PermissionCheck:fees_generate_create', 'DemoCheck');
+                    Route::post('/preview-managed',     'generatePreviewWithManager')->name('fees-generation.preview-managed')->middleware('PermissionCheck:fees_generate_create');
+                    Route::post('/generate-managed',    'generateFeesWithManager')->name('fees-generation.generate-managed')->middleware('PermissionCheck:fees_generate_create', 'DemoCheck');
                 });
 
                 // Receipt Generation Routes
@@ -123,6 +130,40 @@ Route::middleware(saasMiddleware())->group(function () {
                     Route::get('/check-group-availability',            'checkGroupReceiptAvailability')->name('fees.receipt.check-group-availability');
                     Route::get('/today-payments',                      'getTodayPayments')->name('fees.receipt.today-payments');
                     Route::post('/email',                              'emailReceipt')->name('fees.receipt.email')->middleware('PermissionCheck:fees_collect_read');
+                });
+
+                // Enhanced Fee Processing System - Service Management Routes
+                Route::controller(StudentServiceController::class)->prefix('student-services')->group(function () {
+                    // Service Management Dashboard
+                    Route::get('/',                                     'dashboard')->name('student-services.dashboard')->middleware('PermissionCheck:fees_assign_read');
+                    Route::get('/dashboard-stats',                     'getDashboardStats')->name('student-services.dashboard-stats');
+                    Route::get('/services-overview',                   'getServicesOverview')->name('student-services.services-overview');
+                    Route::get('/recent-activities',                   'getRecentActivities')->name('student-services.recent-activities');
+                    Route::get('/academic-level-stats',                'getAcademicLevelStats')->name('student-services.academic-level-stats');
+                    Route::get('/search',                              'searchStudentServices')->name('student-services.search');
+                    Route::get('/export-report',                       'exportServiceReport')->name('student-services.export-report');
+                    
+                    // Student service information
+                    Route::get('/available',                            'getAvailableServicesForRegistration')->name('student-services.available-registration');
+                    Route::get('/registration-services',               'getServicesForRegistration')->name('student-services.registration-services');
+                    Route::get('/student/{student}/available',         'getAvailableServices')->name('student-services.available')->middleware('PermissionCheck:fees_assign_read');
+                    Route::get('/student/{student}/subscriptions',     'getStudentServices')->name('student-services.subscriptions')->middleware('PermissionCheck:fees_assign_read');
+                    
+                    // Service subscription management
+                    Route::post('/subscribe',                           'subscribe')->name('student-services.subscribe')->middleware('PermissionCheck:fees_assign_create', 'DemoCheck');
+                    Route::post('/student/{student}/auto-mandatory',   'autoSubscribeMandatory')->name('student-services.auto-mandatory')->middleware('PermissionCheck:fees_assign_create', 'DemoCheck');
+                    Route::delete('/service/{service}/unsubscribe',    'unsubscribe')->name('student-services.unsubscribe')->middleware('PermissionCheck:fees_assign_delete', 'DemoCheck');
+                    
+                    // Discount management
+                    Route::post('/service/{service}/discount',         'applyDiscount')->name('student-services.apply-discount')->middleware('PermissionCheck:fees_assign_update', 'DemoCheck');
+                    Route::delete('/service/{service}/discount',       'removeDiscount')->name('student-services.remove-discount')->middleware('PermissionCheck:fees_assign_update', 'DemoCheck');
+                    
+                    // Bulk operations
+                    Route::post('/bulk-subscribe',                     'bulkSubscribe')->name('student-services.bulk-subscribe')->middleware('PermissionCheck:fees_assign_create', 'DemoCheck');
+                    Route::post('/bulk-discount',                      'bulkApplyDiscount')->name('student-services.bulk-discount')->middleware('PermissionCheck:fees_assign_update', 'DemoCheck');
+                    
+                    // Fee generation preview
+                    Route::post('/preview',                             'generatePreview')->name('student-services.preview')->middleware('PermissionCheck:fees_generate_read');
                 });
             });
         });

@@ -19,6 +19,37 @@
         </div>
         {{-- breadcrumb Area E n d --}}
 
+        {{-- Enhanced Fee System Status & Toggle --}}
+        <div class="card mb-4" id="system-status-card">
+            <div class="card-header">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <h5 class="mb-0">{{ ___('fees.fee_processing_system') }}</h5>
+                        <small class="text-muted">{{ ___('fees.system_management') }}</small>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <div class="d-flex justify-content-end align-items-center">
+                            <span class="me-2">{{ ___('fees.legacy_system') }}</span>
+                            <div class="form-check form-switch me-2">
+                                <input class="form-check-input" type="checkbox" id="systemToggle" checked>
+                            </div>
+                            <span>{{ ___('fees.enhanced_system') }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row" id="system-status-display">
+                    <div class="col-12 text-center">
+                        <div class="spinner-border spinner-border-sm" role="status">
+                            <span class="sr-only">Loading...</span>
+                        </div>
+                        <span class="ms-2">{{ ___('fees.loading_system_status') }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         {{-- Fee Generation Overview --}}
         <div class="table-content table-basic mt-20">
             <div class="card">
@@ -278,8 +309,8 @@
                         </div>
 
                         <div class="row mb-3">
-                            {{-- Fee Groups --}}
-                            <div class="col-md-6 mb-3">
+                            {{-- Fee Groups (Legacy System) --}}
+                            <div class="col-md-6 mb-3" id="legacy-fee-groups">
                                                 <label for="fees_groups" class="form-label">{{ ___('fees.fee_groups') }}</label>
                                                 <select name="fees_groups[]" id="fees_groups" class="form-control select2" multiple>
                                                     @foreach($data['fees_groups'] as $group)
@@ -288,6 +319,41 @@
                                                 </select>
                                                 <small class="text-muted">{{ ___('fees.leave_empty_for_all') }}</small>
                                             </div>
+
+                            {{-- Service Categories (Enhanced System) --}}
+                            <div class="col-md-6 mb-3" id="enhanced-service-categories" style="display: none;">
+                                <label for="service_categories" class="form-label">{{ ___('fees.service_categories') }}</label>
+                                <div class="service-categories-container">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="mandatory-services" checked disabled>
+                                        <label class="form-check-label" for="mandatory-services">
+                                            <strong>{{ ___('fees.mandatory_services') }}</strong>
+                                            <small class="d-block text-muted">{{ ___('fees.automatically_assigned') }}</small>
+                                        </label>
+                                    </div>
+                                    <div id="optional-service-categories">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" value="academic" name="service_categories[]" id="academic-services">
+                                            <label class="form-check-label" for="academic-services">
+                                                {{ ___('fees.academic_services') }}
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" value="extracurricular" name="service_categories[]" id="extracurricular-services">
+                                            <label class="form-check-label" for="extracurricular-services">
+                                                {{ ___('fees.extracurricular_services') }}
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" value="transportation" name="service_categories[]" id="transportation-services">
+                                            <label class="form-check-label" for="transportation-services">
+                                                {{ ___('fees.transportation_services') }}
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <small class="text-muted">{{ ___('fees.select_optional_services') }}</small>
+                            </div>
 
                                             {{-- Notes --}}
                             <div class="col-md-6 mb-3">
@@ -466,6 +532,10 @@
 $(document).ready(function() {
     let currentBatchId = null;
     let progressInterval = null;
+    let currentSystem = 'enhanced'; // Default to enhanced system
+    
+    // Load system status on page load
+    loadSystemStatus();
 
     // Initialize modal event handlers
     $('#feeGenerationModal').on('shown.bs.modal', function() {
@@ -540,6 +610,12 @@ $(document).ready(function() {
         }
         $('#sections').trigger('change');
         setTimeout(updateSectionsDisplay, 100); // Update display after select2 processes
+    });
+
+    // System toggle functionality
+    $('#systemToggle').on('change', function() {
+        const targetSystem = $(this).is(':checked') ? 'enhanced' : 'legacy';
+        switchSystem(targetSystem);
     });
 
     // Load sections when classes change
@@ -916,6 +992,172 @@ $(document).ready(function() {
                 });
         }
     });
+
+    // Enhanced Fee System Management Functions
+    function loadSystemStatus() {
+        $.get('{{ route("fees-generation.system-status") }}')
+            .done(function(response) {
+                if (response.success) {
+                    displaySystemStatus(response.data);
+                } else {
+                    $('#system-status-display').html('<div class="col-12 text-center text-danger">Failed to load system status</div>');
+                }
+            })
+            .fail(function() {
+                $('#system-status-display').html('<div class="col-12 text-center text-danger">Error loading system status</div>');
+            });
+    }
+
+    function displaySystemStatus(data) {
+        const compatibility = data.compatibility_report;
+        const statistics = data.usage_statistics;
+        
+        let html = `
+            <div class="col-md-3">
+                <div class="text-center">
+                    <h6 class="text-primary">${statistics.active_system || 'Enhanced'}</h6>
+                    <small class="text-muted">{{ ___('fees.active_system') }}</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="text-center">
+                    <h6 class="text-success">${statistics.students_with_services || 0}</h6>
+                    <small class="text-muted">{{ ___('fees.students_with_services') }}</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="text-center">
+                    <h6 class="text-info">${statistics.total_active_services || 0}</h6>
+                    <small class="text-muted">{{ ___('fees.total_active_services') }}</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="text-center">
+                    <h6 class="${compatibility.migration_ready ? 'text-success' : 'text-warning'}">${compatibility.migration_ready ? '✓' : '⚠'}</h6>
+                    <small class="text-muted">{{ ___('fees.system_compatibility') }}</small>
+                </div>
+            </div>
+        `;
+
+        $('#system-status-display').html(html);
+        
+        // Update system toggle based on current system
+        currentSystem = statistics.active_system === 'Enhanced' ? 'enhanced' : 'legacy';
+        $('#systemToggle').prop('checked', currentSystem === 'enhanced');
+        updateSystemUI();
+    }
+
+    function switchSystem(targetSystem) {
+        if (targetSystem === currentSystem) {
+            return; // No change needed
+        }
+
+        const confirmMessage = targetSystem === 'enhanced' 
+            ? '{{ ___("fees.confirm_switch_to_enhanced") }}' 
+            : '{{ ___("fees.confirm_switch_to_legacy") }}';
+            
+        if (!confirm(confirmMessage)) {
+            // Reset toggle to current system
+            $('#systemToggle').prop('checked', currentSystem === 'enhanced');
+            return;
+        }
+
+        $.post('{{ route("fees-generation.switch-system") }}', {
+            system: targetSystem,
+            _token: '{{ csrf_token() }}'
+        })
+        .done(function(response) {
+            if (response.success) {
+                currentSystem = targetSystem;
+                updateSystemUI();
+                showAlert(response.message, 'success');
+                
+                if (response.warnings && response.warnings.length > 0) {
+                    setTimeout(() => {
+                        showAlert('Warnings: ' + response.warnings.join(', '), 'warning');
+                    }, 2000);
+                }
+                
+                // Reload system status
+                loadSystemStatus();
+            } else {
+                showAlert(response.message, 'error');
+                // Reset toggle
+                $('#systemToggle').prop('checked', currentSystem === 'enhanced');
+            }
+        })
+        .fail(function(xhr) {
+            const message = xhr.responseJSON?.message || '{{ ___("common.error") }}';
+            showAlert(message, 'error');
+            // Reset toggle
+            $('#systemToggle').prop('checked', currentSystem === 'enhanced');
+        });
+    }
+
+    function updateSystemUI() {
+        if (currentSystem === 'enhanced') {
+            $('#legacy-fee-groups').hide();
+            $('#enhanced-service-categories').show();
+            
+            // Update modal title to indicate enhanced system
+            $('#feeGenerationModalLabel').html('<i class="fa-solid fa-cogs me-2"></i>{{ ___("fees.enhanced_fee_generation") }}');
+        } else {
+            $('#enhanced-service-categories').hide();
+            $('#legacy-fee-groups').show();
+            
+            // Update modal title to indicate legacy system
+            $('#feeGenerationModalLabel').html('<i class="fa-solid fa-cogs me-2"></i>{{ ___("fees.legacy_fee_generation") }}');
+        }
+    }
+
+    // Override preview and generation functions to use appropriate system
+    function loadPreview() {
+        const formData = $('#fee-generation-form').serialize();
+        const endpoint = currentSystem === 'enhanced' ? 
+            '{{ route("fees-generation.preview-managed") }}' : 
+            '{{ route("fees-generation.preview") }}';
+        
+        $('#preview-content').html('<div class="text-center"><i class="fa-solid fa-spinner fa-spin"></i> {{ ___("common.loading") }}</div>');
+        $('#preview-section').show();
+
+        $.post(endpoint, formData)
+            .done(function(response) {
+                if (response.success) {
+                    displayPreview(response.data);
+                    $('#generate-all-btn').show().prop('disabled', false);
+                } else {
+                    $('#preview-content').html(`<div class="alert alert-danger">${response.message}</div>`);
+                }
+            })
+            .fail(function(xhr) {
+                const message = xhr.responseJSON?.message || '{{ ___("common.error") }}';
+                $('#preview-content').html(`<div class="alert alert-danger">${message}</div>`);
+            });
+    }
+
+    function startGeneration(generateAll) {
+        const formData = $('#fee-generation-form').serializeArray();
+        const endpoint = currentSystem === 'enhanced' ? 
+            '{{ route("fees-generation.generate-managed") }}' : 
+            '{{ route("fees-generation.generate") }}';
+        
+        $.post(endpoint, formData)
+            .done(function(response) {
+                if (response.success) {
+                    currentBatchId = response.data.batch_id;
+                    // Close generation modal and show progress modal
+                    $('#feeGenerationModal').modal('hide');
+                    $('#progressModal').modal('show');
+                    startProgressTracking(currentBatchId);
+                } else {
+                    showAlert(response.message, 'error');
+                }
+            })
+            .fail(function(xhr) {
+                const message = xhr.responseJSON?.message || '{{ ___("common.error") }}';
+                showAlert(message, 'error');
+            });
+    }
 });
 </script>
 @endpush

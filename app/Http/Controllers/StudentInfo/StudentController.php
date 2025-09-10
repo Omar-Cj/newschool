@@ -32,6 +32,7 @@ use Maatwebsite\Excel\Exceptions\ImportValidationException;
 use App\Http\Requests\StudentInfo\Student\StudentStoreRequest;
 use App\Http\Requests\StudentInfo\Student\StudentImportRequest;
 use App\Http\Requests\StudentInfo\Student\StudentUpdateRequest;
+use App\Services\StudentServiceManager;
 
 class StudentController extends Controller
 {
@@ -48,6 +49,7 @@ class StudentController extends Controller
     private $departmentRepo;
     private $parentGuardianRepo;
     private $feesAssignedRepo;
+    private $serviceManager;
 
     function __construct(
         StudentRepository $repo,
@@ -63,6 +65,7 @@ class StudentController extends Controller
         DepartmentRepository         $departmentRepo,
         ParentGuardianRepository     $parentGuardianRepo,
         FeesCollectInterface         $feesAssignedRepo,
+        StudentServiceManager        $serviceManager,
     ) {
         $this->repo               = $repo;
         $this->classRepo          = $classRepo;
@@ -76,7 +79,8 @@ class StudentController extends Controller
         $this->examAssignRepo     = $examAssignRepo;
         $this->departmentRepo     = $departmentRepo;
         $this->parentGuardianRepo = $parentGuardianRepo;
-        $this->feesAssignedRepo              = $feesAssignedRepo;
+        $this->feesAssignedRepo   = $feesAssignedRepo;
+        $this->serviceManager     = $serviceManager;
     }
 
     public function index()
@@ -135,6 +139,37 @@ class StudentController extends Controller
         $result = $this->repo->store($request);
 
         if ($result['status']) {
+            // Handle optional service subscriptions if provided
+            if ($request->has('selected_services') && !empty($request->selected_services)) {
+                try {
+                    $student = Student::find($result['student_id'] ?? null);
+                    if ($student) {
+                        foreach ($request->selected_services as $serviceId) {
+                            $feeType = \App\Models\Fees\FeesType::find($serviceId);
+                            if ($feeType) {
+                                $this->serviceManager->subscribeToService($student, $feeType, [
+                                    'academic_year_id' => session('academic_year_id'),
+                                    'notes' => 'Selected during registration'
+                                ]);
+                            }
+                        }
+                        
+                        return redirect()->route('student.index')
+                            ->with('success', $result['message'] . ' Optional services have been assigned successfully.');
+                    }
+                } catch (\Exception $e) {
+                    \Log::warning('Failed to assign optional services during registration', [
+                        'student_id' => $student->id ?? null,
+                        'services' => $request->selected_services,
+                        'error' => $e->getMessage()
+                    ]);
+                    
+                    // Don't fail registration if optional services fail
+                    return redirect()->route('student.index')
+                        ->with('success', $result['message'] . ' Note: Some optional services could not be assigned.');
+                }
+            }
+            
             return redirect()->route('student.index')->with('success', $result['message']);
         }
         return back()->with('danger', $result['message']);
@@ -162,27 +197,70 @@ class StudentController extends Controller
     public function show($id)
     {
         $data = $this->repo->show($id);
-        $fees['fees_masters'] = $data->feesMasters;
-        $fees['fees_payments'] = $data->feesPayments;
-        $fees['fees_discounts'] = $data->feesDiscounts;
-        // Calculate fees due based on actual fee assignments (avoid duplicates)
-        $feesAssigned = $this->feesAssignedRepo->feesAssigned($id);
-        $totalFees = 0;
-        $totalPaid = 0;
-        $totalDiscounts = $data->feesDiscounts->sum('discount_amount');
         
-        foreach ($feesAssigned as $assignment) {
-            $feeAmount = $assignment->feesMaster->amount ?? 0;
-            $totalFees += $feeAmount;
-            
-            // Only count as paid if payment_method exists
-            if ($assignment->feesCollect && $assignment->feesCollect->isPaid()) {
-                $totalPaid += $assignment->feesCollect->amount;
-            }
+        // Initialize fees array
+        $fees = [];
+        
+        // Enhanced Fee Processing System - Service-based fee calculation
+        $academicYearId = session('academic_year_id');
+        
+        // If no academic year in session, try to get the current active academic year
+        if (!$academicYearId) {
+            $academicYearId = \App\Models\Session::active()->value('id');
         }
         
-        $fees['fees_due'] = $totalFees - ($totalPaid + $totalDiscounts);
-        $fees['fees_assigned']  = $this->feesAssignedRepo->feesAssigned($id);
+        // Check if student has service subscriptions (enhanced system)
+        if ($academicYearId && $data->hasActiveServices($academicYearId)) {
+            // Use service-based fee system
+            $servicesSummary = $data->getServicesSummary($academicYearId);
+            $activeServices = $data->activeServices($academicYearId)->get();
+            $outstandingFees = $data->getOutstandingFees($academicYearId);
+            
+            $fees['system_type'] = 'service_based';
+            $fees['services'] = $activeServices;
+            $fees['services_summary'] = $servicesSummary;
+            $fees['outstanding_services'] = $outstandingFees;
+            $fees['fees_due'] = $data->getOutstandingAmount($academicYearId);
+            $fees['total_fees'] = $data->getTotalServiceFees($academicYearId);
+            $fees['total_discounts'] = $data->getDiscountedAmount($academicYearId);
+            $fees['fees_payments'] = $data->feesPayments;
+            
+            // Calculate total paid for service-based fees
+            $totalPaid = $data->feesPayments()
+                ->where('academic_year_id', $academicYearId)
+                ->whereNotNull('payment_method')
+                ->sum('amount');
+            $fees['total_paid'] = $totalPaid;
+            
+        } else {
+            // Fallback to legacy fee system
+            $fees['system_type'] = 'legacy';
+            $fees['fees_masters'] = $data->feesMasters;
+            $fees['fees_payments'] = $data->feesPayments;
+            $fees['fees_discounts'] = $data->feesDiscounts;
+            
+            // Calculate fees due based on actual fee assignments (avoid duplicates)
+            $feesAssigned = $this->feesAssignedRepo->feesAssigned($id);
+            $totalFees = 0;
+            $totalPaid = 0;
+            $totalDiscounts = $data->feesDiscounts->sum('discount_amount');
+            
+            foreach ($feesAssigned as $assignment) {
+                $feeAmount = $assignment->feesMaster->amount ?? 0;
+                $totalFees += $feeAmount;
+                
+                // Only count as paid if payment_method exists
+                if ($assignment->feesCollect && $assignment->feesCollect->isPaid()) {
+                    $totalPaid += $assignment->feesCollect->amount;
+                }
+            }
+            
+            $fees['fees_due'] = $totalFees - ($totalPaid + $totalDiscounts);
+            $fees['fees_assigned'] = $this->feesAssignedRepo->feesAssigned($id);
+            $fees['total_fees'] = $totalFees;
+            $fees['total_paid'] = $totalPaid;
+            $fees['total_discounts'] = $totalDiscounts;
+        }
 
         $attendances['total_attendance'] = Attendance::where('student_id', $id)->where('session_id', setting('session'))->get();
         $attendances['total_present'] = $attendances['total_attendance']->where('attendance', 1)->count();

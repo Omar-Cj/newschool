@@ -19,10 +19,12 @@ use Illuminate\Database\Eloquent\Model;
 use App\Models\Academic\SubjectAssignChildren;
 use App\Models\AssignFeesDiscount;
 use App\Models\Fees\FeesCollect;
+use App\Models\StudentService;
 use Modules\VehicleTracker\Entities\EnrollmentReport;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Modules\VehicleTracker\Entities\StudentRouteEnrollment;
 use PhpParser\Node\Expr\Assign;
+use Illuminate\Support\Collection;
 
 class Student extends BaseModel
 {
@@ -204,5 +206,128 @@ class Student extends BaseModel
             'id',               // Local key on Student
             'id'    // Foreign key on FeesAssignChildren
         );
+    }
+
+    // Enhanced Fee Processing System Relationships and Methods
+
+    public function studentServices()
+    {
+        return $this->hasMany(StudentService::class, 'student_id');
+    }
+
+    public function activeServices(int $academicYearId = null)
+    {
+        $query = $this->studentServices()->active()->with('feeType');
+        
+        if ($academicYearId) {
+            $query->forAcademicYear($academicYearId);
+        } else {
+            $query->forAcademicYear(session('academic_year_id'));
+        }
+        
+        return $query;
+    }
+
+    public function getAcademicLevel(): string
+    {
+        // Get academic level based on student's class
+        $classNumber = $this->sessionStudentDetails?->classes?->numeric_name ?? 0;
+        
+        return match(true) {
+            $classNumber >= 1 && $classNumber <= 5 => 'primary',
+            $classNumber >= 6 && $classNumber <= 10 => 'secondary',
+            $classNumber >= 11 && $classNumber <= 12 => 'high_school',
+            $classNumber < 1 => 'kg',
+            default => 'primary'
+        };
+    }
+
+    public function getOutstandingFees(int $academicYearId = null): Collection
+    {
+        $academicYearId = $academicYearId ?? session('academic_year_id');
+        
+        // Get all active services for the academic year
+        $services = $this->activeServices($academicYearId)->get();
+        
+        // Filter out services that have been fully paid
+        return $services->filter(function ($service) use ($academicYearId) {
+            $paidAmount = $this->feesPayments()
+                ->where('fee_type_id', $service->fee_type_id)
+                ->where('academic_year_id', $academicYearId)
+                ->whereNotNull('payment_method')
+                ->sum('amount');
+                
+            return $paidAmount < $service->final_amount;
+        });
+    }
+
+    public function getTotalServiceFees(int $academicYearId = null): float
+    {
+        return $this->activeServices($academicYearId)->get()->sum('final_amount');
+    }
+
+    public function getTotalOriginalFees(int $academicYearId = null): float
+    {
+        return $this->activeServices($academicYearId)->get()->sum('amount');
+    }
+
+    public function getDiscountedAmount(int $academicYearId = null): float
+    {
+        $services = $this->activeServices($academicYearId)->get();
+        
+        return $services->sum(function ($service) {
+            return $service->amount - $service->final_amount;
+        });
+    }
+
+    public function getOutstandingAmount(int $academicYearId = null): float
+    {
+        return $this->getOutstandingFees($academicYearId)->sum('final_amount');
+    }
+
+    public function hasActiveServices(int $academicYearId = null): bool
+    {
+        return $this->activeServices($academicYearId)->exists();
+    }
+
+    public function getServicesByCategory(string $category, int $academicYearId = null): Collection
+    {
+        return $this->activeServices($academicYearId)
+                    ->byCategory($category)
+                    ->get();
+    }
+
+    public function hasServiceType(int $feeTypeId, int $academicYearId = null): bool
+    {
+        return $this->activeServices($academicYearId)
+                    ->where('fee_type_id', $feeTypeId)
+                    ->exists();
+    }
+
+    public function getServicesSummary(int $academicYearId = null): array
+    {
+        $services = $this->activeServices($academicYearId)->get();
+        
+        return [
+            'total_services' => $services->count(),
+            'total_original_amount' => $services->sum('amount'),
+            'total_final_amount' => $services->sum('final_amount'),
+            'total_discount' => $services->sum(function ($service) {
+                return $service->amount - $service->final_amount;
+            }),
+            'services_by_category' => $services->groupBy('feeType.category')->map(function ($categoryServices) {
+                return [
+                    'count' => $categoryServices->count(),
+                    'total_amount' => $categoryServices->sum('final_amount'),
+                    'services' => $categoryServices->pluck('feeType.name')->toArray()
+                ];
+            })->toArray(),
+            'overdue_services' => $services->filter(function ($service) {
+                return $service->isOverdue();
+            })->count(),
+            'due_soon_services' => $services->filter(function ($service) {
+                return $service->isDueSoon();
+            })->count()
+        ];
     }
 }

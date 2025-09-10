@@ -13,7 +13,9 @@ use App\Traits\CommonHelperTrait;
 use App\Traits\ReturnFormatTrait;
 use Illuminate\Support\Facades\DB;
 use App\Models\StudentInfo\Student;
+use App\Services\StudentServiceManager;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Database\Eloquent\Builder;
 use App\Models\StudentInfo\SessionClassStudent;
 use App\Interfaces\StudentInfo\StudentInterface;
@@ -24,10 +26,12 @@ class StudentRepository implements StudentInterface
     use CommonHelperTrait;
 
     private $model;
+    private $serviceManager;
 
-    public function __construct(Student $model)
+    public function __construct(Student $model, StudentServiceManager $serviceManager)
     {
         $this->model = $model;
+        $this->serviceManager = $serviceManager;
     }
 
     public function all()
@@ -159,8 +163,36 @@ class StudentRepository implements StudentInterface
             $session_class->roll                = $request->roll_no;
             $session_class->save();
 
+            // Auto-subscribe to mandatory services for enhanced fee processing system
+            try {
+                $student = $this->model->find($row->id);
+                $subscriptions = $this->serviceManager->autoSubscribeMandatoryServices(
+                    $student, 
+                    setting('session')
+                );
+
+                Log::info('Student registered with service auto-subscription', [
+                    'student_id' => $student->id,
+                    'student_name' => $student->full_name,
+                    'academic_level' => $student->getAcademicLevel(),
+                    'mandatory_services_count' => $subscriptions->count(),
+                    'total_fees' => $subscriptions->sum('final_amount')
+                ]);
+
+            } catch (\Exception $e) {
+                // Log the error but don't fail the registration
+                Log::warning('Failed to auto-subscribe student to mandatory services during registration', [
+                    'student_id' => $row->id,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+                
+                // We don't throw the exception to avoid failing student registration
+                // Services can be manually assigned later
+            }
+
             DB::commit();
-            return $this->responseWithSuccess(___('alert.created_successfully'), []);
+            return $this->responseWithSuccess(___('alert.created_successfully'), ['student_id' => $row->id]);
         } catch (\Throwable $th) {
             DB::rollback();
             return $this->responseWithError(___('alert.something_went_wrong_please_try_again'), []);

@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Repositories\Fees\FeesGenerationRepository;
 use App\Services\FeesGenerationService;
+use App\Services\FeesServiceManager;
 use App\Repositories\Academic\ClassesRepository;
 use App\Repositories\Academic\SectionRepository;
 use App\Repositories\Academic\ClassSetupRepository;
@@ -19,6 +20,7 @@ class FeesGenerationController extends Controller
 {
     private $repo;
     private $service;
+    private $serviceManager;
     private $classRepo;
     private $sectionRepo;
     private $classSetupRepo;
@@ -28,6 +30,7 @@ class FeesGenerationController extends Controller
     public function __construct(
         FeesGenerationRepository $repo,
         FeesGenerationService $service,
+        FeesServiceManager $serviceManager,
         ClassesRepository $classRepo,
         SectionRepository $sectionRepo,
         ClassSetupRepository $classSetupRepo,
@@ -36,6 +39,7 @@ class FeesGenerationController extends Controller
     ) {
         $this->repo = $repo;
         $this->service = $service;
+        $this->serviceManager = $serviceManager;
         $this->classRepo = $classRepo;
         $this->sectionRepo = $sectionRepo;
         $this->classSetupRepo = $classSetupRepo;
@@ -258,5 +262,150 @@ class FeesGenerationController extends Controller
                 'message' => $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Get system status and compatibility report
+     */
+    public function getSystemStatus(): JsonResponse
+    {
+        try {
+            $report = $this->serviceManager->getSystemCompatibilityReport();
+            $statistics = $this->serviceManager->getUsageStatistics();
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'compatibility_report' => $report,
+                    'usage_statistics' => $statistics
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Switch between fee generation systems
+     */
+    public function switchSystem(Request $request): JsonResponse
+    {
+        try {
+            $targetSystem = $request->input('system'); // 'legacy' or 'enhanced'
+            
+            if (!in_array($targetSystem, ['legacy', 'enhanced'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid system type. Must be "legacy" or "enhanced".'
+                ], 422);
+            }
+
+            // Validate system switch
+            $validation = $this->serviceManager->validateSystemSwitch($targetSystem);
+            
+            if (!$validation['is_valid']) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cannot switch to ' . $targetSystem . ' system.',
+                    'errors' => $validation['errors']
+                ], 422);
+            }
+
+            // Perform the switch
+            if ($targetSystem === 'enhanced') {
+                $this->serviceManager->enableEnhancedSystem();
+            } else {
+                $this->serviceManager->enableLegacySystem();
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Successfully switched to ' . $targetSystem . ' fee system.',
+                'warnings' => $validation['warnings'] ?? []
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Generate preview using the active service
+     */
+    public function generatePreviewWithManager(Request $request): JsonResponse
+    {
+        try {
+            $filters = $request->only(['classes', 'sections', 'month', 'year', 'fees_groups']);
+            
+            // Use service manager to get preview from active service
+            $preview = $this->serviceManager->generatePreview($filters);
+            
+            $preview['active_system'] = $this->serviceManager->isEnhancedSystemEnabled() ? 'enhanced' : 'legacy';
+            
+            return response()->json([
+                'success' => true,
+                'data' => $preview
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Generate fees using the active service
+     */
+    public function generateFeesWithManager(Request $request): JsonResponse
+    {
+        try {
+            $data = $this->prepareGenerationData($request);
+            
+            // Use service manager to generate fees with active service
+            $generation = $this->serviceManager->generateFees($data);
+            
+            return response()->json([
+                'success' => true,
+                'message' => ___('fees.generation_initiated'),
+                'data' => [
+                    'generation_id' => $generation->id,
+                    'batch_id' => $generation->batch_id,
+                    'active_system' => $this->serviceManager->isEnhancedSystemEnabled() ? 'enhanced' : 'legacy'
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Prepare generation data from request
+     */
+    private function prepareGenerationData(Request $request): array
+    {
+        return [
+            'batch_id' => 'FEES_' . strtoupper(Str::random(10)) . '_' . time(),
+            'classes' => $request->input('classes', []),
+            'sections' => $request->input('sections', []),
+            'month' => $request->input('month'),
+            'year' => $request->input('year'),
+            'fees_groups' => $request->input('fees_groups', []),
+            'selected_students' => $request->input('selected_students', []),
+            'notes' => $request->input('notes'),
+            'due_date' => $request->input('due_date') ? 
+                Carbon::parse($request->input('due_date'))->toDateString() : null,
+            'created_by' => auth()->id(),
+            'school_id' => auth()->user()->school_id ?? 1
+        ];
     }
 }

@@ -30,11 +30,16 @@ class FeesTypeRepository implements FeesTypeInterface
     public function store($request)
     {
         try {
-            $row                = new $this->model;
-            $row->name          = $request->name;
-            $row->code          = $request->code;
-            $row->description   = $request->description;
-            $row->status        = $request->status;
+            $row                            = new $this->model;
+            $row->name                      = $request->name;
+            $row->code                      = $request->code;
+            $row->description               = $request->description;
+            $row->academic_level            = $request->academic_level ?? 'all';
+            $row->category                  = $request->category ?? 'academic';
+            $row->amount                    = $request->amount ?? 0;
+            $row->due_date_offset           = $request->due_date_offset ?? 30;
+            $row->is_mandatory_for_level    = $request->has('is_mandatory_for_level') ? true : false;
+            $row->status                    = $request->status;
             $row->save();
             return $this->responseWithSuccess(___('alert.created_successfully'), []);
         } catch (\Throwable $th) {
@@ -51,11 +56,16 @@ class FeesTypeRepository implements FeesTypeInterface
     public function update($request, $id)
     {
         try {
-            $row                = $this->model->findOrfail($id);
-            $row->name          = $request->name;
-            $row->code          = $request->code;
-            $row->description   = $request->description;
-            $row->status        = $request->status;
+            $row                            = $this->model->findOrfail($id);
+            $row->name                      = $request->name;
+            $row->code                      = $request->code;
+            $row->description               = $request->description;
+            $row->academic_level            = $request->academic_level ?? 'all';
+            $row->category                  = $request->category ?? 'academic';
+            $row->amount                    = $request->amount ?? 0;
+            $row->due_date_offset           = $request->due_date_offset ?? 30;
+            $row->is_mandatory_for_level    = $request->has('is_mandatory_for_level') ? true : false;
+            $row->status                    = $request->status;
             $row->save();
             return $this->responseWithSuccess(___('alert.updated_successfully'), []);
         } catch (\Throwable $th) {
