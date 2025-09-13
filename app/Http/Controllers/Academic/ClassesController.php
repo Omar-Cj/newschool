@@ -9,6 +9,8 @@ use App\Repositories\LanguageRepository;
 use App\Interfaces\Academic\ClassesInterface;
 use App\Http\Requests\Academic\Classes\ClassesStoreRequest;
 use App\Http\Requests\Academic\Classes\ClassesUpdateRequest;
+use App\Models\Academic\Classes;
+use Illuminate\Support\Facades\Log;
 
 class ClassesController extends Controller
 {
@@ -29,6 +31,26 @@ class ClassesController extends Controller
     {
         $data['class'] = $this->classes->getAll();
         $data['title'] = ___('academic.class');
+        
+        // Check for classes without academic levels
+        $classesWithoutLevels = $data['class']->filter(function ($class) {
+            return !$class->hasAcademicLevel();
+        });
+        
+        if ($classesWithoutLevels->count() > 0) {
+            $message = "Warning: {$classesWithoutLevels->count()} classes do not have academic levels assigned. " .
+                      "This may cause issues with fee assignment during student registration. " .
+                      "Please assign academic levels to ensure proper fee calculation.";
+            
+            session()->flash('warning', $message);
+            
+            // Optional: Provide a quick fix link
+            session()->flash('action_link', [
+                'url' => url('artisan-command?cmd=classes:assign-academic-levels'),
+                'text' => 'Auto-assign Academic Levels'
+            ]);
+        }
+        
         return view('backend.academic.class.index', compact('data'));
     }
 
@@ -96,5 +118,82 @@ class ClassesController extends Controller
             $success[2] = ___('alert.oops');
             return response()->json($success);
         endif;
+    }
+
+    /**
+     * Show academic level management interface
+     */
+    public function academicLevelManagement()
+    {
+        $data['classes'] = Classes::orderBy('name')->get();
+        $data['title'] = 'Academic Level Management';
+        $data['statistics'] = Classes::getAcademicLevelCounts();
+        
+        return view('backend.academic.class.academic-level-management', compact('data'));
+    }
+
+    /**
+     * Bulk assign academic levels
+     */
+    public function bulkAssignAcademicLevels(Request $request)
+    {
+        $request->validate([
+            'assignments' => 'required|array',
+            'assignments.*.class_id' => 'required|exists:classes,id',
+            'assignments.*.academic_level' => 'required|in:kg,primary,secondary,high_school'
+        ]);
+
+        $successCount = 0;
+        $errors = [];
+
+        foreach ($request->assignments as $assignment) {
+            try {
+                $class = Classes::find($assignment['class_id']);
+                if ($class) {
+                    $class->update(['academic_level' => $assignment['academic_level']]);
+                    $successCount++;
+                    
+                    Log::info('Academic level assigned via bulk management', [
+                        'class_id' => $class->id,
+                        'class_name' => $class->name,
+                        'academic_level' => $assignment['academic_level'],
+                        'assigned_by' => auth()->id()
+                    ]);
+                }
+            } catch (\Exception $e) {
+                $errors[] = "Failed to update class ID {$assignment['class_id']}: " . $e->getMessage();
+                Log::error('Bulk academic level assignment failed', [
+                    'class_id' => $assignment['class_id'],
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+
+        if ($successCount > 0) {
+            $message = "Successfully assigned academic levels to {$successCount} classes.";
+            if (!empty($errors)) {
+                $message .= " However, " . count($errors) . " assignments failed.";
+            }
+            return redirect()->back()->with('success', $message);
+        }
+
+        return redirect()->back()->with('error', 'No academic levels were assigned. Please check the errors.');
+    }
+
+    /**
+     * Get academic level suggestion for a class
+     */
+    public function suggestAcademicLevel(Request $request)
+    {
+        $request->validate(['class_id' => 'required|exists:classes,id']);
+        
+        $class = Classes::find($request->class_id);
+        $suggestion = $class->suggestAcademicLevel();
+        
+        return response()->json([
+            'success' => true,
+            'suggestion' => $suggestion,
+            'class_name' => $class->name
+        ]);
     }
 }

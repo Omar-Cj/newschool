@@ -643,7 +643,7 @@
                                             <tbody id="servicesTableBody">
                                                 <tr id="no-services-row">
                                                     <td colspan="7" class="text-center text-muted">
-                                                        {{ ___('fees.no_services_assigned') ?? 'No services assigned yet. Select a class to auto-populate mandatory services or click "Add Service" to add manually.' }}
+                                                        {{ ___('fees.no_services_assigned') ?? 'No services assigned yet. Click "Add Service" to add services manually. Mandatory services will be assigned automatically when the student is saved.' }}
                                                     </td>
                                                 </tr>
                                             </tbody>
@@ -913,7 +913,7 @@
                 emptyRow.id = 'no-services-row';
                 emptyRow.innerHTML = `
                     <td colspan="7" class="text-center text-muted">
-                        {{ ___('fees.no_services_assigned') ?? 'No services assigned yet. Select a class to auto-populate mandatory services or click "Add Service" to add manually.' }}
+                        {{ ___('fees.no_services_assigned') ?? 'No services assigned yet. Click "Add Service" to add services manually. Mandatory services will be assigned automatically when the student is saved.' }}
                     </td>
                 `;
                 tableBody.appendChild(emptyRow);
@@ -1002,132 +1002,13 @@
         // EVENT HANDLERS & CLASS/SERVICE INTEGRATION
         // =======================================================================
 
-        // Hook into the existing getSections change event from custom.js
-        // The existing system handles section loading, we just need to add service management
-        $(document).on('change', '#getSections', function() {
-            console.log('getSections change detected for service management');
-            const selectedClassId = $(this).val();
-            console.log('Selected class ID:', selectedClassId);
-            
-            // Add a delay to let the existing custom.js section loading complete first
-            setTimeout(() => {
-                if (selectedClassId) {
-                    detectAndAddMandatoryServices(selectedClassId);
-                } else {
-                    clearAllServices();
-                }
-            }, 1000); // Wait 1 second for existing AJAX section loading from custom.js
-        });
+        // Note: Automatic service population on class selection has been removed
+        // Manual service addition via "Add Service" button is still available
+        // Mandatory services are automatically assigned in the background when student is saved
 
-        // Additional handler for nice-select specific events  
-        $(document).on('click', '.nice-select .option', function() {
-            const parentSelect = $(this).closest('.nice-select').next('select#getSections');
-            if (parentSelect.length > 0) {
-                console.log('Nice-select option clicked for class');
-                setTimeout(() => {
-                    const selectedClassId = parentSelect.val();
-                    console.log('Nice-select class ID:', selectedClassId);
-                    if (selectedClassId) {
-                        // Let custom.js handle section loading, then add services
-                        setTimeout(() => {
-                            detectAndAddMandatoryServices(selectedClassId);
-                        }, 1500); // Wait longer for nice-select + custom.js section loading
-                    } else {
-                        clearAllServices();
-                    }
-                }, 100);
-            }
-        });
-
-        // Detect and add mandatory services based on selected class
-        function detectAndAddMandatoryServices(classId) {
-            console.log('detectAndAddMandatoryServices called with classId:', classId);
-            
-            // Get class name from our mapping
-            const className = window.classMapping[classId];
-            console.log('Class name from mapping:', className);
-            
-            if (!className) {
-                console.log('No class name found in mapping, returning');
-                return;
-            }
-
-            // Clear existing services first
-            clearAllServices();
-
-            // Determine academic level from class name
-            const academicLevel = getAcademicLevelFromClassName(className);
-            console.log('Detected academic level:', academicLevel);
-            
-            // Find mandatory services for this level
-            console.log('Available fee types:', window.feeTypes);
-            const mandatoryServices = window.feeTypes.filter(feeType => {
-                const isMandatory = feeType.is_mandatory_for_level;
-                const levelMatch = (feeType.academic_level === academicLevel || feeType.academic_level === 'all');
-                console.log(`Fee type ${feeType.name}: mandatory=${isMandatory}, level=${feeType.academic_level}, matches=${levelMatch}`);
-                return isMandatory && levelMatch;
-            });
-            
-            console.log('Found mandatory services:', mandatoryServices);
-
-            // Add mandatory services automatically
-            mandatoryServices.forEach(service => {
-                console.log('Adding service:', service.name);
-                addServiceRow(service, true); // true = mandatory
-            });
-
-            // Show success message if services were added
-            if (mandatoryServices.length > 0) {
-                console.log('Showing success message');
-                if (typeof toastr !== 'undefined') {
-                    toastr.success(`Added ${mandatoryServices.length} mandatory service(s) for ${className}`);
-                } else {
-                    alert(`Added ${mandatoryServices.length} mandatory service(s) for ${className}`);
-                }
-            } else {
-                console.log('No mandatory services found for this class level');
-            }
-        }
-
-        // Get academic level from class name
-        function getAcademicLevelFromClassName(className) {
-            if (/^Form[1-4]/i.test(className)) {
-                return 'secondary';
-            }
-            if (/^Grade([1-8])/i.test(className)) {
-                const gradeMatch = className.match(/^Grade([1-8])/i);
-                const gradeNumber = parseInt(gradeMatch[1]);
-                return gradeNumber <= 5 ? 'primary' : 'secondary';
-            }
-            if (/^(KG|Kindergarten|Pre)/i.test(className)) {
-                return 'kg';
-            }
-            if (/^(Form[5-6]|Grade(9|1[0-2]))/i.test(className)) {
-                return 'high_school';
-            }
-            if (/form/i.test(className)) {
-                return 'secondary';
-            }
-            if (/grade/i.test(className)) {
-                return 'primary';
-            }
-            return 'primary';
-        }
-
-        // Clear all services
-        function clearAllServices() {
-            const tableBody = document.getElementById('servicesTableBody');
-            if (tableBody) {
-                tableBody.innerHTML = `
-                    <tr id="no-services-row">
-                        <td colspan="7" class="text-center text-muted">
-                            {{ ___('fees.no_services_assigned') ?? 'No services assigned yet. Select a class to auto-populate mandatory services or click "Add Service" to add manually.' }}
-                        </td>
-                    </tr>
-                `;
-                window.serviceRowCounter = 0;
-            }
-        }
+        // Note: detectAndAddMandatoryServices, getAcademicLevelFromClassName, and clearAllServices functions removed
+        // Manual service management is still available via "Add Service" button
+        // Automatic mandatory service assignment happens in the background during student creation
 
         $(document).ready(function() {
             // Test if global functions are available

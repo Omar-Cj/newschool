@@ -70,14 +70,16 @@ return [
         ],
         'primary' => [
             'keywords' => ['primary', 'elementary', 'grade', 'class', 'std'],
-            'numeric_range' => ['min' => 1, 'max' => 5]
+            'numeric_range' => ['min' => 1, 'max' => 8]  // Updated: Classes 1-8 = Primary
         ],
         'secondary' => [
-            'keywords' => ['secondary', 'middle', 'junior'],
-            'numeric_range' => ['min' => 6, 'max' => 10]
+            'keywords' => ['secondary', 'middle', 'junior', 'form'],  // Added 'form' keyword
+            'form_range' => ['min' => 1, 'max' => 4],  // Form 1-4 = Secondary
+            'numeric_range' => ['min' => 9, 'max' => 10]  // Updated: Grades 9-10 for fallback systems
         ],
         'high_school' => [
-            'keywords' => ['high', 'senior', 'college'],
+            'keywords' => ['high', 'senior', 'college', 'form'],
+            'form_range' => ['min' => 5, 'max' => 6],  // Form 5-6 if applicable
             'numeric_range' => ['min' => 11, 'max' => 12]
         ]
     ],

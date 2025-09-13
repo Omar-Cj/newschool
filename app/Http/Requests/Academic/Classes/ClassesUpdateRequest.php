@@ -24,8 +24,17 @@ class ClassesUpdateRequest extends FormRequest
     public function rules()
     {
         return [
-            'name'   => 'required|max:255|unique:classes,name,'.Request()->id,
-            'status' => 'required'
+            'name' => 'required|max:255|unique:classes,name,'.Request()->id,
+            'status' => 'required',
+            'academic_level' => 'required|in:kg,primary,secondary,high_school'
+        ];
+    }
+
+    public function messages()
+    {
+        return [
+            'academic_level.required' => 'Academic level is required for proper fee assignment.',
+            'academic_level.in' => 'Please select a valid academic level.'
         ];
     }
 }

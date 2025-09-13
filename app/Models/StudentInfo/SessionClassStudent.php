@@ -11,6 +11,7 @@ use App\Models\Academic\Classes;
 use App\Models\Academic\Section;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Facades\Log;
 
 class SessionClassStudent extends BaseModel
 {
@@ -24,6 +25,41 @@ class SessionClassStudent extends BaseModel
         'shift_id',
         'roll'
     ];
+
+    /**
+     * Boot the model and add event listeners
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        // Before creating a new session class student record
+        static::creating(function ($model) {
+            $class = Classes::find($model->classes_id);
+            
+            if ($class && !$class->hasAcademicLevel()) {
+                $student = Student::find($model->student_id);
+                $studentName = $student ? $student->full_name : 'Unknown Student';
+                
+                Log::warning('Student assigned to class without academic level', [
+                    'student_id' => $model->student_id,
+                    'student_name' => $studentName,
+                    'class_id' => $model->classes_id,
+                    'class_name' => $class->name,
+                    'warning' => 'Fee assignment may be inconsistent without explicit academic level',
+                    'recommendation' => 'Assign academic level to class using: php artisan classes:assign-academic-levels'
+                ]);
+                
+                // Flash warning to session for immediate user feedback
+                if (session()->exists()) {
+                    session()->flash('warning', 
+                        "Warning: Class '{$class->name}' does not have an academic level assigned. " .
+                        "This may cause issues with fee assignment. Please assign an academic level to this class."
+                    );
+                }
+            }
+        });
+    }
 
     public function subjectAssignChildren()
     {

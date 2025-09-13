@@ -3,6 +3,7 @@
 namespace App\Http\Requests\StudentInfo\Student;
 
 use Illuminate\Foundation\Http\FormRequest;
+use App\Models\Academic\Classes;
 
 class StudentStoreRequest extends FormRequest
 {
@@ -45,7 +46,7 @@ class StudentStoreRequest extends FormRequest
             'health_status' => 'nullable|max:255',
             'rank_in_family' => 'nullable|max:20',
             'siblings' => 'nullable|max:20',
-            'class' => 'required|max:255',
+            'class' => ['required', 'exists:classes,id'],
             'section' => 'required|max:255',
             'date_of_birth' => 'required|max:255',
             'admission_date' => 'required|max:255',
@@ -67,4 +68,5 @@ class StudentStoreRequest extends FormRequest
             'services.*.is_active' => 'required_with:services.*|boolean'
         ];
     }
+
 }

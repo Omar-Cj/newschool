@@ -38,6 +38,60 @@ class StudentServiceManager
             ->where('academic_year_id', $academicYearId)
             ->first();
 
+        // ✅ ENHANCED: Check for conflicting academic level fees (prevent both primary + secondary)
+        // Skip complex conflict detection during initial registration to prevent transaction issues
+        $skipConflictCheck = $options['skip_conflict_check'] ?? false;
+        
+        if (!$skipConflictCheck) {
+            try {
+                $conflictingFees = StudentService::where('student_id', $student->id)
+                    ->where('academic_year_id', $academicYearId)
+                    ->where('is_active', true)
+                    ->whereHas('feeType', function($query) use ($feeType) {
+                        $query->where('category', $feeType->category)
+                              ->where('is_mandatory_for_level', true)
+                              ->where('academic_level', '!=', $feeType->academic_level)
+                              ->where('academic_level', '!=', 'all');
+                    })
+                    ->with('feeType')
+                    ->get();
+
+                if ($conflictingFees->count() > 0) {
+                    $conflictingFeeNames = $conflictingFees->pluck('feeType.name')->join(', ');
+                    Log::warning('Preventing conflicting fee assignment', [
+                        'student_id' => $student->id,
+                        'student_name' => $student->full_name,
+                        'new_fee' => $feeType->name . ' (' . $feeType->academic_level . ')',
+                        'conflicting_fees' => $conflictingFeeNames,
+                        'academic_level' => $academicLevel,
+                        'action' => 'Removing conflicting fees to prevent dual fee assignment'
+                    ]);
+
+                    // Remove conflicting fees before adding the correct one
+                    foreach ($conflictingFees as $conflictingFee) {
+                        $conflictingFee->update([
+                            'is_active' => false,
+                            'notes' => ($conflictingFee->notes ? $conflictingFee->notes . ' | ' : '') . 
+                                      "Deactivated due to conflicting academic level. Student academic level: {$academicLevel}",
+                            'updated_by' => auth()->id()
+                        ]);
+                    }
+                }
+            } catch (\Exception $e) {
+                // Don't let conflict detection break the service subscription
+                Log::warning('Conflict detection failed, proceeding with service subscription', [
+                    'student_id' => $student->id,
+                    'fee_type' => $feeType->name,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        } else {
+            Log::debug('Skipping conflict detection during registration', [
+                'student_id' => $student->id,
+                'fee_type' => $feeType->name
+            ]);
+        }
+
         if ($existing) {
             if ($existing->is_active) {
                 throw new \InvalidArgumentException(
@@ -120,7 +174,7 @@ class StudentServiceManager
     /**
      * Auto-subscribe student to mandatory services for their academic level
      */
-    public function autoSubscribeMandatoryServices(Student $student, $academicYearId = null): Collection
+    public function autoSubscribeMandatoryServices(Student $student, $academicYearId = null, array $options = []): Collection
     {
         $academicLevel = $this->determineAcademicLevel($student);
         $academicYearId = $academicYearId ?? session('academic_year_id');
@@ -143,7 +197,8 @@ class StudentServiceManager
                     try {
                         $subscription = $this->subscribeToService($student, $service, [
                             'academic_year_id' => $academicYearId,
-                            'notes' => 'Automatically assigned mandatory service'
+                            'notes' => 'Automatically assigned mandatory service',
+                            'skip_conflict_check' => $options['skip_conflict_check'] ?? false
                         ]);
                         $subscriptions->push($subscription);
                     } catch (\Exception $e) {
@@ -323,38 +378,50 @@ class StudentServiceManager
 
     /**
      * Determine academic level based on student's class
+     * 
+     * NEW SCALABLE APPROACH: Uses explicit academic_level field from classes table
+     * instead of fragile name-based detection
      */
     public function determineAcademicLevel(Student $student): string
     {
-        // First try to use the AcademicLevelConfig system
-        if ($student->classes) {
-            $className = $student->classes->name ?? '';
-            $detectedLevel = AcademicLevelConfig::detectAcademicLevel($className);
+        try {
+            // ENHANCED: Use Student model's getAcademicLevel() method with robust error handling
+            $academicLevel = $student->getAcademicLevel();
             
-            if ($detectedLevel) {
-                return $detectedLevel;
+            if (!$academicLevel) {
+                Log::warning('getAcademicLevel() returned empty value, using fallback', [
+                    'student_id' => $student->id,
+                    'student_name' => $student->full_name,
+                    'has_session_details' => !is_null($student->sessionStudentDetails),
+                    'class_info' => $student->sessionStudentDetails?->class?->name ?? 'No class'
+                ]);
+                
+                // Emergency fallback: return primary as safe default
+                return 'primary';
             }
-
-            // Fallback to numeric name if available
-            $classNumber = $student->classes->numeric_name ?? null;
-            if ($classNumber) {
-                $detectedLevel = AcademicLevelConfig::detectAcademicLevelFromNumber($classNumber);
-                if ($detectedLevel) {
-                    return $detectedLevel;
-                }
-            }
+            
+            Log::debug('Successfully determined academic level', [
+                'student_id' => $student->id,
+                'academic_level' => $academicLevel,
+                'method' => 'Student.getAcademicLevel()'
+            ]);
+            
+            return $academicLevel;
+            
+        } catch (\Exception $e) {
+            // Critical error handling: never let fee assignment fail completely
+            Log::critical('Failed to determine academic level, using emergency fallback', [
+                'student_id' => $student->id,
+                'student_name' => $student->full_name,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'emergency_fallback' => 'primary',
+                'action_required' => 'Check student class assignment and academic level configuration'
+            ]);
+            
+            // Return safe default to prevent registration failure
+            return 'primary';
         }
-
-        // Fallback to hardcoded logic as last resort
-        $classNumber = $student->classes->numeric_name ?? 0;
-        
-        return match(true) {
-            $classNumber >= 1 && $classNumber <= 5 => 'primary',
-            $classNumber >= 6 && $classNumber <= 10 => 'secondary', 
-            $classNumber >= 11 && $classNumber <= 12 => 'high_school',
-            $classNumber < 1 => 'kg',
-            default => 'primary'
-        };
     }
 
     /**

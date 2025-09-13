@@ -230,16 +230,47 @@ class Student extends BaseModel
 
     public function getAcademicLevel(): string
     {
-        // Get academic level based on student's class
-        $classNumber = $this->sessionStudentDetails?->classes?->numeric_name ?? 0;
+        // NEW SCALABLE APPROACH: Use explicit academic level from class
+        if ($this->sessionStudentDetails?->class?->academic_level) {
+            return $this->sessionStudentDetails->class->academic_level;
+        }
+
+        // Fallback to legacy detection for backward compatibility
+        $className = $this->sessionStudentDetails?->class?->name ?? '';
         
-        return match(true) {
-            $classNumber >= 1 && $classNumber <= 5 => 'primary',
-            $classNumber >= 6 && $classNumber <= 10 => 'secondary',
-            $classNumber >= 11 && $classNumber <= 12 => 'high_school',
-            $classNumber < 1 => 'kg',
-            default => 'primary'
-        };
+        // Try AcademicLevelConfig detection first
+        if ($className) {
+            $detectedLevel = \App\Models\AcademicLevelConfig::detectAcademicLevel($className);
+            if ($detectedLevel) {
+                return $detectedLevel;
+            }
+        }
+        
+        // Final fallback: Enhanced detection with form-based and numeric parsing
+        // Priority 1: Check for Form-based classes (Form 1-4 = secondary)
+        if (preg_match('/form\s*(\d+)/i', $className, $matches)) {
+            $formNumber = (int) $matches[1];
+            return match(true) {
+                $formNumber >= 1 && $formNumber <= 4 => 'secondary',
+                $formNumber >= 5 && $formNumber <= 6 => 'high_school',
+                default => 'primary'
+            };
+        }
+
+        // Priority 2: Check for numeric classes (1-8 = primary)
+        if (preg_match('/(\d+)/', $className, $matches)) {
+            $classNumber = (int) $matches[1];
+            return match(true) {
+                $classNumber >= 1 && $classNumber <= 8 => 'primary',  // Classes 1-8 = Primary
+                $classNumber >= 9 && $classNumber <= 10 => 'secondary',
+                $classNumber >= 11 && $classNumber <= 12 => 'high_school',
+                $classNumber < 1 => 'kg',
+                default => 'primary'
+            };
+        }
+
+        // Priority 3: Safe default
+        return 'primary';
     }
 
     public function getOutstandingFees(int $academicYearId = null): Collection

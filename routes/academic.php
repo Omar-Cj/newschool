@@ -31,6 +31,11 @@ Route::middleware(saasMiddleware())->group(function () {
                     Route::post('/translateUpdate/{id}',        'translateUpdate')->name('classes.translateUpdate')->middleware('PermissionCheck:classes_update');
                     Route::put('/update/{id}',      'update')->name('classes.update')->middleware('PermissionCheck:classes_update', 'DemoCheck');
                     Route::delete('/delete/{id}',   'delete')->name('classes.delete')->middleware('PermissionCheck:classes_delete', 'DemoCheck');
+                    
+                    // Academic Level Management Routes
+                    Route::get('/academic-levels',   'academicLevelManagement')->name('classes.academic-level-management')->middleware('PermissionCheck:classes_update');
+                    Route::post('/bulk-assign-academic-levels', 'bulkAssignAcademicLevels')->name('classes.bulk-assign-academic-levels')->middleware('PermissionCheck:classes_update', 'DemoCheck');
+                    Route::post('/suggest-academic-level', 'suggestAcademicLevel')->name('classes.suggest-academic-level')->middleware('PermissionCheck:classes_update');
                 });
 
                 Route::controller(SectionController::class)->prefix('section')->group(function () {

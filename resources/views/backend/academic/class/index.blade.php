@@ -24,12 +24,20 @@
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h4 class="mb-0">{{ $data['title'] }}</h4>
-                    @if (hasPermission('classes_create'))
-                        <a href="{{ route('classes.create') }}" class="btn btn-lg ot-btn-primary">
-                            <span><i class="fa-solid fa-plus"></i> </span>
-                            <span class="">{{ ___('common.add') }}</span>
-                        </a>
-                    @endif
+                    <div class="d-flex gap-2">
+                        @if (hasPermission('classes_update'))
+                            <a href="{{ route('classes.academic-level-management') }}" class="btn btn-outline-info">
+                                <span><i class="fa-solid fa-layer-group"></i> </span>
+                                <span class="">Academic Levels</span>
+                            </a>
+                        @endif
+                        @if (hasPermission('classes_create'))
+                            <a href="{{ route('classes.create') }}" class="btn btn-lg ot-btn-primary">
+                                <span><i class="fa-solid fa-plus"></i> </span>
+                                <span class="">{{ ___('common.add') }}</span>
+                            </a>
+                        @endif
+                    </div>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
@@ -38,6 +46,7 @@
                                 <tr>
                                     <th class="serial">{{ ___('common.sr_no') }}</th>
                                     <th class="purchase">{{ ___('common.name') }}</th>
+                                    <th class="purchase">{{ ___('Academic Level') }}</th>
                                     <th class="purchase">{{ ___('common.status') }}</th>
                                     @if (hasPermission('classes_update') || hasPermission('classes_delete'))
                                         <th class="action">{{ ___('common.action') }}</th>
@@ -49,6 +58,17 @@
                                 <tr id="row_{{ $row->id }}">
                                     <td class="serial">{{ ++$key }}</td>
                                     <td>{{ $row->name }}</td>
+                                    <td>
+                                        @if($row->hasAcademicLevel())
+                                            <span class="badge-basic-{{ $row->getAcademicLevelColor() }}-text">
+                                                {{ $row->formatted_academic_level }}
+                                            </span>
+                                        @else
+                                            <span class="badge-basic-warning-text">
+                                                <i class="fas fa-exclamation-triangle"></i> Not Assigned
+                                            </span>
+                                        @endif
+                                    </td>
                                     <td>
                                         @if ($row->status == App\Enums\Status::ACTIVE)
                                             <span class="badge-basic-success-text">{{ ___('common.active') }}</span>

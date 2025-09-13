@@ -166,11 +166,35 @@ class AcademicLevelConfig extends BaseModel
         ]);
     }
 
-    // Static helper methods
+    // Static helper methods - Enhanced for Form-based detection
     public static function detectAcademicLevel(string $className): ?string
     {
+        $className = trim($className);
+
+        // Priority 1: Form-based detection (Form 1-4 = secondary)
+        if (preg_match('/form\s*(\d+)/i', $className, $matches)) {
+            $formNumber = (int) $matches[1];
+            return match(true) {
+                $formNumber >= 1 && $formNumber <= 4 => 'secondary',
+                $formNumber >= 5 && $formNumber <= 6 => 'high_school',
+                default => null
+            };
+        }
+
+        // Priority 2: Enhanced numeric detection (Classes 1-8 = primary)
+        if (preg_match('/(\d+)/', $className, $matches)) {
+            $classNumber = (int) $matches[1];
+            return match(true) {
+                $classNumber >= 1 && $classNumber <= 8 => 'primary',
+                $classNumber >= 9 && $classNumber <= 10 => 'secondary',
+                $classNumber >= 11 && $classNumber <= 12 => 'high_school',
+                $classNumber < 1 => 'kg',
+                default => null
+            };
+        }
+
+        // Priority 3: Config-based detection (for custom configurations)
         $configs = self::active()->ordered()->get();
-        
         foreach ($configs as $config) {
             if ($config->matchesClassName($className)) {
                 return $config->academic_level;
@@ -219,14 +243,14 @@ class AcademicLevelConfig extends BaseModel
             ],
             'primary' => [
                 'display_name' => 'Primary School',
-                'class_identifiers' => ['1', '2', '3', '4', '5', 'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5'],
-                'numeric_range' => ['min' => 1, 'max' => 5],
+                'class_identifiers' => ['1', '2', '3', '4', '5', '6', '7', '8', 'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8'],
+                'numeric_range' => ['min' => 1, 'max' => 8],  // Updated: Classes 1-8 = Primary
                 'sort_order' => 2
             ],
             'secondary' => [
                 'display_name' => 'Secondary School',
-                'class_identifiers' => ['6', '7', '8', '9', '10', 'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10'],
-                'numeric_range' => ['min' => 6, 'max' => 10],
+                'class_identifiers' => ['Form 1', 'Form 2', 'Form 3', 'Form 4', 'Form I', 'Form II', 'Form III', 'Form IV', '9', '10', 'Class 9', 'Class 10'],
+                'numeric_range' => ['min' => 9, 'max' => 10],  // Updated: Form 1-4 or Grades 9-10
                 'sort_order' => 3
             ],
             'high_school' => [

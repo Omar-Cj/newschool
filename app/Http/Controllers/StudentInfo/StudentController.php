@@ -433,4 +433,5 @@ class StudentController extends Controller
             'data' => $data
         ]);
     }
+
 }
