@@ -648,7 +648,7 @@ $(document).ready(function() {
 
     // Generate button from preview
     $('#generate-all-btn').on('click', function() {
-        startGeneration(true);
+        checkForDuplicatesAndGenerate();
     });
 
     // Cancel generation
@@ -721,7 +721,12 @@ $(document).ready(function() {
             });
     }
 
+    // Store preview data for duplicate checking
+    let currentPreviewData = null;
+
     function displayPreview(data) {
+        // Store preview data for duplicate checking
+        currentPreviewData = data;
         let html = `
             <div class="row">
                 <div class="col-md-4">
@@ -751,9 +756,16 @@ $(document).ready(function() {
             </div>
         `;
 
-        if (data.duplicate_warning.has_duplicates) {
+        // Enhanced duplicate warning with more details
+        if (data.duplicate_warning && data.duplicate_warning.has_duplicates) {
             html += `<div class="alert alert-warning mt-3">
-                <i class="fa-solid fa-exclamation-triangle"></i> ${data.duplicate_warning.message}
+                <div class="d-flex align-items-center">
+                    <i class="fa-solid fa-exclamation-triangle me-2"></i>
+                    <div>
+                        <strong>{{ ___('fees.duplicate_fees_detected') }}</strong><br>
+                        <small>${data.duplicate_warning.message}</small>
+                    </div>
+                </div>
             </div>`;
         }
 
@@ -871,8 +883,115 @@ $(document).ready(function() {
     }
 
     function showAlert(message, type) {
-        // Implement your preferred alert system (toastr, SweetAlert, etc.)
-        alert(message);
+        // Use toastr for notifications
+        if (typeof toastr !== 'undefined') {
+            toastr.options = {
+                "closeButton": true,
+                "progressBar": true,
+                "positionClass": "toast-top-right",
+                "timeOut": "5000"
+            };
+            
+            switch(type) {
+                case 'success':
+                    toastr.success(message);
+                    break;
+                case 'error':
+                    toastr.error(message);
+                    break;
+                case 'warning':
+                    toastr.warning(message);
+                    break;
+                case 'info':
+                    toastr.info(message);
+                    break;
+                default:
+                    toastr.info(message);
+            }
+        } else {
+            // Fallback to alert
+            alert(message);
+        }
+    }
+
+    function checkForDuplicatesAndGenerate() {
+        if (currentPreviewData && currentPreviewData.duplicate_warning && currentPreviewData.duplicate_warning.has_duplicates) {
+            showDuplicateConfirmationDialog();
+        } else {
+            startGeneration(true);
+        }
+    }
+
+    function showDuplicateConfirmationDialog() {
+        const duplicateInfo = currentPreviewData.duplicate_warning;
+        
+        // Create confirmation modal HTML
+        const modalHtml = `
+            <div class="modal fade" id="duplicateConfirmModal" tabindex="-1" aria-labelledby="duplicateConfirmModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header bg-warning text-dark">
+                            <h5 class="modal-title" id="duplicateConfirmModalLabel">
+                                <i class="fa-solid fa-exclamation-triangle me-2"></i>{{ ___('fees.duplicate_fees_detected') }}
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="alert alert-warning">
+                                <h6><i class="fa-solid fa-info-circle me-2"></i>{{ ___('fees.duplicate_detection_title') }}</h6>
+                                <p class="mb-2">${duplicateInfo.message}</p>
+                                <hr>
+                                <small class="text-muted">
+                                    <strong>{{ ___('fees.what_this_means') }}:</strong><br>
+                                    • {{ ___('fees.duplicate_explanation_1') }}<br>
+                                    • {{ ___('fees.duplicate_explanation_2') }}<br>
+                                    • {{ ___('fees.duplicate_explanation_3') }}
+                                </small>
+                            </div>
+                            
+                            <div class="mt-3">
+                                <h6>{{ ___('fees.generation_summary') }}:</h6>
+                                <ul class="list-unstyled">
+                                    <li><i class="fa-solid fa-users text-info me-2"></i><strong>{{ ___('fees.total_students') }}:</strong> ${currentPreviewData.total_students}</li>
+                                    <li><i class="fa-solid fa-dollar-sign text-success me-2"></i><strong>{{ ___('fees.estimated_amount') }}:</strong> ${formatCurrency(currentPreviewData.estimated_amount)}</li>
+                                    <li><i class="fa-solid fa-exclamation-triangle text-warning me-2"></i><strong>{{ ___('fees.existing_fees') }}:</strong> ${duplicateInfo.count} {{ ___('fees.records') }}</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn ot-btn-secondary" data-bs-dismiss="modal">
+                                <i class="fa-solid fa-times me-1"></i>{{ ___('common.cancel') }}
+                            </button>
+                            <button type="button" class="btn ot-btn-primary" id="confirmGenerateBtn">
+                                <i class="fa-solid fa-bolt me-1"></i>{{ ___('fees.proceed_anyway') }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Remove existing modal if any
+        $('#duplicateConfirmModal').remove();
+        
+        // Add modal to body
+        $('body').append(modalHtml);
+        
+        // Show modal
+        const modal = new bootstrap.Modal(document.getElementById('duplicateConfirmModal'));
+        modal.show();
+        
+        // Handle confirm button
+        $('#confirmGenerateBtn').on('click', function() {
+            modal.hide();
+            showAlert('{{ ___('fees.proceeding_with_generation') }}', 'info');
+            startGeneration(true);
+        });
+        
+        // Clean up modal after hide
+        document.getElementById('duplicateConfirmModal').addEventListener('hidden.bs.modal', function() {
+            $('#duplicateConfirmModal').remove();
+        });
     }
 
     function resetGenerationForm() {
