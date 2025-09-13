@@ -15,19 +15,22 @@ class FeesType extends BaseModel
 
     protected $fillable = [
         'name',
-        'code', 
+        'code',
         'description',
         'academic_level',
         'amount',
         'due_date_offset',
         'is_mandatory_for_level',
         'category',
+        'fee_frequency',
+        'is_prorated',
         'status'
     ];
 
     protected $casts = [
         'amount' => 'decimal:2',
         'is_mandatory_for_level' => 'boolean',
+        'is_prorated' => 'boolean',
         'due_date_offset' => 'integer',
         'status' => 'integer'
     ];
@@ -183,5 +186,128 @@ class FeesType extends BaseModel
         });
         
         return $totalDiscount / $services->count();
+    }
+
+    // Fee frequency methods
+    public function scopeMonthly($query)
+    {
+        return $query->where('fee_frequency', 'monthly');
+    }
+
+    public function scopeSemester($query)
+    {
+        return $query->where('fee_frequency', 'semester');
+    }
+
+    public function scopeAnnual($query)
+    {
+        return $query->where('fee_frequency', 'annual');
+    }
+
+    public function scopeOneTime($query)
+    {
+        return $query->where('fee_frequency', 'one_time');
+    }
+
+    public function scopeRecurring($query)
+    {
+        return $query->whereIn('fee_frequency', ['monthly', 'semester', 'annual']);
+    }
+
+    public function scopeProrated($query)
+    {
+        return $query->where('is_prorated', true);
+    }
+
+    // Helper methods for fee frequency
+    public function isMonthly(): bool
+    {
+        return $this->fee_frequency === 'monthly';
+    }
+
+    public function isSemester(): bool
+    {
+        return $this->fee_frequency === 'semester';
+    }
+
+    public function isAnnual(): bool
+    {
+        return $this->fee_frequency === 'annual';
+    }
+
+    public function isOneTime(): bool
+    {
+        return $this->fee_frequency === 'one_time';
+    }
+
+    public function isRecurring(): bool
+    {
+        return in_array($this->fee_frequency, ['monthly', 'semester', 'annual']);
+    }
+
+    public function supportsProRating(): bool
+    {
+        return $this->is_prorated && $this->isMonthly();
+    }
+
+    public function getFormattedFrequency(): string
+    {
+        return match($this->fee_frequency) {
+            'monthly' => 'Monthly',
+            'semester' => 'Semester',
+            'annual' => 'Annual',
+            'one_time' => 'One-time',
+            default => ucfirst($this->fee_frequency ?? 'monthly')
+        };
+    }
+
+    public function getDisplayName(): string
+    {
+        $name = $this->name;
+
+        if ($this->academic_level !== 'all') {
+            $name .= " ({$this->getFormattedAcademicLevel()})";
+        }
+
+        if ($this->fee_frequency && $this->fee_frequency !== 'monthly') {
+            $name .= " - {$this->getFormattedFrequency()}";
+        }
+
+        return $name;
+    }
+
+    // Calculate monthly amount for non-monthly fees
+    public function getMonthlyEquivalent(): float
+    {
+        return match($this->fee_frequency) {
+            'semester' => $this->amount / 6, // 6 months per semester
+            'annual' => $this->amount / 12,
+            'monthly' => $this->amount,
+            'one_time' => 0, // One-time fees don't have monthly equivalent
+            default => $this->amount
+        };
+    }
+
+    // Calculate amount for specific billing period
+    public function calculateAmountForPeriod(string $period = 'monthly'): float
+    {
+        return match($period) {
+            'monthly' => $this->getMonthlyEquivalent(),
+            'semester' => match($this->fee_frequency) {
+                'monthly' => $this->amount * 6,
+                'annual' => $this->amount / 2,
+                'semester' => $this->amount,
+                'one_time' => $this->amount,
+                default => $this->amount
+            },
+            'annual' => match($this->fee_frequency) {
+                'monthly' => $this->amount * 12,
+                'semester' => $this->amount * 2,
+                'annual' => $this->amount,
+                'one_time' => $this->amount,
+                default => $this->amount
+            },
+            default => $this->amount
+        };
     }
 }

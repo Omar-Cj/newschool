@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Repositories\Fees\FeesGenerationRepository;
 use App\Services\FeesGenerationService;
+use App\Services\EnhancedFeesGenerationService;
 use App\Services\FeesServiceManager;
 use App\Repositories\Academic\ClassesRepository;
 use App\Repositories\Academic\SectionRepository;
@@ -20,6 +21,7 @@ class FeesGenerationController extends Controller
 {
     private $repo;
     private $service;
+    private $enhancedService;
     private $serviceManager;
     private $classRepo;
     private $sectionRepo;
@@ -30,6 +32,7 @@ class FeesGenerationController extends Controller
     public function __construct(
         FeesGenerationRepository $repo,
         FeesGenerationService $service,
+        EnhancedFeesGenerationService $enhancedService,
         FeesServiceManager $serviceManager,
         ClassesRepository $classRepo,
         SectionRepository $sectionRepo,
@@ -39,6 +42,7 @@ class FeesGenerationController extends Controller
     ) {
         $this->repo = $repo;
         $this->service = $service;
+        $this->enhancedService = $enhancedService;
         $this->serviceManager = $serviceManager;
         $this->classRepo = $classRepo;
         $this->sectionRepo = $sectionRepo;
@@ -341,7 +345,15 @@ class FeesGenerationController extends Controller
     public function generatePreviewWithManager(Request $request): JsonResponse
     {
         try {
-            $filters = $request->only(['classes', 'sections', 'month', 'year', 'fees_groups']);
+            // Get all form data and process array parameters
+            $filters = [
+                'classes' => $request->input('classes', []),
+                'sections' => $request->input('sections', []),
+                'month' => $request->input('month'),
+                'year' => $request->input('year'),
+                'fees_groups' => $request->input('fees_groups', []),
+                'academic_year_id' => $request->input('academic_year_id', session('academic_year_id', 1))
+            ];
             
             // Use service manager to get preview from active service
             $preview = $this->serviceManager->generatePreview($filters);
@@ -405,7 +417,245 @@ class FeesGenerationController extends Controller
             'due_date' => $request->input('due_date') ? 
                 Carbon::parse($request->input('due_date'))->toDateString() : null,
             'created_by' => auth()->id(),
-            'school_id' => auth()->user()->school_id ?? 1
+            'school_id' => auth()->user()->school_id ?? null
         ];
+    }
+
+    /**
+     * Preview service-based fee generation
+     */
+    public function previewServiceBased(Request $request): JsonResponse
+    {
+        try {
+            $request->validate([
+                'generation_month' => 'required|date_format:Y-m',
+                'academic_year_id' => 'nullable|integer',
+                'class_ids' => 'nullable|array',
+                'section_ids' => 'nullable|array',
+                'service_categories' => 'nullable|array',
+                'fee_type_ids' => 'nullable|array',
+                'include_one_time_fees' => 'nullable|boolean'
+            ]);
+
+            $month = Carbon::createFromFormat('Y-m', $request->generation_month);
+            $filters = $this->buildServiceFilters($request);
+
+            $preview = $this->enhancedService->previewMonthlyFees($month, $filters);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Service-based fee preview generated successfully',
+                'data' => $preview
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to generate preview: ' . $e->getMessage()
+            ], 422);
+        }
+    }
+
+    /**
+     * Generate service-based fees for students
+     */
+    public function generateServiceBased(Request $request): JsonResponse
+    {
+        try {
+            $request->validate([
+                'generation_month' => 'required|date_format:Y-m',
+                'academic_year_id' => 'nullable|integer',
+                'class_ids' => 'nullable|array',
+                'section_ids' => 'nullable|array',
+                'service_categories' => 'nullable|array',
+                'fee_type_ids' => 'nullable|array',
+                'include_one_time_fees' => 'nullable|boolean',
+                'use_prorated' => 'nullable|boolean',
+                'notes' => 'nullable|string|max:500'
+            ]);
+
+            $month = Carbon::createFromFormat('Y-m', $request->generation_month);
+            $filters = $this->buildServiceFilters($request);
+
+            // Add generation metadata
+            $filters['notes'] = $request->notes ?? 'Service-based fee generation for ' . $month->format('F Y');
+
+            if ($request->use_prorated) {
+                $result = $this->enhancedService->generateProRatedMonthlyFees($month, $filters);
+            } else {
+                $result = $this->enhancedService->generateMonthlyFees($month, $filters);
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Service-based fees generated successfully',
+                'data' => $result
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to generate fees: ' . $e->getMessage()
+            ], 422);
+        }
+    }
+
+    /**
+     * Generate monthly fees for current month
+     */
+    public function generateCurrentMonth(Request $request): JsonResponse
+    {
+        try {
+            $request->validate([
+                'academic_year_id' => 'nullable|integer',
+                'class_ids' => 'nullable|array',
+                'section_ids' => 'nullable|array',
+                'service_categories' => 'nullable|array',
+                'use_prorated' => 'nullable|boolean'
+            ]);
+
+            $currentMonth = now();
+            $filters = $this->buildServiceFilters($request);
+
+            if ($request->use_prorated) {
+                $result = $this->enhancedService->generateProRatedMonthlyFees($currentMonth, $filters);
+            } else {
+                $result = $this->enhancedService->generateMonthlyFees($currentMonth, $filters);
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Current month fees generated successfully',
+                'data' => $result
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to generate current month fees: ' . $e->getMessage()
+            ], 422);
+        }
+    }
+
+    /**
+     * Get service-based generation status
+     */
+    public function serviceBasedStatus($generationId): JsonResponse
+    {
+        try {
+            $generation = $this->repo->find($generationId);
+
+            if (!$generation) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Generation record not found'
+                ], 404);
+            }
+
+            $status = $this->enhancedService->getGenerationStatus($generation);
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $status
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to get generation status: ' . $e->getMessage()
+            ], 422);
+        }
+    }
+
+    /**
+     * Cancel service-based fee generation
+     */
+    public function cancelServiceBased($generationId): JsonResponse
+    {
+        try {
+            $generation = $this->repo->find($generationId);
+
+            if (!$generation) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Generation record not found'
+                ], 404);
+            }
+
+            $this->enhancedService->cancelGeneration($generation);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Fee generation cancelled successfully'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to cancel generation: ' . $e->getMessage()
+            ], 422);
+        }
+    }
+
+    /**
+     * Auto-subscribe students to mandatory services before generation
+     */
+    public function autoSubscribeMandatory(Request $request): JsonResponse
+    {
+        try {
+            $request->validate([
+                'academic_year_id' => 'nullable|integer',
+                'class_ids' => 'nullable|array',
+                'section_ids' => 'nullable|array'
+            ]);
+
+            $filters = $this->buildServiceFilters($request);
+            $result = $this->enhancedService->autoSubscribeMandatoryServices($filters);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Mandatory services subscribed successfully',
+                'data' => $result
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to subscribe mandatory services: ' . $e->getMessage()
+            ], 422);
+        }
+    }
+
+    /**
+     * Build service filters from request
+     */
+    private function buildServiceFilters(Request $request): array
+    {
+        $filters = [
+            'academic_year_id' => $request->academic_year_id ?? session('academic_year_id'),
+            'school_id' => auth()->user()->school_id ?? null
+        ];
+
+        if ($request->class_ids) {
+            $filters['class_ids'] = $request->class_ids;
+        }
+
+        if ($request->section_ids) {
+            $filters['section_ids'] = $request->section_ids;
+        }
+
+        if ($request->service_categories) {
+            $filters['service_categories'] = $request->service_categories;
+        }
+
+        if ($request->fee_type_ids) {
+            $filters['fee_type_ids'] = $request->fee_type_ids;
+        }
+
+        if ($request->include_one_time_fees) {
+            $filters['include_one_time_fees'] = $request->include_one_time_fees;
+        }
+
+        return $filters;
     }
 }
