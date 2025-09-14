@@ -100,12 +100,72 @@
                             <div class="row mb-4">
                                 <div class="col-12">
                                     <h5>{{ ___('fees.filters_used') }}</h5>
+                                    @php
+                                        $filters = $data['generation']->filters ?? [];
+                                        // Support legacy (classes/sections) and enhanced (class_ids/section_ids)
+                                        $filterClasses = $filters['classes'] ?? $filters['class_ids'] ?? [];
+                                        $filterSections = $filters['sections'] ?? $filters['section_ids'] ?? [];
+
+                                        $classNames = !empty($filterClasses)
+                                            ? \App\Models\Academic\Classes::whereIn('id', (array)$filterClasses)->pluck('name')->toArray()
+                                            : [];
+                                        $sectionNames = !empty($filterSections)
+                                            ? \App\Models\Academic\Section::whereIn('id', (array)$filterSections)->pluck('name')->toArray()
+                                            : [];
+
+                                        // If no filters were specified, infer from logs
+                                        if (empty($classNames) && !empty($data['generation']->logs)) {
+                                            $classNames = collect($data['generation']->logs)
+                                                ->map(function($log){ return $log->student->sessionStudentDetails->class->name ?? null; })
+                                                ->filter()
+                                                ->unique()
+                                                ->values()
+                                                ->toArray();
+                                        }
+                                        if (empty($sectionNames) && !empty($data['generation']->logs)) {
+                                            $sectionNames = collect($data['generation']->logs)
+                                                ->map(function($log){ return $log->student->sessionStudentDetails->section->name ?? null; })
+                                                ->filter()
+                                                ->unique()
+                                                ->values()
+                                                ->toArray();
+                                        }
+
+                                        // Resolve fee period from filters
+                                        $periodLabel = null;
+                                        if (!empty($filters['generation_month'])) {
+                                            // Enhanced monthly format 'Y-m'
+                                            try {
+                                                $periodLabel = \Carbon\Carbon::createFromFormat('Y-m', $filters['generation_month'])->format('F Y');
+                                            } catch (Exception $e) {
+                                                $periodLabel = $filters['generation_month'];
+                                            }
+                                        } elseif (!empty($filters['month']) && !empty($filters['year'])) {
+                                            $m = (int)$filters['month'];
+                                            $y = (int)$filters['year'];
+                                            $periodLabel = date('F', mktime(0, 0, 0, $m, 1)) . ' ' . $y;
+                                        } elseif (!empty($data['generation']->feesCollects) && $data['generation']->feesCollects->count() > 0) {
+                                            // Fallback: infer from generated fee records
+                                            $first = $data['generation']->feesCollects->first();
+                                            if (!empty($first->billing_period)) {
+                                                try {
+                                                    $periodLabel = \Carbon\Carbon::createFromFormat('Y-m', $first->billing_period)->format('F Y');
+                                                } catch (Exception $e) {
+                                                    $periodLabel = $first->billing_period;
+                                                }
+                                            } elseif (!empty($first->date)) {
+                                                try {
+                                                    $periodLabel = \Carbon\Carbon::parse($first->date)->format('F Y');
+                                                } catch (Exception $e) {
+                                                    $periodLabel = null;
+                                                }
+                                            }
+                                        }
+                                    @endphp
                                     <div class="alert alert-info">
-                                        <strong>{{ ___('fees.classes') }}:</strong> {{ implode(', ', $data['generation']->filters['classes'] ?? []) }}<br>
-                                        <strong>{{ ___('fees.sections') }}:</strong> {{ implode(', ', $data['generation']->filters['sections'] ?? []) }}<br>
-                                        <strong>{{ ___('fees.month') }}:</strong> {{ $data['generation']->filters['month'] ?? 'N/A' }}<br>
-                                        <strong>{{ ___('fees.year') }}:</strong> {{ $data['generation']->filters['year'] ?? 'N/A' }}<br>
-                                        <strong>{{ ___('fees.fees_groups') }}:</strong> {{ implode(', ', $data['generation']->filters['fees_groups'] ?? []) }}
+                                        <strong>{{ ___('fees.classes') }}:</strong> {{ !empty($classNames) ? implode(', ', $classNames) : ___('common.all') }}<br>
+                                        <strong>{{ ___('fees.sections') }}:</strong> {{ !empty($sectionNames) ? implode(', ', $sectionNames) : ___('common.all') }}<br>
+                                        <strong>{{ ___('fees.fee_period') }}:</strong> {{ $periodLabel ?? 'N/A' }}
                                     </div>
                                 </div>
                             </div>
@@ -116,6 +176,38 @@
                             <div class="row">
                                 <div class="col-12">
                                     <h5>{{ ___('fees.student_details') }}</h5>
+                                    @php
+                                        // Global fee period for this generation (fallback for rows)
+                                        $globalFilters = $data['generation']->filters ?? [];
+                                        $globalPeriod = null;
+                                        if (!empty($globalFilters['generation_month'])) {
+                                            try {
+                                                $globalPeriod = \Carbon\Carbon::createFromFormat('Y-m', $globalFilters['generation_month'])->format('F Y');
+                                            } catch (Exception $e) {
+                                                $globalPeriod = $globalFilters['generation_month'];
+                                            }
+                                        } elseif (!empty($globalFilters['month']) && !empty($globalFilters['year'])) {
+                                            $gm = (int)$globalFilters['month'];
+                                            $gy = (int)$globalFilters['year'];
+                                            $globalPeriod = date('F', mktime(0, 0, 0, $gm, 1)) . ' ' . $gy;
+                                        } elseif (!empty($data['generation']->feesCollects) && $data['generation']->feesCollects->count() > 0) {
+                                            // Fallback: infer from generated fee records
+                                            $first = $data['generation']->feesCollects->first();
+                                            if (!empty($first->billing_period)) {
+                                                try {
+                                                    $globalPeriod = \Carbon\Carbon::createFromFormat('Y-m', $first->billing_period)->format('F Y');
+                                                } catch (Exception $e) {
+                                                    $globalPeriod = $first->billing_period;
+                                                }
+                                            } elseif (!empty($first->date)) {
+                                                try {
+                                                    $globalPeriod = \Carbon\Carbon::parse($first->date)->format('F Y');
+                                                } catch (Exception $e) {
+                                                    $globalPeriod = null;
+                                                }
+                                            }
+                                        }
+                                    @endphp
                                     <div class="table-responsive">
                                         <table class="table table-striped">
                                             <thead>
@@ -124,6 +216,7 @@
                                                     <th>{{ ___('student.admission_no') }}</th>
                                                     <th>{{ ___('academic.class') }}</th>
                                                     <th>{{ ___('academic.section') }}</th>
+                                                    <th>{{ ___('fees.fee_period') }}</th>
                                                     <th>{{ ___('common.status') }}</th>
                                                     <th>{{ ___('fees.amount') }}</th>
                                                     <th>{{ ___('common.error') }}</th>
@@ -136,6 +229,19 @@
                                                     <td>{{ $log->student->admission_no ?? 'N/A' }}</td>
                                                     <td>{{ $log->student->sessionStudentDetails->class->name ?? 'N/A' }}</td>
                                                     <td>{{ $log->student->sessionStudentDetails->section->name ?? 'N/A' }}</td>
+                                                    <td>
+                                                        @php
+                                                            $rowPeriod = null;
+                                                            if (!empty($log->feesCollect) && !empty($log->feesCollect->billing_period)) {
+                                                                try {
+                                                                    $rowPeriod = \Carbon\Carbon::createFromFormat('Y-m', $log->feesCollect->billing_period)->format('F Y');
+                                                                } catch (Exception $e) {
+                                                                    $rowPeriod = $log->feesCollect->billing_period;
+                                                                }
+                                                            }
+                                                        @endphp
+                                                        {{ $rowPeriod ?? $globalPeriod ?? 'N/A' }}
+                                                    </td>
                                                     <td>
                                                         <span class="badge bg-{{ $log->status == 'success' ? 'success' : ($log->status == 'failed' ? 'danger' : 'warning') }}">
                                                             {{ __(ucfirst($log->status)) }}

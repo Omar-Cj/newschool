@@ -42,8 +42,10 @@ class FeesGenerationRepository
     {
         return $this->model->with([
             'creator',
+            'feesCollects',
             'logs' => function ($query) {
-                $query->with('student')->orderBy('created_at', 'desc');
+                // Eager load related student and feesCollect to avoid N+1 in views
+                $query->with(['student', 'feesCollect'])->orderBy('created_at', 'desc');
             }
         ])->find($id);
     }
