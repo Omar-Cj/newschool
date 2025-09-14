@@ -662,4 +662,205 @@ class FeesGenerationController extends Controller
 
         return $filters;
     }
+
+    /**
+     * Service-based fee generation reports
+     */
+    public function serviceReports()
+    {
+        $data['title'] = ___('fees.service_based_reports');
+        $data['classes'] = $this->classRepo->assignedAll();
+        $data['sections'] = [];
+        $data['billing_periods'] = $this->getAvailableBillingPeriods();
+        $data['academic_years'] = $this->getAcademicYears();
+
+        return view('backend.fees.generation.service-reports', compact('data'));
+    }
+
+    /**
+     * Search service-based fee generation data
+     */
+    public function serviceReportsSearch(Request $request)
+    {
+        $data['title'] = ___('fees.service_based_reports');
+        $data['classes'] = $this->classRepo->assignedAll();
+        $data['billing_periods'] = $this->getAvailableBillingPeriods();
+        $data['academic_years'] = $this->getAcademicYears();
+
+        // Build filters
+        $filters = [
+            'class_id' => $request->input('class'),
+            'section_id' => $request->input('section'),
+            'student_search' => $request->input('name'),
+            'payment_status' => $request->input('payment_status'),
+            'billing_periods' => $request->input('billing_periods', []),
+            'academic_year_id' => $request->input('academic_year_id'),
+        ];
+
+        // Get service-based fee data with filters
+        $data['students'] = $this->getServiceBasedStudents($filters);
+
+        // Get sections for selected class
+        if ($request->input('class')) {
+            $data['sections'] = $this->classSetupRepo->getSectionsByClasses([$request->input('class')]);
+        }
+
+        return view('backend.fees.generation.service-reports', compact('data'));
+    }
+
+    /**
+     * Get students with service-based fees
+     */
+    private function getServiceBasedStudents(array $filters)
+    {
+        $query = \DB::table('fees_generation_logs as fgl')
+            ->join('fees_generations as fg', 'fg.id', '=', 'fgl.fees_generation_id')
+            ->join('students as s', 's.id', '=', 'fgl.student_id')
+            ->leftJoin('session_class_students as ssd', function($join) {
+                $join->on('ssd.student_id', '=', 's.id')
+                     ->where('ssd.session_id', '=', session('session_id', 1));
+            })
+            ->leftJoin('classes as c', 'c.id', '=', 'ssd.classes_id')
+            ->leftJoin('sections as sec', 'sec.id', '=', 'ssd.section_id')
+            ->leftJoin('fees_collects as fc', function($join) {
+                $join->on('fc.student_id', '=', 's.id')
+                     ->on('fc.generation_batch_id', '=', 'fg.batch_id');
+            })
+            ->leftJoin('fees_types as ft', 'ft.id', '=', 'fc.fee_type_id')
+            ->leftJoin('parent_guardians as pg', 'pg.id', '=', 's.parent_guardian_id')
+            ->where('fc.generation_method', 'service_based')
+            ->select([
+                's.id as student_id',
+                's.first_name',
+                's.last_name',
+                's.admission_no',
+                's.mobile',
+                'c.name as class_name',
+                'sec.name as section_name',
+                'pg.guardian_name',
+                'fg.batch_id',
+                'fg.created_at as generation_date',
+                'fg.status as generation_status',
+                'fc.amount',
+                'fc.due_date',
+                'fc.payment_method',
+                'fc.billing_period',
+                'fc.academic_year_id',
+                'ft.name as fee_type_name',
+                'ft.category as fee_category',
+                'fgl.status as log_status',
+                'fgl.error_message'
+            ]);
+
+        // Apply filters
+        if (!empty($filters['class_id'])) {
+            $query->where('ssd.classes_id', $filters['class_id']);
+        }
+
+        if (!empty($filters['section_id'])) {
+            $query->where('ssd.section_id', $filters['section_id']);
+        }
+
+        if (!empty($filters['student_search'])) {
+            $query->where(function($q) use ($filters) {
+                $q->where('s.first_name', 'like', '%' . $filters['student_search'] . '%')
+                  ->orWhere('s.last_name', 'like', '%' . $filters['student_search'] . '%')
+                  ->orWhere('s.admission_no', 'like', '%' . $filters['student_search'] . '%');
+            });
+        }
+
+        if (!empty($filters['payment_status'])) {
+            switch ($filters['payment_status']) {
+                case 'paid':
+                    $query->whereNotNull('fc.payment_method');
+                    break;
+                case 'unpaid':
+                    $query->whereNull('fc.payment_method');
+                    break;
+                case 'overdue':
+                    $query->whereNull('fc.payment_method')
+                          ->where('fc.due_date', '<', now());
+                    break;
+            }
+        }
+
+        if (!empty($filters['billing_periods']) && is_array($filters['billing_periods'])) {
+            $query->whereIn('fc.billing_period', $filters['billing_periods']);
+        }
+
+        if (!empty($filters['academic_year_id'])) {
+            $query->where('fc.academic_year_id', $filters['academic_year_id']);
+        }
+
+        return $query->orderBy('fg.created_at', 'desc')
+                     ->orderBy('s.first_name')
+                     ->paginate(50);
+    }
+
+    /**
+     * Get available billing periods from service-based fees
+     */
+    private function getAvailableBillingPeriods()
+    {
+        $periods = \DB::table('fees_collects as fc')
+            ->where('fc.generation_method', 'service_based')
+            ->whereNotNull('fc.billing_period')
+            ->select('fc.billing_period')
+            ->distinct()
+            ->orderBy('fc.billing_period', 'desc')
+            ->limit(24) // Last 24 months
+            ->get()
+            ->map(function($item) {
+                try {
+                    $date = \Carbon\Carbon::createFromFormat('Y-m', $item->billing_period);
+                    return [
+                        'value' => $item->billing_period,
+                        'label' => $date->format('F Y'), // e.g., "October 2024"
+                        'short_label' => $date->format('M Y'), // e.g., "Oct 2024"
+                        'year' => $date->year,
+                        'month' => $date->month,
+                        'is_current' => $date->format('Y-m') === now()->format('Y-m'),
+                        'is_past' => $date->lt(now()->startOfMonth()),
+                    ];
+                } catch (\Exception $e) {
+                    return null;
+                }
+            })
+            ->filter() // Remove null values
+            ->values();
+
+        return $periods;
+    }
+
+    /**
+     * Get available academic years
+     */
+    private function getAcademicYears()
+    {
+        $years = \DB::table('sessions')
+            ->select('id', 'name', 'start_date', 'end_date')
+            ->orderBy('start_date', 'desc')
+            ->get()
+            ->map(function($session) {
+                return [
+                    'id' => $session->id,
+                    'name' => $session->name,
+                    'is_current' => $session->id == session('session_id', 1)
+                ];
+            });
+
+        // If no sessions found, create a fallback
+        if ($years->isEmpty()) {
+            $currentYear = now()->year;
+            $years = collect([
+                [
+                    'id' => 1,
+                    'name' => ($currentYear - 1) . '-' . $currentYear,
+                    'is_current' => true
+                ]
+            ]);
+        }
+
+        return $years;
+    }
 }

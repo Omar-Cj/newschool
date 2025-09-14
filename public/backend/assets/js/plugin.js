@@ -1276,7 +1276,7 @@ Made by Hernán Sartorio  */
                   $selected_html +=
                       '<span class="current">' + $selected_text + "</span>";
               });
-              $select_placeholder =
+              var $select_placeholder =
                   $select.data("placeholder") || $select.attr("placeholder");
               $select_placeholder =
                   $select_placeholder == "" ? "Select" : $select_placeholder;

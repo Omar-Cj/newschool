@@ -365,7 +365,15 @@
                             @endif
                             @if (hasPermission('fees_generate_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['fees-generation*']) }}">
-                                    <a href="{{ route('fees-generation.index') }}">{{ ___('fees.Fee Generation') }}</a>
+                                    <a class="has-arrow">{{ ___('fees.Fee Generation') }}</a>
+                                    <ul class="child-menu-list">
+                                        <li class="sidebar-menu-item {{ set_menu(['fees-generation.index', 'fees-generation.create', 'fees-generation.show']) }}">
+                                            <a href="{{ route('fees-generation.index') }}">{{ ___('fees.fee_generation') }}</a>
+                                        </li>
+                                        <li class="sidebar-menu-item {{ set_menu(['fees-generation.service-reports*']) }}">
+                                            <a href="{{ route('fees-generation.service-reports') }}">{{ ___('fees.service_reports') }}</a>
+                                        </li>
+                                    </ul>
                                 </li>
                             @endif
                                   @if(config('app.app_ver') > 2.0)

@@ -91,6 +91,8 @@ Route::middleware(saasMiddleware())->group(function () {
                     Route::get('/create',               'create')->name('fees-generation.create')->middleware('PermissionCheck:fees_generate_create');
                     Route::get('/history',              'history')->name('fees-generation.history')->middleware('PermissionCheck:fees_generate_read');
                     Route::get('/show/{id}',            'show')->name('fees-generation.show')->middleware('PermissionCheck:fees_generate_read');
+                    Route::get('/service-reports',      'serviceReports')->name('fees-generation.service-reports')->middleware('PermissionCheck:fees_generate_read');
+                    Route::any('/service-reports/search', 'serviceReportsSearch')->name('fees-generation.service-reports.search')->middleware('PermissionCheck:fees_generate_read');
                     
                     // AJAX endpoints
                     Route::post('/preview',             'preview')->name('fees-generation.preview')->middleware('PermissionCheck:fees_generate_create');
