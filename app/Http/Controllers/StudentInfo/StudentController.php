@@ -230,17 +230,40 @@ class StudentController extends Controller
             $fees['services'] = $activeServices;
             $fees['services_summary'] = $servicesSummary;
             $fees['outstanding_services'] = $outstandingFees;
-            $fees['fees_due'] = $data->getOutstandingAmount($academicYearId);
-            $fees['total_fees'] = $data->getTotalServiceFees($academicYearId);
-            $fees['total_discounts'] = $data->getDiscountedAmount($academicYearId);
-            $fees['fees_payments'] = $data->feesPayments;
-            
-            // Calculate total paid for service-based fees
-            $totalPaid = $data->feesPayments()
+
+            // Calculate totals from actual generated fees (FeesCollect records) not service subscriptions
+            $allGeneratedFees = $data->feesPayments()
                 ->where('academic_year_id', $academicYearId)
-                ->whereNotNull('payment_method')
-                ->sum('amount');
-            $fees['total_paid'] = $totalPaid;
+                ->get();
+
+            $fees['total_fees'] = $allGeneratedFees->sum('amount');
+            $fees['total_paid'] = $allGeneratedFees->whereNotNull('payment_method')->sum('amount');
+            $fees['fees_due'] = $fees['total_fees'] - $fees['total_paid'];
+            $fees['total_discounts'] = $allGeneratedFees->sum('discount_applied');
+            $fees['fees_payments'] = $data->feesPayments;
+
+            // Get monthly fees grouped by billing period for service-based system
+            $monthlyFees = $data->feesPayments()
+                ->where('academic_year_id', $academicYearId)
+                ->with('feeType')
+                ->orderBy('billing_period', 'desc')
+                ->orderBy('created_at', 'desc')
+                ->get()
+                ->groupBy(function($fee) {
+                    // Group by billing period, using due date as fallback for legacy fees
+                    if ($fee->billing_period) {
+                        return $fee->billing_period;
+                    }
+
+                    // For legacy fees without billing period, infer from due date
+                    if ($fee->due_date) {
+                        return \App\Models\Fees\FeesCollect::inferBillingPeriodFromDueDate($fee->due_date);
+                    }
+
+                    return 'unknown';
+                });
+
+            $fees['monthly_fees_by_period'] = $monthlyFees;
             
         } else {
             // Fallback to legacy fee system

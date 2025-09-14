@@ -22,6 +22,8 @@ class FeesCollect extends BaseModel
         'fine_amount' => 'decimal:2',
         'late_fee_applied' => 'decimal:2',
         'discount_applied' => 'decimal:2',
+        'billing_year' => 'integer',
+        'billing_month' => 'integer',
     ];
 
     // Relationships
@@ -126,6 +128,49 @@ class FeesCollect extends BaseModel
     public function scopeWithBatchId($query, string $batchId)
     {
         return $query->where('generation_batch_id', $batchId);
+    }
+
+    // Billing period scopes
+    public function scopeByBillingPeriod($query, string $billingPeriod)
+    {
+        return $query->where('billing_period', $billingPeriod);
+    }
+
+    public function scopeByBillingYear($query, int $year)
+    {
+        return $query->where('billing_year', $year);
+    }
+
+    public function scopeByBillingMonth($query, int $month)
+    {
+        return $query->where('billing_month', $month);
+    }
+
+    public function scopeCurrentMonth($query)
+    {
+        $now = now();
+        return $query->where('billing_year', $now->year)
+                     ->where('billing_month', $now->month);
+    }
+
+    public function scopeCurrentYear($query)
+    {
+        return $query->where('billing_year', now()->year);
+    }
+
+    public function scopeBillingPeriodRange($query, string $startPeriod, string $endPeriod)
+    {
+        return $query->whereBetween('billing_period', [$startPeriod, $endPeriod]);
+    }
+
+    public function scopeWithBillingPeriod($query)
+    {
+        return $query->whereNotNull('billing_period');
+    }
+
+    public function scopeWithoutBillingPeriod($query)
+    {
+        return $query->whereNull('billing_period');
     }
 
     public function scopePaid($query)
@@ -259,8 +304,86 @@ class FeesCollect extends BaseModel
         if ($this->due_date && !$this->isPaid()) {
             return now()->diffInDays($this->due_date, false);
         }
-        
+
         return null;
+    }
+
+    // Billing period helper methods
+    public function hasBillingPeriod(): bool
+    {
+        return $this->billing_period !== null;
+    }
+
+    public function setBillingPeriodFromDate(\Carbon\Carbon $date): void
+    {
+        $this->billing_period = $date->format('Y-m');
+        $this->billing_year = $date->year;
+        $this->billing_month = $date->month;
+    }
+
+    public function getBillingPeriodLabel(): string
+    {
+        if (!$this->hasBillingPeriod()) {
+            return 'Unknown Period';
+        }
+
+        $date = \Carbon\Carbon::createFromFormat('Y-m', $this->billing_period);
+        return $date->format('F Y'); // e.g., "October 2024"
+    }
+
+    public function getBillingPeriodShortLabel(): string
+    {
+        if (!$this->hasBillingPeriod()) {
+            return 'Unknown';
+        }
+
+        $date = \Carbon\Carbon::createFromFormat('Y-m', $this->billing_period);
+        return $date->format('M Y'); // e.g., "Oct 2024"
+    }
+
+    public function isCurrentMonth(): bool
+    {
+        if (!$this->hasBillingPeriod()) {
+            return false;
+        }
+
+        $now = now();
+        return $this->billing_year === $now->year && $this->billing_month === $now->month;
+    }
+
+    public function isPreviousMonth(): bool
+    {
+        if (!$this->hasBillingPeriod()) {
+            return false;
+        }
+
+        $currentMonth = now()->format('Y-m');
+        return $this->billing_period < $currentMonth;
+    }
+
+    public function isFutureMonth(): bool
+    {
+        if (!$this->hasBillingPeriod()) {
+            return false;
+        }
+
+        $currentMonth = now()->format('Y-m');
+        return $this->billing_period > $currentMonth;
+    }
+
+    public static function inferBillingPeriodFromDueDate(\Carbon\Carbon $dueDate): string
+    {
+        // Infer billing period from due date
+        // Most fees are due in the month they're for, or the following month
+        $billingMonth = $dueDate->copy();
+
+        // If due date is after 15th, assume it's for the same month
+        // If due date is before 15th, assume it's for the previous month
+        if ($dueDate->day <= 15) {
+            $billingMonth->subMonth();
+        }
+
+        return $billingMonth->format('Y-m');
     }
 
     // Accessor methods for better formatting

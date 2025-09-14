@@ -316,6 +316,122 @@
             </div>
         </div>
 
+        @if($fees['system_type'] === 'service_based' && !empty($fees['monthly_fees_by_period']))
+            <!-- Monthly Fee Charges Section -->
+            <div class="col-12">
+                <div class="card border shadow-sm">
+                    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fa-solid fa-calendar-alt me-2"></i>
+                            Monthly Fee Charges
+                        </h5>
+                        <span class="badge bg-info">
+                            {{ count($fees['monthly_fees_by_period']) }} Billing Periods
+                        </span>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <i class="fa-solid fa-info-circle me-2"></i>
+                            This section shows individual fee charges generated monthly from your service subscriptions.
+                        </div>
+
+                        @php
+                            $sortedPeriods = collect($fees['monthly_fees_by_period'])->sortKeysDesc();
+                        @endphp
+
+                        @foreach($sortedPeriods as $billingPeriod => $periodFees)
+                            @php
+                                $periodLabel = $billingPeriod !== 'unknown'
+                                    ? \Carbon\Carbon::createFromFormat('Y-m', $billingPeriod)->format('F Y')
+                                    : 'Unknown Period';
+                                $periodTotal = $periodFees->sum('amount');
+                                $periodPaid = $periodFees->where('payment_method', '!=', null)->sum('amount');
+                                $periodDue = $periodTotal - $periodPaid;
+                            @endphp
+
+                            <div class="billing-period-section mb-4">
+                                <!-- Period Header -->
+                                <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                                    <div>
+                                        <h6 class="mb-0">
+                                            <i class="fa-solid fa-calendar me-2 text-primary"></i>
+                                            {{ $periodLabel }}
+                                        </h6>
+                                        <small class="text-muted">{{ $periodFees->count() }} charges</small>
+                                    </div>
+                                    <div class="text-end">
+                                        <div class="fw-bold">{{ $currency }} {{ number_format($periodTotal, 2) }}</div>
+                                        <div class="small">
+                                            <span class="text-success">Paid: {{ $currency }}{{ number_format($periodPaid, 2) }}</span>
+                                            @if($periodDue > 0)
+                                                | <span class="text-danger">Due: {{ $currency }}{{ number_format($periodDue, 2) }}</span>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Period Fees Table -->
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-bordered">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Service</th>
+                                                <th>Due Date</th>
+                                                <th>Amount ({{ $currency }})</th>
+                                                <th>Discount ({{ $currency }})</th>
+                                                <th>Status</th>
+                                                <th>Payment Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach($periodFees->sortBy('fee_type_id') as $fee)
+                                                <tr>
+                                                    <td>
+                                                        <strong>{{ $fee->feeType->name ?? 'Unknown Service' }}</strong>
+                                                        <small class="d-block text-muted">{{ ucfirst($fee->feeType->category ?? 'N/A') }}</small>
+                                                    </td>
+                                                    <td>
+                                                        {{ $fee->due_date ? $fee->due_date->format('M d, Y') : 'N/A' }}
+                                                        @if($fee->due_date && $fee->due_date->isPast() && !$fee->payment_method)
+                                                            <span class="badge bg-danger ms-1">Overdue</span>
+                                                        @endif
+                                                    </td>
+                                                    <td>{{ $currency }} {{ number_format($fee->amount, 2) }}</td>
+                                                    <td>
+                                                        @if($fee->discount_applied > 0)
+                                                            {{ $currency }} {{ number_format($fee->discount_applied, 2) }}
+                                                        @else
+                                                            {{ $currency }} 0.00
+                                                        @endif
+                                                    </td>
+                                                    <td>
+                                                        @if($fee->payment_method)
+                                                            <span class="badge bg-success">Paid</span>
+                                                        @elseif($fee->generation_method)
+                                                            <span class="badge bg-warning">Generated</span>
+                                                        @else
+                                                            <span class="badge bg-secondary">Pending</span>
+                                                        @endif
+                                                    </td>
+                                                    <td>
+                                                        @if($fee->payment_method && $fee->date)
+                                                            {{ \Carbon\Carbon::parse($fee->date)->format('M d, Y') }}
+                                                        @else
+                                                            <span class="text-muted">Not paid</span>
+                                                        @endif
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+        @endif
+
         <!-- Modal Placeholder -->
         <div id="view-modal">
             <div class="modal fade" id="modalCustomizeWidth" tabindex="-1" aria-labelledby="modalWidth" aria-hidden="true">

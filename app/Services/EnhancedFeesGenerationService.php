@@ -172,6 +172,25 @@ class EnhancedFeesGenerationService
                 $dueDate = Carbon::parse($dueDate);
             }
 
+            // Determine billing period based on generation type and due date
+            $billingPeriod = null;
+            $billingYear = null;
+            $billingMonth = null;
+
+            if (isset($criteria['generation_month']) && $criteria['generation_month'] instanceof Carbon) {
+                // Monthly generation - use the specified month
+                $billingPeriod = $criteria['generation_month']->format('Y-m');
+                $billingYear = $criteria['generation_month']->year;
+                $billingMonth = $criteria['generation_month']->month;
+            } elseif ($this->isMonthlyFeeType($service->feeType)) {
+                // Monthly fee type - infer billing period from due date
+                $billingPeriod = FeesCollect::inferBillingPeriodFromDueDate($dueDate);
+                $billingDate = Carbon::createFromFormat('Y-m', $billingPeriod);
+                $billingYear = $billingDate->year;
+                $billingMonth = $billingDate->month;
+            }
+            // For one-time fees, leave billing period as null
+
             // Create fees collect record with new structure
             $feesCollect = FeesCollect::create([
                 'student_id' => $student->id,
@@ -188,7 +207,11 @@ class EnhancedFeesGenerationService
                 'discount_applied' => $service->amount - $service->final_amount,
                 'discount_notes' => $service->notes,
                 'fine_amount' => 0,
-                'late_fee_applied' => 0
+                'late_fee_applied' => 0,
+                // Add billing period fields (null for one-time fees)
+                'billing_period' => $billingPeriod,
+                'billing_year' => $billingYear,
+                'billing_month' => $billingMonth,
             ]);
             
             $feesGenerated++;
@@ -713,12 +736,21 @@ class EnhancedFeesGenerationService
                 continue;
             }
 
-            // Check for existing fee record to prevent duplicates
+            // Check for existing fee record to prevent duplicates for this billing period
+            $billingPeriod = $month->format('Y-m');
             $existing = FeesCollect::where('student_id', $student->id)
                 ->where('fee_type_id', $service->fee_type_id)
                 ->where('academic_year_id', $academicYearId)
-                ->whereYear('date', $month->year)
-                ->whereMonth('date', $month->month)
+                ->where(function ($query) use ($billingPeriod, $month) {
+                    // First try to find by billing_period (for new records)
+                    $query->where('billing_period', $billingPeriod)
+                        // Fallback to date-based check for legacy records
+                        ->orWhere(function ($subQuery) use ($month) {
+                            $subQuery->whereYear('date', $month->year)
+                                     ->whereMonth('date', $month->month)
+                                     ->whereNull('billing_period');
+                        });
+                })
                 ->first();
 
             if ($existing) {
@@ -747,7 +779,11 @@ class EnhancedFeesGenerationService
                 'discount_applied' => $service->amount - $amount, // Track pro-rating as discount
                 'discount_notes' => $this->getProRatingNotes($service, $month),
                 'fine_amount' => 0,
-                'late_fee_applied' => 0
+                'late_fee_applied' => 0,
+                // Add billing period fields for proper monthly tracking
+                'billing_period' => $month->format('Y-m'),
+                'billing_year' => $month->year,
+                'billing_month' => $month->month,
             ]);
 
             $feesGenerated++;
