@@ -8,6 +8,7 @@ use App\Repositories\Fees\FeesGenerationRepository;
 use App\Services\FeesGenerationService;
 use App\Services\EnhancedFeesGenerationService;
 use App\Services\FeesServiceManager;
+use App\Services\BatchIdService;
 use App\Repositories\Academic\ClassesRepository;
 use App\Repositories\Academic\SectionRepository;
 use App\Repositories\Academic\ClassSetupRepository;
@@ -23,6 +24,7 @@ class FeesGenerationController extends Controller
     private $service;
     private $enhancedService;
     private $serviceManager;
+    private $batchIdService;
     private $classRepo;
     private $sectionRepo;
     private $classSetupRepo;
@@ -34,6 +36,7 @@ class FeesGenerationController extends Controller
         FeesGenerationService $service,
         EnhancedFeesGenerationService $enhancedService,
         FeesServiceManager $serviceManager,
+        BatchIdService $batchIdService,
         ClassesRepository $classRepo,
         SectionRepository $sectionRepo,
         ClassSetupRepository $classSetupRepo,
@@ -44,6 +47,7 @@ class FeesGenerationController extends Controller
         $this->service = $service;
         $this->enhancedService = $enhancedService;
         $this->serviceManager = $serviceManager;
+        $this->batchIdService = $batchIdService;
         $this->classRepo = $classRepo;
         $this->sectionRepo = $sectionRepo;
         $this->classSetupRepo = $classSetupRepo;
@@ -118,8 +122,8 @@ class FeesGenerationController extends Controller
                 'notes' => 'nullable|string|max:500'
             ]);
 
-            // Generate batch ID
-            $batchId = 'FG_' . date('YmdHis') . '_' . Str::random(6);
+            // Generate batch ID using BatchIdService
+            $batchId = $this->batchIdService->generateBatchId();
             
             // Add batch ID and creator info
             $data['batch_id'] = $batchId;
@@ -406,7 +410,7 @@ class FeesGenerationController extends Controller
     private function prepareGenerationData(Request $request): array
     {
         return [
-            'batch_id' => 'FEES_' . strtoupper(Str::random(10)) . '_' . time(),
+            'batch_id' => $this->batchIdService->generateBatchId(),
             'classes' => $request->input('classes', []),
             'sections' => $request->input('sections', []),
             'month' => $request->input('month'),

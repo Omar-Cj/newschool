@@ -8,6 +8,7 @@ use App\Models\Fees\FeesGeneration;
 use App\Models\Fees\FeesGenerationLog;
 use App\Models\StudentInfo\Student;
 use App\Services\StudentServiceManager;
+use App\Services\BatchIdService;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -16,10 +17,12 @@ use Illuminate\Support\Facades\Log;
 class EnhancedFeesGenerationService
 {
     private StudentServiceManager $serviceManager;
+    private BatchIdService $batchIdService;
 
-    public function __construct(StudentServiceManager $serviceManager)
+    public function __construct(StudentServiceManager $serviceManager, BatchIdService $batchIdService)
     {
         $this->serviceManager = $serviceManager;
+        $this->batchIdService = $batchIdService;
     }
 
     /**
@@ -574,7 +577,7 @@ class EnhancedFeesGenerationService
         $academicYearId = $filters['academic_year_id'] ?? session('academic_year_id');
 
         $criteria = array_merge($filters, [
-            'batch_id' => 'MONTHLY_' . $month->format('Y_m') . '_' . uniqid(),
+            'batch_id' => $this->batchIdService->generateBatchId(),
             'generation_month' => $month,
             'academic_year_id' => $academicYearId,
             'generation_type' => 'monthly_auto',
@@ -609,7 +612,7 @@ class EnhancedFeesGenerationService
 
         // Create generation batch record
         $generation = FeesGeneration::create([
-            'batch_id' => 'MONTHLY_PRORATED_' . $month->format('Y_m') . '_' . uniqid(),
+            'batch_id' => $this->batchIdService->generateBatchId(),
             'status' => 'processing',
             'total_students' => $students->count(),
             'filters' => $this->sanitizeMonthlyFilters($month, $filters),
@@ -1130,7 +1133,7 @@ class EnhancedFeesGenerationService
         $academicYearId = $data['academic_year_id'] ?? session('academic_year_id') ?? 1;
         
         $criteria = [
-            'batch_id' => $data['batch_id'] ?? 'FEES_' . strtoupper(\Str::random(10)) . '_' . time(),
+            'batch_id' => $data['batch_id'] ?? $this->batchIdService->generateBatchId(),
             'academic_year_id' => $academicYearId,
             'notes' => $data['notes'] ?? 'Legacy fee generation converted to service-based',
             'school_id' => $data['school_id'] ?? null,
