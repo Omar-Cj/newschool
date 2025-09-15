@@ -101,10 +101,8 @@
                                 <thead class="thead">
                                     <tr>
                                         <th class="serial">{{ ___('common.sr_no') }}</th>
-                                        <th class="purchase">{{ ___('student_info.admission_no') }}</th>
-                                        <th class="purchase">{{ ___('student_info.roll_no') }}</th>
-                                        <th class="purchase">{{ ___('student_info.Department') }}</th>
                                         <th class="purchase">{{ ___('student_info.student_name') }}</th>
+                                        <th class="purchase">{{ ___('student_info.Department') }}</th>
                                         <th class="purchase">{{ ___('academic.class') }} ({{ ___('academic.section') }})
                                         </th>
                                         <th class="purchase">{{ ___('student_info.guardian_name') }}</th>
@@ -122,9 +120,6 @@
                                     @forelse ($data['students'] as $key => $row)
                                         <tr id="row_{{ @$row->student->id }}">
                                             <td class="serial">{{ ++$key }}</td>
-                                            <td class="serial">{{ @$row->student->admission_no }}</td>
-                                            <td class="serial">{{ @$row->roll }}</td>
-                                            <td class="serial">{{ @$row->student->department->name }}</td>
                                             <td>
                                                 <div class="">
                                                     <a href="{{ route('student.show', @$row->student->id) }}">
@@ -142,6 +137,7 @@
                                                     </a>
                                                 </div>
                                             </td>
+                                            <td class="serial">{{ @$row->student->department->name }}</td>
                                             <td>{{ @$row->class->name }} ({{ @$row->section->name }})</td>
                                             <td>{{ @$row->student->parent->guardian_name }}</td>
                                             <td>{{ dateFormat(@$row->student->dob) }}</td>
