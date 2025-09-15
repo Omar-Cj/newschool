@@ -64,6 +64,39 @@
                                 <div class="h6 text-warning">{{ count($fees['outstanding_services'] ?? []) }}</div>
                             </div>
                         </div>
+
+                        {{-- Prominent Payment Collection Button --}}
+                        @if($fees['fees_due'] > 0 && hasPermission('fees_collect_update'))
+                            <div class="row mt-4">
+                                <div class="col-12">
+                                    <div class="d-flex justify-content-center">
+                                        <a href="{{ route('fees-collect.collect', $data->id) }}"
+                                           class="btn ot-btn-primary shadow-sm px-4 py-2">
+                                            <i class="fa-solid fa-credit-card me-2"></i>
+                                            {{ ___('common.pay') }}
+                                            <span class="ms-2 fw-bold">
+                                                {{ $currency }} {{ number_format($fees['fees_due'], 2) }}
+                                            </span>
+                                        </a>
+                                    </div>
+                                    <div class="text-center mt-2">
+                                        <small class="text-muted">
+                                            <i class="fa-solid fa-info-circle me-1"></i>
+                                            {{ ___('fees.redirect_to_payment_collection') }}
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        @elseif($fees['fees_due'] <= 0)
+                            <div class="row mt-4">
+                                <div class="col-12">
+                                    <div class="alert alert-success text-center">
+                                        <i class="fa-solid fa-check-circle me-2"></i>
+                                        <strong>{{ ___('fees.all_fees_paid') }}</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
                     @else
                         <!-- Legacy Overview -->
                         <div class="row text-center">

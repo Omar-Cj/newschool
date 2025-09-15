@@ -90,6 +90,9 @@ class StudentController extends Controller
         $data['title']    = ___('student_info.student_list');
         $data['students'] = $this->repo->getPaginateAll();
 
+        // Calculate outstanding amounts for fee display
+        $this->calculateOutstandingAmounts($data['students']);
+
         return view('backend.student-info.student.index', compact('data'));
     }
 
@@ -100,6 +103,10 @@ class StudentController extends Controller
         $data['request']  = $request;
         $data['title']    = ___('student_info.student_list');
         $data['students'] = $this->repo->searchStudents($request);
+
+        // Calculate outstanding amounts for fee display
+        $this->calculateOutstandingAmounts($data['students']);
+
         return view('backend.student-info.student.index', compact('data'));
     }
 
@@ -455,6 +462,71 @@ class StudentController extends Controller
             'status' => 'success',
             'data' => $data
         ]);
+    }
+
+    /**
+     * Calculate outstanding amounts for students for fee display
+     * Leverages the existing service-based fee system
+     *
+     * @param \Illuminate\Pagination\LengthAwarePaginator $students
+     */
+    private function calculateOutstandingAmounts($students)
+    {
+        // Get academic year ID - same logic as show() method
+        $academicYearId = session('academic_year_id');
+
+        if (!$academicYearId) {
+            $academicYearId = \App\Models\Session::active()->value('id');
+        }
+
+        // Only proceed if we have an academic year
+        if (!$academicYearId) {
+            return;
+        }
+
+        // Load fee relationships for all students to prevent N+1 queries
+        $students->load([
+            'student.feesPayments' => function($query) use ($academicYearId) {
+                $query->where('academic_year_id', $academicYearId);
+            },
+            'student.studentServices.feeType'
+        ]);
+
+        // Calculate outstanding amount for each student
+        foreach ($students as $row) {
+            $student = $row->student;
+
+            if (!$student) {
+                $row->outstanding_amount = 0;
+                continue;
+            }
+
+            try {
+                // Check if student has active services (same logic as show() method)
+                if ($student->hasActiveServices($academicYearId)) {
+                    // Use service-based fee system
+                    $allGeneratedFees = $student->feesPayments()
+                        ->where('academic_year_id', $academicYearId)
+                        ->get();
+
+                    $totalFees = $allGeneratedFees->sum('amount');
+                    $totalPaid = $allGeneratedFees->whereNotNull('payment_method')->sum('amount');
+                    $outstandingAmount = $totalFees - $totalPaid;
+
+                    $row->outstanding_amount = max(0, $outstandingAmount); // Ensure non-negative
+                } else {
+                    // No active services or fallback
+                    $row->outstanding_amount = 0;
+                }
+            } catch (\Exception $e) {
+                // Log error but don't break the page
+                \Log::warning('Error calculating outstanding amount for student', [
+                    'student_id' => $student->id,
+                    'error' => $e->getMessage()
+                ]);
+                $row->outstanding_amount = 0;
+            }
+        }
     }
 
 }

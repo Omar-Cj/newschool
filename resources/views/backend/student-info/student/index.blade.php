@@ -109,6 +109,7 @@
                                         <th class="purchase">{{ ___('student_info.date_of_birth') }}</th>
                                         <th class="purchase">{{ ___('common.gender') }}</th>
                                         <th class="purchase">{{ ___('student_info.mobile_number') }}</th>
+                                        <th class="purchase">{{ ___('fees.total_amount') }}</th>
                                         <th class="purchase">{{ ___('common.status') }}</th>
                                         @if (hasPermission('student_update') || hasPermission('student_delete'))
                                             <th class="action">{{ ___('common.action') }}</th>
@@ -144,6 +145,15 @@
                                             <td>{{ @$row->student->gender->name }}</td>
                                             <td>{{ @$row->student->mobile }}</td>
                                             <td>
+                                                @if(isset($row->outstanding_amount) && $row->outstanding_amount > 0)
+                                                    <span class="text-danger fw-bold">
+                                                        {{ setting('currency_symbol') }} {{ number_format($row->outstanding_amount, 2) }}
+                                                    </span>
+                                                @else
+                                                    <span class="text-success small">{{ ___('fees.no_dues') }}</span>
+                                                @endif
+                                            </td>
+                                            <td>
                                                 @if (@$row->student->status == App\Enums\Status::ACTIVE)
                                                     <span
                                                         class="badge-basic-success-text">{{ ___('common.active') }}</span>
@@ -167,6 +177,16 @@
                                                                             class="icon mr-8"><i
                                                                                 class="fa-solid fa-pen-to-square"></i></span>
                                                                         {{ ___('common.edit') }}</a>
+                                                                </li>
+                                                            @endif
+                                                            @if(isset($row->outstanding_amount) && $row->outstanding_amount > 0 && hasPermission('fees_collect_update'))
+                                                                <li>
+                                                                    <a class="dropdown-item" href="{{ route('fees-collect.collect', @$row->student->id) }}">
+                                                                        <span class="icon mr-8">
+                                                                            <i class="fa-solid fa-credit-card text-success"></i>
+                                                                        </span>
+                                                                        {{ ___('common.pay') }}
+                                                                    </a>
                                                                 </li>
                                                             @endif
                                                             @if (hasPermission('student_delete'))
