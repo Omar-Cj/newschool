@@ -87,7 +87,7 @@
                                 <div class="col-md-12 mb-3">
                                     <label for="validationServer04" class="form-label">{{ ___('settings.shortcodes') }} <span class="fillable">*</span></label>
                                     <div class="short-code">
-                                        <code> [student_name], [guardian_name], [attendance_date], [attendance_type], [admission_no] , [roll_no] , [class] , [section], [school_name]</code>
+                                        <code> [student_name], [guardian_name], [attendance_date], [attendance_type], [class] , [section], [school_name]</code>
                                     </div>
                                 </div>
 

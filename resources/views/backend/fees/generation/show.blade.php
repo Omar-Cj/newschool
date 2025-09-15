@@ -213,7 +213,6 @@
                                             <thead>
                                                 <tr>
                                                     <th>{{ ___('student.student_name') }}</th>
-                                                    <th>{{ ___('student.admission_no') }}</th>
                                                     <th>{{ ___('academic.class') }}</th>
                                                     <th>{{ ___('academic.section') }}</th>
                                                     <th>{{ ___('fees.fee_period') }}</th>
@@ -226,7 +225,6 @@
                                                 @foreach($data['generation']->logs as $log)
                                                 <tr>
                                                     <td>{{ $log->student->full_name ?? 'Unknown' }}</td>
-                                                    <td>{{ $log->student->admission_no ?? 'N/A' }}</td>
                                                     <td>{{ $log->student->sessionStudentDetails->class->name ?? 'N/A' }}</td>
                                                     <td>{{ $log->student->sessionStudentDetails->section->name ?? 'N/A' }}</td>
                                                     <td>

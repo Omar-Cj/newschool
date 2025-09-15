@@ -239,7 +239,6 @@
                             <thead class="thead">
                                 <tr>
                                     <th class="purchase">{{ ___('student_info.student_name') }}</th>
-                                    <th class="purchase">{{ ___('student_info.admission_no') }}</th>
                                     <th class="purchase">{{ ___('academic.class') }} ({{ ___('academic.section') }})</th>
                                     <th class="purchase">{{ ___('fees.service_type') }}</th>
                                     <th class="purchase">{{ ___('fees.amount') }}</th>
@@ -256,7 +255,6 @@
                                 @forelse ($data['students'] as $item)
                                 <tr>
                                     <td>{{ $item->first_name }} {{ $item->last_name }}</td>
-                                    <td>{{ $item->admission_no }}</td>
                                     <td>
                                         @if($item->class_name && $item->section_name)
                                             {{ $item->class_name }} ({{ $item->section_name }})

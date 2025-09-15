@@ -17,8 +17,6 @@ class StudentDetailsResource extends JsonResource
         return [
             'id'        => $this->id,
             'name'      => $this->first_name . ' ' . $this->last_name,
-            'admission_no'   => $this->roll_no,
-            'roll_no'   => $this->roll_no,
             'email'     => $this->email,
             'mobile'    => $this->mobile,
             'session'   => @$this->session_class_student->session->name,

@@ -34,8 +34,6 @@ class Student extends BaseModel
 
     protected $fillable = [
         'user_id',
-        'admission_no',
-        'roll_no',
         'first_name',
         'last_name',
         'mobile',

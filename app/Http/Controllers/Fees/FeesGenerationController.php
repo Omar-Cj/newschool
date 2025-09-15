@@ -733,7 +733,6 @@ class FeesGenerationController extends Controller
                 's.id as student_id',
                 's.first_name',
                 's.last_name',
-                's.admission_no',
                 's.mobile',
                 'c.name as class_name',
                 'sec.name as section_name',
@@ -764,8 +763,7 @@ class FeesGenerationController extends Controller
         if (!empty($filters['student_search'])) {
             $query->where(function($q) use ($filters) {
                 $q->where('s.first_name', 'like', '%' . $filters['student_search'] . '%')
-                  ->orWhere('s.last_name', 'like', '%' . $filters['student_search'] . '%')
-                  ->orWhere('s.admission_no', 'like', '%' . $filters['student_search'] . '%');
+                  ->orWhere('s.last_name', 'like', '%' . $filters['student_search'] . '%');
             });
         }
 

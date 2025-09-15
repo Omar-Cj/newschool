@@ -17,7 +17,6 @@ class MeritlistResource extends JsonResource
         return [
             'merit_position' => $this->position,
             'student_name' => $this->student->full_name,
-            'admission_no' => $this->student->admission_no,
             'class_sec' => @$this->class->name . '-' . @$this->section->name,
             'result' => $this->result,
             'point' => $this->grade_point,

@@ -113,8 +113,6 @@
                                 <thead class="thead">
                                     <tr>
                                         <th class="purchase">{{ ___('student_info.student_name') }}</th>
-                                        <th class="purchase">{{ ___('student_info.roll_no') }}</th>
-                                        <th class="purchase">{{ ___('student_info.admission_no') }}</th>
                                         <th class="purchase">{{ ___('student_info.class') }} ({{ ___('student_info.section') }})</th>
                                         <th class="purchase">{{ ___('attendance.Attendance') }}</th>
                                         <th class="purchase">{{ ___('attendance.Note') }}</th>
@@ -124,8 +122,6 @@
                                     @forelse ($data['students'] as $item)
                                     <tr id="document-file">
                                         <td>{{ @$item->student->first_name }} {{ @$item->student->last_name }}</td>
-                                        <td>{{ @$item->roll }}</td>
-                                        <td>{{ @$item->student->admission_no }}</td>
                                         <td>{{ @$item->class->name }} ({{ @$item->section->name }})</td>
                                         <td>
 

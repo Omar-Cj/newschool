@@ -42,32 +42,6 @@
                         <div class="col-lg-12">
                             <div class="row">
                                 <div class="col-md-3 mb-3">
-                                    <label for="exampleDataList" class="form-label ">{{ ___('student_info.admission_no') }}
-                                        <span class="fillable">*</span></label>
-                                    <input class="form-control ot-input @error('admission_no') is-invalid @enderror"
-                                        type="number" name="admission_no" list="datalistOptions" id="exampleDataList_admission_no"
-                                        placeholder="{{ ___('student_info.enter_admission_no') }}"
-                                        value="{{ old('admission_no') }}">
-                                    @error('admission_no')
-                                        <div id="validationServer04Feedback" class="invalid-feedback">
-                                            {{ $message }}
-                                        </div>
-                                    @enderror
-                                </div>
-                                <div class="col-md-3 mb-3">
-                                    <label for="exampleDataList" class="form-label ">{{ ___('student_info.roll_no') }}
-                                        <span class="fillable">*</span></label>
-                                    <input class="form-control ot-input @error('roll_no') is-invalid @enderror"
-                                        name="roll_no" list="datalistOptions" id="exampleDataList_roll_no" type="number"
-                                        placeholder="{{ ___('student_info.enter_roll_no') }}"
-                                        value="{{ old('roll_no') }}">
-                                    @error('roll_no')
-                                        <div id="validationServer04Feedback" class="invalid-feedback">
-                                            {{ $message }}
-                                        </div>
-                                    @enderror
-                                </div>
-                                <div class="col-md-3 mb-3">
                                     <label for="exampleDataList" class="form-label ">{{ ___('student_info.first_name') }}
                                         <span class="fillable">*</span></label>
                                     <input class="form-control ot-input @error('first_name') is-invalid @enderror"

@@ -76,10 +76,8 @@ class StudentRepository implements StudentInterface
         }
         if ($request->keyword != "") {
             $students = $students->whereHas('student', function ($query) use ($request) {
-                $query->where('admission_no', 'LIKE', "%{$request->keyword}%")
-                    ->orWhere('first_name', 'LIKE', "%{$request->keyword}%")
+                $query->where('first_name', 'LIKE', "%{$request->keyword}%")
                     ->orWhere('last_name', 'LIKE', "%{$request->keyword}%")
-                    ->orWhere('roll_no', 'LIKE', "%{$request->keyword}%")
                     ->orWhere('dob', 'LIKE', "%{$request->keyword}%");
             });
         }
@@ -101,7 +99,6 @@ class StudentRepository implements StudentInterface
             $user->name              = $request->first_name . ' ' . $request->last_name;
             $user->email             = $request->email  != "" ? $request->email :  NULL;
             $user->phone             = $request->mobile != "" ? $request->mobile :  NULL;
-            $user->admission_no      = $request->admission_no;
             $user->password          = $request->password_type == 'default' ? Hash::make('123456') : Hash::make($request->password);
             $user->email_verified_at = now();
             $user->role_id           = $role->id;
@@ -116,8 +113,6 @@ class StudentRepository implements StudentInterface
             $row->user_id              = $user->id;
             $row->first_name           = $request->first_name;
             $row->last_name            = $request->last_name;
-            $row->admission_no         = $request->admission_no;
-            $row->roll_no              = $request->roll_no != "" ? $request->roll_no :  NULL;
             $row->mobile               = $request->mobile;
             $row->image_id             = $user->upload_id;
             $row->email                = $request->email;
@@ -160,7 +155,7 @@ class StudentRepository implements StudentInterface
             $session_class->section_id          = $request->section != "" ? $request->section :  NULL;
             $session_class->shift_id            = $request->shift != "" ? $request->shift :  NULL;
             $session_class->student_id          = $row->id;
-            $session_class->roll                = $request->roll_no;
+            $session_class->roll                = NULL; // Roll number field removed
             $session_class->save();
 
             // Auto-subscribe to mandatory services for enhanced fee processing system
@@ -241,7 +236,6 @@ class StudentRepository implements StudentInterface
             $user->email              = $request->email != "" ? $request->email :  NULL;
             $user->phone              = $request->mobile != "" ? $request->mobile :  NULL;
             $user->date_of_birth      = $request->date_of_birth;
-            $user->admission_no       = $request->admission_no;
             $user->upload_id          = $this->UploadImageUpdate($request->image, 'backend/uploads/students', $user->upload_id);
             $user->permissions        = $role->permissions;
             $user->username          = $request->username;
@@ -249,8 +243,6 @@ class StudentRepository implements StudentInterface
 
             $row->first_name           = $request->first_name;
             $row->last_name            = $request->last_name;
-            $row->admission_no         = $request->admission_no;
-            $row->roll_no              = $request->roll_no != "" ? $request->roll_no :  NULL;
             $row->mobile               = $request->mobile;
             $row->image_id             = $user->upload_id;
             $row->email                = $request->email;
@@ -291,7 +283,7 @@ class StudentRepository implements StudentInterface
             $session_class->section_id          = $request->section != "" ? $request->section :  NULL;
             $session_class->shift_id            = $request->shift != "" ? $request->shift :  NULL;
             $session_class->student_id          = $row->id;
-            $session_class->roll                = $request->roll_no;
+            $session_class->roll                = NULL; // Roll number field removed
             $session_class->save();
 
             // Handle student services update

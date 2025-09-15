@@ -19,7 +19,6 @@ class StudentResource extends JsonResource
         $data = [
             'id'        => $this->id,
             'name'      => $this->first_name . ' ' . $this->last_name,
-            'roll_no'   => $this->roll_no,
             'gender'     =>@$this->gender->name,
             'mobile'    => $this->mobile,
             'session'   => @$this->session_class_student->session->name,

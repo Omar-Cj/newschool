@@ -38,8 +38,6 @@ class StudentStoreRequest extends FormRequest
         return [
             'mobile' => $mobile,
             'email' => $email,
-            'admission_no' => 'required|max:255|unique:students,admission_no',
-            'roll_no' => 'required|max:255',
             'first_name' => 'required|max:255',
             'last_name' => 'required|max:255',
             'department_id' => 'required|exists:departments,id',

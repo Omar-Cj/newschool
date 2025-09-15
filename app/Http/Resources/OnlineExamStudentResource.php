@@ -29,7 +29,6 @@ class OnlineExamStudentResource extends JsonResource
 
         return [
             'id' => $student->id,
-            'admission_no' => $student->admission_no,
             'name' => $student->first_name . ' ' . $student->last_name,
             'guardian_name' => $student->parent->guardian_name ?? null,
             'mobile' => $student->mobile,

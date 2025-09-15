@@ -18,8 +18,7 @@ class NotificationSetting extends BaseModel
         $message_body = str_replace('[school_name]', @setting('application_name'), $message_body);
 
         $message_body = str_replace('[student_name]', @$data['student_name'], $message_body);
-        $message_body = str_replace('[admission_no]', @$data['admission_no'], $message_body);
-        $message_body = str_replace('[roll_no]', @$data['roll_no'], $message_body);
+        // Removed admission_no and roll_no shortcodes as these fields are no longer used
         $message_body = str_replace('[class]', @$data['class'], $message_body);
         $message_body = str_replace('[section]', @$data['section'], $message_body);
         $message_body = str_replace('[guardian_name]', @$data['guardian_name'], $message_body);

@@ -17,8 +17,6 @@ class HomeworkStudentListResource extends JsonResource
         return [
             'student_id' => $this->student_id,
             'student_name' => $this->student->full_name ?? null,
-            'student_roll' => $this->student->roll_no ?? null,
-            'admission_no' => $this->student->admission_no ?? null,
             'homework_submitted' => $this->homeworkStudent ? true : false,
             'marks' => $this->homeworkStudent
                     ? [
