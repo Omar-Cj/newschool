@@ -1025,3 +1025,75 @@ if (!function_exists('saasTenantMigrationPaths')) {
         return $migrationPaths;
     }
 }
+
+/**
+ * Generate avatar HTML for students based on their names
+ * Creates circular avatars with initials and consistent color backgrounds
+ *
+ * @param string $firstName Student's first name
+ * @param string $lastName Student's last name
+ * @param string $size Size CSS value (e.g., '40px', '60px')
+ * @return string HTML markup for the avatar
+ */
+function generateStudentAvatar($firstName, $lastName, $size = '40px')
+{
+    // Color palette - professional colors that work well with the system theme
+    $colors = [
+        ['bg' => '#4A90E2', 'text' => '#FFFFFF'], // Blue
+        ['bg' => '#7ED321', 'text' => '#FFFFFF'], // Green
+        ['bg' => '#F5A623', 'text' => '#FFFFFF'], // Orange
+        ['bg' => '#BD10E0', 'text' => '#FFFFFF'], // Purple
+        ['bg' => '#B8E986', 'text' => '#333333'], // Light Green
+        ['bg' => '#9013FE', 'text' => '#FFFFFF'], // Violet
+        ['bg' => '#50E3C2', 'text' => '#333333'], // Teal
+        ['bg' => '#D0021B', 'text' => '#FFFFFF'], // Red
+        ['bg' => '#F8E71C', 'text' => '#333333'], // Yellow
+        ['bg' => '#8B572A', 'text' => '#FFFFFF'], // Brown
+        ['bg' => '#417505', 'text' => '#FFFFFF'], // Dark Green
+        ['bg' => '#9B9B9B', 'text' => '#FFFFFF'], // Gray
+    ];
+
+    // Clean and prepare names
+    $firstName = trim($firstName ?? '');
+    $lastName = trim($lastName ?? '');
+
+    // Generate initials
+    $initials = '';
+    if (!empty($firstName)) {
+        $initials .= strtoupper(substr($firstName, 0, 1));
+    }
+    if (!empty($lastName)) {
+        $initials .= strtoupper(substr($lastName, 0, 1));
+    }
+
+    // Fallback if no proper names
+    if (empty($initials)) {
+        $initials = 'ST'; // Student
+    }
+
+    // Generate consistent color based on full name hash
+    $fullName = $firstName . $lastName;
+    $colorIndex = !empty($fullName) ? crc32($fullName) % count($colors) : 0;
+    $colorIndex = abs($colorIndex); // Ensure positive index
+    $selectedColor = $colors[$colorIndex];
+
+    // Calculate font size based on avatar size
+    $numericSize = (int) preg_replace('/[^0-9]/', '', $size);
+    $fontSize = max(($numericSize * 0.4), 12) . 'px';
+
+    // Generate avatar HTML
+    return sprintf(
+        '<div class="student-avatar d-inline-flex align-items-center justify-content-center rounded-circle fw-bold"
+              style="width: %s; height: %s; background-color: %s; color: %s; font-size: %s; min-width: %s; min-height: %s; font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, sans-serif;">
+            %s
+        </div>',
+        $size,
+        $size,
+        $selectedColor['bg'],
+        $selectedColor['text'],
+        $fontSize,
+        $size,
+        $size,
+        htmlspecialchars($initials)
+    );
+}

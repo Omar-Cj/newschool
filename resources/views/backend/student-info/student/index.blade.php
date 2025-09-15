@@ -126,9 +126,13 @@
                                                     <a href="{{ route('student.show', @$row->student->id) }}">
                                                         <div class="user-card">
                                                             <div class="user-avatar">
-                                                                <img src="{{ @$row->student->upload ? asset(@$row->student->upload->path) : asset('backend/uploads/users/user-icon-1.png') }}"
-                                                                    alt="{{ @$row->student->first_name }} {{ @$row->student->last_name }}"
-                                                                    style="width: 40px; height: 40px; object-fit: cover; border-radius: 50%;">
+                                                                @if(@$row->student->upload)
+                                                                    <img src="{{ asset(@$row->student->upload->path) }}"
+                                                                        alt="{{ @$row->student->first_name }} {{ @$row->student->last_name }}"
+                                                                        style="width: 32px; height: 32px; object-fit: cover; border-radius: 50%;">
+                                                                @else
+                                                                    {!! generateStudentAvatar(@$row->student->first_name, @$row->student->last_name, '32px') !!}
+                                                                @endif
                                                             </div>
                                                             <div class="user-info">
                                                                 {{ @$row->student->first_name }}
