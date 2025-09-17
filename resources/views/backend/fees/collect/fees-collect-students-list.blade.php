@@ -7,7 +7,13 @@
     <td>{{ @$item->student->parent->guardian_name }}</td>
     <td>{{ @$item->student->mobile }}</td>
     <td>
-        <a href="{{ route('fees-collect.collect',$item) }}" class="btn btn-sm ot-btn-primary">{{ ___('common.Collect')}}</a>
+        <button type="button" class="btn btn-sm ot-btn-primary"
+                data-bs-toggle="modal"
+                data-bs-target="#modalCustomizeWidth"
+                onclick="openFeeCollectionModal({{ $item->student->id }}, '{{ $item->student->first_name }} {{ $item->student->last_name }}')">
+            <i class="fas fa-credit-card me-1"></i>
+            {{ ___('common.Collect')}}
+        </button>
     </td>
 </tr>
 @endforeach

@@ -213,4 +213,74 @@
     </div>
     </div>
     </div>
+
+    <!-- Fee Collection Modal -->
+    <div id="view-modal">
+        <div class="modal fade" id="modalCustomizeWidth" tabindex="-1" aria-labelledby="modalWidth"
+            aria-hidden="true">
+            <div class="modal-dialog modal-xl">
+                @include('backend.fees.collect.fee-collection-modal')
+            </div>
+        </div>
+    </div>
 @endsection
+
+@push('script')
+    @include('backend.fees.collect.fee-collection-modal-script')
+
+    <script>
+        // Function to open fee collection modal for individual student
+        function openFeeCollectionModal(studentId, studentName, admissionNo = null) {
+            console.log(`Opening fee collection modal for student ${studentId}: ${studentName}`);
+
+            // Show loading in modal
+            $('#modal_student_id').val(studentId);
+            $('#modalCustomizeWidth .modal-title').text(`Fee Collection - ${studentName}`);
+
+            // Prepare student info object
+            const studentInfo = {
+                name: studentName,
+                student_name: studentName,
+                admission_no: admissionNo || '{{ @$data->admission_no }}' || '--'
+            };
+
+            // Fetch student's unpaid fees via AJAX
+            fetchStudentFees(studentId).then(feesData => {
+                if (feesData && feesData.success) {
+                    window.populateFeeCollectionModal(studentId, feesData.data, studentInfo);
+                } else {
+                    showErrorMessage('Unable to load student fees. Please try again.');
+                }
+            }).catch(error => {
+                console.error('Error fetching student fees:', error);
+                showErrorMessage('An error occurred while loading student fees.');
+            });
+        }
+
+        // Function to fetch student fees via AJAX
+        function fetchStudentFees(studentId) {
+            return $.ajax({
+                url: '{{ route("fees-collect.fees-show") }}',
+                method: 'GET',
+                data: {
+                    student_id: studentId
+                },
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                }
+            });
+        }
+
+        function showErrorMessage(message) {
+            if (typeof Toast !== 'undefined' && Toast.fire) {
+                Toast.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: message
+                });
+            } else {
+                alert(message);
+            }
+        }
+    </script>
+@endpush

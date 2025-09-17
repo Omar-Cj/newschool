@@ -70,14 +70,16 @@
                             <div class="row mt-4">
                                 <div class="col-12">
                                     <div class="d-flex justify-content-center">
-                                        <a href="{{ route('fees-collect.collect', $data->id) }}"
-                                           class="btn ot-btn-primary shadow-sm px-4 py-2">
+                                        <button type="button" class="btn ot-btn-primary shadow-sm px-4 py-2"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#modalCustomizeWidth"
+                                                onclick="openFeeCollectionModal({{ $data->id }}, '{{ $data->first_name }} {{ $data->last_name }}')">
                                             <i class="fa-solid fa-credit-card me-2"></i>
                                             {{ ___('common.pay') }}
                                             <span class="ms-2 fw-bold">
                                                 {{ $currency }} {{ number_format($fees['fees_due'], 2) }}
                                             </span>
-                                        </a>
+                                        </button>
                                     </div>
                                     <div class="text-center mt-2">
                                         <small class="text-muted">

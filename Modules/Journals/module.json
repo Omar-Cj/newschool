@@ -1,0 +1,11 @@
+{
+    "name": "Journals",
+    "alias": "journals",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Journals\\Providers\\JournalsServiceProvider"
+    ],
+    "files": []
+}

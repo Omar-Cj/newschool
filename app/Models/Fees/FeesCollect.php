@@ -22,6 +22,7 @@ class FeesCollect extends BaseModel
         'fine_amount' => 'decimal:2',
         'late_fee_applied' => 'decimal:2',
         'discount_applied' => 'decimal:2',
+        'discount_amount' => 'decimal:2',
         'billing_year' => 'integer',
         'billing_month' => 'integer',
     ];
@@ -66,6 +67,11 @@ class FeesCollect extends BaseModel
     public function collectBy(): BelongsTo
     {
         return $this->belongsTo(\App\Models\User::class, 'fees_collect_by');
+    }
+
+    public function journal(): BelongsTo
+    {
+        return $this->belongsTo(\Modules\Journals\Entities\Journal::class);
     }
 
     // Get associated student service if exists

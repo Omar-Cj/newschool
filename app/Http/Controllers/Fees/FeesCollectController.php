@@ -68,53 +68,101 @@ class FeesCollectController extends Controller
         \Log::info('Fee collection request received', [
             'is_ajax' => $request->ajax(),
             'student_id' => $request->student_id,
-            'payment_method' => $request->payment_method
+            'payment_method' => $request->payment_method,
+            'journal_id' => $request->journal_id,
+            'payment_amount' => $request->payment_amount
         ]);
-        
-        $result = $this->repo->store($request);
-        if($result['status']){
-            // If it's an AJAX request, return JSON with payment details for receipt modal
-            if ($request->ajax()) {
-                $student = $this->studentRepo->show($request->student_id);
-                
-                $response = [
-                    'success' => true,
-                    'message' => $result['message'],
-                    'payment_id' => $result['data']['payment_id'] ?? null,
-                    'payment_details' => [
-                        'student_name' => $student->first_name . ' ' . $student->last_name,
-                        'admission_no' => $student->admission_no,
-                        'student_id' => $student->id,
-                        'payment_date' => date('d M Y'),
-                        'amount' => number_format(array_sum($request->amounts ?? []), 2)
-                    ]
-                ];
-                
-                \Log::info('Fee collection AJAX response', $response);
-                
-                return response()->json($response);
-            }
-            
-            // If it's a simple payment, redirect to receipt page
-            if ($request->has('simple_payment')) {
-                $paymentId = $result['data']['payment_id'] ?? null;
-                if ($paymentId) {
-                    return redirect()->route('fees.receipt.options', $paymentId)
-                        ->with('success', $result['message']);
+
+        // Validate request for new modal functionality
+        $validatedData = $request->validate([
+            'student_id' => 'required|exists:students,id',
+            'payment_method' => 'required|in:cash,zaad,edahab',
+            'payment_amount' => 'required|numeric|min:0.01',
+            'journal_id' => 'required|exists:journals,id',
+            'payment_date' => 'required|date',
+            'discount_type' => 'nullable|in:fixed,percentage',
+            'discount_amount' => 'nullable|numeric|min:0',
+            'transaction_reference' => 'required_if:payment_method,zaad,edahab',
+            'payment_notes' => 'nullable|string|max:500',
+            'fees_assign_childrens' => 'required'
+        ]);
+
+        try {
+            $result = $this->repo->store($request);
+
+            if($result['status']){
+                // If it's an AJAX request, return JSON with payment details
+                if ($request->ajax()) {
+                    $student = $this->studentRepo->show($request->student_id);
+
+                    $response = [
+                        'success' => true,
+                        'message' => $result['message'],
+                        'payment_id' => $result['data']['payment_id'] ?? null,
+                        'payment_details' => [
+                            'student_name' => $student->first_name . ' ' . $student->last_name,
+                            'admission_no' => $student->admission_no,
+                            'student_id' => $student->id,
+                            'payment_date' => $request->payment_date,
+                            'payment_method' => $request->payment_method,
+                            'transaction_reference' => $request->transaction_reference,
+                            'amount' => number_format($request->payment_amount, 2),
+                            'journal_name' => $result['data']['journal_name'] ?? 'N/A'
+                        ]
+                    ];
+
+                    \Log::info('Fee collection AJAX response', $response);
+
+                    return response()->json($response);
                 }
+
+                // Legacy handling for non-AJAX requests
+                if ($request->has('simple_payment')) {
+                    $paymentId = $result['data']['payment_id'] ?? null;
+                    if ($paymentId) {
+                        return redirect()->route('fees.receipt.options', $paymentId)
+                            ->with('success', $result['message']);
+                    }
+                }
+
+                return back()->with('success', $result['message']);
             }
-            
-            return back()->with('success', $result['message']);
+
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $result['message']
+                ], 422);
+            }
+
+            return back()->with('danger', $result['message']);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $e->errors()
+                ], 422);
+            }
+            throw $e;
+        } catch (\Exception $e) {
+            \Log::error('Fee collection error', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            $errorMessage = 'An error occurred while processing the payment. Please try again.';
+
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $errorMessage
+                ], 500);
+            }
+
+            return back()->with('danger', $errorMessage);
         }
-        
-        if ($request->ajax()) {
-            return response()->json([
-                'success' => false,
-                'message' => $result['message']
-            ], 422);
-        }
-        
-        return back()->with('danger', $result['message']);
     }
 
     public function edit($id)
@@ -186,6 +234,57 @@ class FeesCollectController extends Controller
                     $data['siblings_discount_percentage'] = $feesAssignChild->feesDiscount->discount_percentage;
                     $data['siblings_discount_name'] = $feesAssignChild->feesDiscount->title;
                 }
+            }
+        }
+
+        // Return JSON for AJAX requests
+        if ($request->ajax()) {
+            try {
+                // Transform fee assignment data for modal
+                $fees = [];
+                $totalAmount = 0;
+
+                if (isset($data['fees_assign_children']) && $data['fees_assign_children']) {
+                    foreach ($data['fees_assign_children'] as $item) {
+                        // Skip if already paid
+                        if ($item->fees_collect_count && $item->feesCollect && $item->feesCollect->isPaid()) {
+                            continue;
+                        }
+
+                        $feeAmount = $item->feesMaster->amount ?? 0;
+                        $taxAmount = calculateTax($feeAmount);
+                        $discountAmount = calculateDiscount($feeAmount, $item->feesDiscount->discount_percentage ?? 0);
+                        $payableAmount = $feeAmount + $taxAmount - $discountAmount;
+
+                        $fees[] = [
+                            'id' => $item->id,
+                            'name' => ($item->feesMaster->group->name ?? '') . ' - ' . ($item->feesMaster->type->name ?? ''),
+                            'amount' => number_format($payableAmount, 2)
+                        ];
+
+                        $totalAmount += $payableAmount;
+                    }
+                }
+
+                return response()->json([
+                    'success' => true,
+                    'data' => [
+                        'fees' => $fees,
+                        'totalAmount' => $totalAmount,
+                        'payableAmount' => $totalAmount
+                    ]
+                ]);
+
+            } catch (\Exception $e) {
+                \Log::error('Error in feesShow AJAX request', [
+                    'error' => $e->getMessage(),
+                    'student_id' => $request->student_id
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unable to load student fees. Please try again.'
+                ], 500);
             }
         }
 

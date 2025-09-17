@@ -93,15 +93,16 @@
                     </div>
                     @if (hasPermission('fees_collect_update'))
                         <div class="d-flex flex-column align-items-end">
-                            <a href="#" class="btn btn-lg disabled btn-outline-secondary" 
-                               data-bs-toggle="modal" data-bs-target="#modalCustomizeWidth" 
-                               onclick="return feesCollect();" aria-disabled="true"
-                               title="Select fee items to enable payment collection">
+                            <button type="button" class="btn btn-lg disabled btn-outline-secondary"
+                                    data-bs-toggle="modal" data-bs-target="#modalCustomizeWidth"
+                                    onclick="return openSelectedFeesModal();" aria-disabled="true"
+                                    id="collect-fees-btn"
+                                    title="Select fee items to enable payment collection">
                                 <span><i class="fa-solid fa-credit-card"></i> </span>
-                                <span>Select Items to Collect</span>
-                            </a>
+                                <span>Collect Selected Fees</span>
+                            </button>
                             <small class="text-muted mt-1 fee-collection-help">
-                                <i class="fa fa-info-circle"></i> 
+                                <i class="fa fa-info-circle"></i>
                                 Select fee items below to enable payment collection
                             </small>
                         </div>
@@ -232,14 +233,7 @@
         <div class="modal fade" id="modalCustomizeWidth" tabindex="-1" aria-labelledby="modalWidth"
             aria-hidden="true">
             <div class="modal-dialog modal-xl">
-                <div class="modal-content">
-                    <div class="modal-body text-center p-5">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                        <p class="mt-3">Loading payment form...</p>
-                    </div>
-                </div>
+                @include('backend.fees.collect.fee-collection-modal')
             </div>
         </div>
     </div>
@@ -269,16 +263,140 @@
             if (!$('meta[name="csrf-token"]').length) {
                 console.error('CSRF token meta tag not found');
             }
-            
-            // Prevent form submission when collect button is disabled
-            $(document).on('click', '.disabled[onclick*="feesCollect"]', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                
-                showErrorMessage('Please select at least one fee item to collect payment.');
-                
-                return false;
+
+            // Initialize fee selection handlers
+            initializeFeeSelection();
+        });
+
+        function initializeFeeSelection() {
+            // Handle individual checkbox changes
+            $('.child').change(function() {
+                updateCollectButton();
+                updateSelectionSummary();
             });
+
+            // Handle "select all" checkbox
+            $('.all').change(function() {
+                const isChecked = $(this).is(':checked');
+                $('.child').prop('checked', isChecked);
+                updateCollectButton();
+                updateSelectionSummary();
+            });
+
+            // Initialize button state
+            updateCollectButton();
+        }
+
+        function updateCollectButton() {
+            const selectedFees = $('.child:checked').length;
+            const collectBtn = $('#collect-fees-btn');
+
+            if (selectedFees > 0) {
+                collectBtn.removeClass('disabled btn-outline-secondary')
+                          .addClass('ot-btn-primary')
+                          .prop('disabled', false)
+                          .attr('aria-disabled', 'false');
+            } else {
+                collectBtn.addClass('disabled btn-outline-secondary')
+                          .removeClass('ot-btn-primary')
+                          .prop('disabled', true)
+                          .attr('aria-disabled', 'true');
+            }
+        }
+
+        function updateSelectionSummary() {
+            const selectedFees = $('.child:checked').length;
+            const totalFees = $('.child').length;
+
+            // Update the summary text near the fees details header
+            let summaryText = '';
+            if (selectedFees > 0) {
+                summaryText = `<small class="text-primary">${selectedFees} of ${totalFees} fee items selected</small>`;
+            }
+
+            // Find or create summary container
+            let summaryContainer = $('.card-header').find('.selection-summary');
+            if (summaryContainer.length === 0) {
+                summaryContainer = $('<div class="selection-summary mt-2"></div>');
+                $('.card-header > div:first-child').append(summaryContainer);
+            }
+
+            summaryContainer.html(summaryText);
+        }
+
+        function openSelectedFeesModal() {
+            const selectedCheckboxes = $('.child:checked');
+
+            if (selectedCheckboxes.length === 0) {
+                showErrorMessage('Please select at least one fee item to collect payment.');
+                return false;
+            }
+
+            // Collect selected fees data
+            const selectedFees = [];
+            let totalAmount = 0;
+            const studentId = $('#student_id').val();
+
+            selectedCheckboxes.each(function() {
+                const row = $(this).closest('tr');
+                const feeId = $(this).val();
+                const feeName = row.find('td:nth-child(3)').text().trim(); // Type column
+                const feeGroup = row.find('td:nth-child(2)').text().trim(); // Group column
+                const payableAmount = parseFloat(row.find('td:nth-child(8)').text().trim()) || 0; // Payable column
+
+                selectedFees.push({
+                    id: feeId,
+                    name: `${feeGroup} - ${feeName}`,
+                    amount: payableAmount.toFixed(2)
+                });
+
+                totalAmount += payableAmount;
+            });
+
+            const feesData = {
+                fees: selectedFees,
+                totalAmount: totalAmount,
+                payableAmount: totalAmount
+            };
+
+            // Populate the modal with selected fees data
+            if (typeof window.populateFeeCollectionModal === 'function') {
+                window.populateFeeCollectionModal(studentId, feesData);
+            }
+
+            return true;
+        }
+
+        // Function to open fee collection modal for individual student (called from list page)
+        function openFeeCollectionModal(studentId, studentName) {
+            // This would typically fetch the student's unpaid fees via AJAX
+            // For now, we'll show a placeholder
+            console.log(`Opening fee collection modal for student ${studentId}: ${studentName}`);
+
+            // You would implement the AJAX call to fetch student's fees here
+            // fetchStudentFees(studentId).then(feesData => {
+            //     window.populateFeeCollectionModal(studentId, feesData);
+            // });
+        }
+
+        function showErrorMessage(message) {
+            if (typeof Toast !== 'undefined' && Toast.fire) {
+                Toast.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: message
+                });
+            } else {
+                alert(message);
+            }
+        }
+
+        // Prevent form submission when collect button is disabled
+        $(document).on('click', '.disabled[onclick*="openSelectedFeesModal"]', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            showErrorMessage('Please select at least one fee item to collect payment.');
+            return false;
         });
     </script>
 @endpush

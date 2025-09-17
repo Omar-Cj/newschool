@@ -45,10 +45,118 @@ class FeesCollectRepository implements FeesCollectInterface
     {
         DB::beginTransaction();
         try {
-            $firstPaymentId = null; // Track the first payment ID for receipt
-            
-            foreach ($request->fees_assign_childrens as $key=>$item) {
-                // Check if there's an existing bulk-generated fee record for this assignment
+            $firstPaymentId = null;
+            $journal = null;
+
+            // Get journal information for response
+            if ($request->journal_id) {
+                $journal = \Modules\Journals\Entities\Journal::find($request->journal_id);
+            }
+
+            // Handle new modal payment processing
+            if ($request->has('payment_amount') && $request->has('fees_assign_childrens') && is_string($request->fees_assign_childrens)) {
+                $feesAssignChildrens = json_decode($request->fees_assign_childrens, true);
+
+                // Map payment method string to integer for legacy compatibility
+                $paymentMethodMap = [
+                    'cash' => 1,
+                    'zaad' => 3,
+                    'edahab' => 4,
+                    'stripe' => 2, // Legacy
+                    'paypal' => 5  // Legacy
+                ];
+
+                $paymentMethodInt = $paymentMethodMap[$request->payment_method] ?? 1;
+
+                // Calculate discount amount
+                $discountAmount = 0;
+                if ($request->discount_type && $request->discount_amount) {
+                    if ($request->discount_type === 'percentage') {
+                        $discountAmount = ($request->payment_amount * $request->discount_amount) / 100;
+                    } else {
+                        $discountAmount = $request->discount_amount;
+                    }
+                }
+
+                foreach ($feesAssignChildrens as $feeData) {
+                    $feeId = $feeData['id'];
+
+                    // Check for existing payment record
+                    $existingFee = $this->model::where('fees_assign_children_id', $feeId)
+                        ->where('student_id', $request->student_id)
+                        ->where('session_id', setting('session'))
+                        ->whereNull('payment_method')
+                        ->first();
+
+                    if ($existingFee) {
+                        $row = $existingFee;
+                    } else {
+                        $row = new $this->model;
+                        $row->fees_assign_children_id = $feeId;
+                        $row->student_id = $request->student_id;
+                        $row->session_id = setting('session');
+                        $row->generation_method = 'manual';
+                    }
+
+                    // Update payment details
+                    $row->date = $request->payment_date ?? $request->date ?? date('Y-m-d');
+                    $row->payment_method = $paymentMethodInt;
+                    $row->payment_gateway = $request->payment_method;
+                    $row->amount = $request->payment_amount;
+                    $row->fine_amount = $request->fine_amount ?? 0;
+                    $row->discount_amount = $discountAmount;
+                    $row->discount_type = $request->discount_type;
+                    $row->transaction_reference = $request->transaction_reference;
+                    $row->payment_notes = $request->payment_notes;
+                    $row->journal_id = $request->journal_id;
+                    $row->fees_collect_by = Auth::user()->id;
+
+                    $row->save();
+
+                    if ($firstPaymentId === null) {
+                        $firstPaymentId = $row->id;
+                    }
+
+                    // Create income record
+                    $ac_head = AccountHead::where('type', 1)->where('status', 1)->first();
+                    if ($ac_head) {
+                        $incomeStore = new Income();
+                        $incomeStore->fees_collect_id = $row->id;
+                        $incomeStore->name = $feeData['name'] ?? "Fee Payment";
+                        $incomeStore->session_id = setting('session');
+                        $incomeStore->income_head = $ac_head->id;
+                        $incomeStore->date = $row->date;
+                        $incomeStore->amount = $row->amount - $discountAmount;
+                        $incomeStore->invoice_number = 'fees_collect_' . $row->id;
+                        $incomeStore->save();
+                    }
+
+                    // Handle tax if applicable
+                    $tax = calculateTax($row->amount);
+                    if ($tax > 0) {
+                        $settings = Setting::whereIn('name', ['tax_income_head'])->pluck('value', 'name');
+                        $accountHead = AccountHead::where('name', $settings['tax_income_head'])->first();
+                        if ($accountHead) {
+                            $incomeStore = new Income();
+                            $incomeStore->name = "Fees-Tax";
+                            $incomeStore->session_id = setting('session');
+                            $incomeStore->income_head = $accountHead->id;
+                            $incomeStore->date = $row->date;
+                            $incomeStore->amount = $tax;
+                            $incomeStore->save();
+                        }
+                    }
+                }
+
+                DB::commit();
+                return $this->responseWithSuccess(___('alert.created_successfully'), [
+                    'payment_id' => $firstPaymentId,
+                    'journal_name' => $journal ? $journal->display_name : null
+                ]);
+            }
+
+            // Legacy processing for old format
+            foreach ($request->fees_assign_childrens as $key => $item) {
                 $existingFee = $this->model::where('fees_assign_children_id', $item)
                     ->where('student_id', $request->student_id)
                     ->where('session_id', setting('session'))
@@ -57,49 +165,44 @@ class FeesCollectRepository implements FeesCollectInterface
                     ->first();
 
                 if ($existingFee) {
-                    // Update existing bulk-generated fee record
                     $row = $existingFee;
                     $row->date = $request->date;
                     $row->payment_method = $request->payment_method;
-                    $row->amount = $request->amounts[$key] + $request->fine_amounts[$key] ?? 0;
-                    $row->fine_amount = $request->fine_amounts[$key];
+                    $row->amount = $request->amounts[$key] + ($request->fine_amounts[$key] ?? 0);
+                    $row->fine_amount = $request->fine_amounts[$key] ?? 0;
                     $row->fees_collect_by = Auth::user()->id;
-                    // Keep existing generation_method as 'bulk'
                 } else {
-                    // Create new fee record (for manual collection)
                     $row = new $this->model;
                     $row->date = $request->date;
                     $row->payment_method = $request->payment_method;
                     $row->fees_assign_children_id = $item;
-                    $row->amount = $request->amounts[$key] + $request->fine_amounts[$key] ?? 0;
-                    $row->fine_amount = $request->fine_amounts[$key];
+                    $row->amount = $request->amounts[$key] + ($request->fine_amounts[$key] ?? 0);
+                    $row->fine_amount = $request->fine_amounts[$key] ?? 0;
                     $row->fees_collect_by = Auth::user()->id;
                     $row->student_id = $request->student_id;
                     $row->session_id = setting('session');
                     $row->generation_method = 'manual';
                 }
-                
+
                 $row->save();
-                
-                // Store the first payment ID for receipt generation
+
                 if ($firstPaymentId === null) {
                     $firstPaymentId = $row->id;
                 }
 
-               $ac_head =  AccountHead::where('type', 1)->where('status', 1)->first();
-
-
-               if($ac_head){
-                    $incomeStore                   = new Income();
-                    $incomeStore->fees_collect_id  = $row->id;
-                    $incomeStore->name             = $item;
-                    $incomeStore->session_id       = setting('session');
-                    $incomeStore->income_head      = $ac_head->id; // Because, Fees id 1.
-                    $incomeStore->date             = $request->date;
-                    $incomeStore->amount           = $row->amount;
-                    $incomeStore->invoice_number   = 'fees_collect_'.$item;
+                // Legacy income and tax handling
+                $ac_head = AccountHead::where('type', 1)->where('status', 1)->first();
+                if ($ac_head) {
+                    $incomeStore = new Income();
+                    $incomeStore->fees_collect_id = $row->id;
+                    $incomeStore->name = $item;
+                    $incomeStore->session_id = setting('session');
+                    $incomeStore->income_head = $ac_head->id;
+                    $incomeStore->date = $request->date;
+                    $incomeStore->amount = $row->amount;
+                    $incomeStore->invoice_number = 'fees_collect_' . $item;
                     $incomeStore->save();
-               }
+                }
 
                 $tax = calculateTax($row->amount);
                 $settings = Setting::whereIn('name', ['tax_income_head'])->pluck('value', 'name');
@@ -114,7 +217,7 @@ class FeesCollectRepository implements FeesCollectInterface
                     $incomeStore->save();
                 }
 
-                if ($request->early_payment_percentage > 0){
+                if ($request->early_payment_percentage > 0) {
                     $feesDiscount = new AssignFeesDiscount();
                     $feesDiscount->fees_assign_children_id = $item;
                     $feesDiscount->title = 'Early Payment Fees Discount';
@@ -123,15 +226,16 @@ class FeesCollectRepository implements FeesCollectInterface
                     $feesDiscount->discount_source = 'Early Payment Fees Discount';
                     $feesDiscount->save();
                 }
-
-
-
             }
 
             DB::commit();
             return $this->responseWithSuccess(___('alert.created_successfully'), ['payment_id' => $firstPaymentId]);
         } catch (\Throwable $th) {
             DB::rollBack();
+            \Log::error('Fee collection store error', [
+                'error' => $th->getMessage(),
+                'trace' => $th->getTraceAsString()
+            ]);
             return $this->responseWithError(___('alert.something_went_wrong_please_try_again'), []);
         }
     }
