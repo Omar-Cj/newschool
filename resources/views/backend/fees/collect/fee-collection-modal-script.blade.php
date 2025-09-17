@@ -242,8 +242,12 @@ $(document).ready(function() {
 
     // Global function to populate modal with selected fees (called from parent page)
     window.populateFeeCollectionModal = function(studentId, feesData, studentInfo = null) {
-        // Extract fees and amounts
-        selectedFees = Array.isArray(feesData.fees) ? feesData.fees : [];
+        // Identify source and extract display items
+        const source = feesData.source || 'service_based';
+        const displayFees = Array.isArray(feesData.fees) ? feesData.fees : [];
+
+        // Persist only legacy items for submission (service-based is display-only; backend handles via fees_source)
+        selectedFees = source === 'legacy' ? displayFees : [];
         totalAmount = parseFloat(feesData.totalAmount || 0);
         payableAmount = parseFloat(feesData.payableAmount || 0);
 
@@ -255,13 +259,14 @@ $(document).ready(function() {
         $('#modal_student_id').val(studentId);
         $('#payment_amount').val(payableAmount.toFixed(2));
         $('#modal_fees_assign_childrens').val(JSON.stringify(selectedFees));
+        $('#fees_source').val(source);
 
         // Update labels in header and summary
         $('#feeCollectionModalLabel').text(`{{ ___('fees.Fee Collection') }} - ${currentStudentName}`);
         $('#summary-student-name').text(currentStudentName);
 
-        // Update summary display and calculations
-        updateFeesSummary(selectedFees);
+        // Update summary display and calculations (use display fees, not submission list)
+        updateFeesSummary(displayFees);
         calculateNetAmount();
     };
 
@@ -269,24 +274,75 @@ $(document).ready(function() {
         const summaryContainer = $('#selected-fees-summary');
         summaryContainer.empty();
 
-        if (!fees || fees.length === 0) {
-            summaryContainer.append('<div class="text-muted">{{ ___('fees.no_outstanding_fees') }}</div>');
+        if (!fees || !fees.length) {
+            summaryContainer.append('<div class="text-muted">No outstanding fees</div>');
         } else {
-            fees.forEach(function(fee) {
-                const safeAmount = parseFloat(fee.amount || 0).toFixed(2);
-                const feeItem = `
-                    <div class="fee-item">
-                        <div class="fee-item-name">${fee.name}</div>
-                        <div class="fee-item-amount">{{ Setting('currency_symbol') }}${safeAmount}</div>
-                    </div>
-                `;
-                summaryContainer.append(feeItem);
-            });
+            const hasPeriods = fees.some(function(f){ return !!f.billing_period; });
+            if (hasPeriods) {
+                // Group by billing period (YYYY-MM) with collapsible sections
+                const groups = {};
+                fees.forEach(function(fee){
+                    const p = fee.billing_period || 'unknown';
+                    groups[p] = groups[p] || [];
+                    groups[p].push(fee);
+                });
+
+                Object.keys(groups).sort().forEach(function(period, idx){
+                    const pretty = formatBillingPeriod(period);
+                    const groupId = `fee-period-${(period || 'unknown').replace(/[^a-zA-Z0-9]/g, '-')}-${idx}`;
+                    const groupEl = $(`
+                        <div class="fee-period-group">
+                            <div class="fee-period-heading d-flex justify-content-between align-items-center collapsed" role="button" data-bs-toggle="collapse" data-bs-target="#${groupId}" aria-expanded="false" aria-controls="${groupId}">
+                                <span class="d-flex align-items-center">
+                                    <i class="fas fa-chevron-down fee-period-caret me-2"></i>
+                                    <span>${pretty}</span>
+                                </span>
+                                <span class="text-muted small">${groups[period].length} item(s)</span>
+                            </div>
+                            <div id="${groupId}" class="collapse"></div>
+                        </div>
+                    `);
+                    summaryContainer.append(groupEl);
+
+                    const itemsEl = groupEl.find(`#${groupId}`);
+                    groups[period].forEach(function(fee){
+                        const safeAmount = parseFloat(fee.amount || 0).toFixed(2);
+                        itemsEl.append(`
+                            <div class="fee-item">
+                                <div class="fee-item-name">${fee.name}</div>
+                                <div class="fee-item-amount">{{ Setting('currency_symbol') }}${safeAmount}</div>
+                            </div>
+                        `);
+                    });
+                });
+            } else {
+                // Flat list fallback
+                fees.forEach(function(fee) {
+                    const safeAmount = parseFloat(fee.amount || 0).toFixed(2);
+                    summaryContainer.append(`
+                        <div class="fee-item">
+                            <div class="fee-item-name">${fee.name}</div>
+                            <div class="fee-item-amount">{{ Setting('currency_symbol') }}${safeAmount}</div>
+                        </div>
+                    `);
+                });
+            }
         }
 
+        // Preserve totals + outstanding
         $('#total-amount').text('{{ Setting("currency_symbol") }}' + totalAmount.toFixed(2));
         $('#payable-amount').text('{{ Setting("currency_symbol") }}' + payableAmount.toFixed(2));
         $('#summary-outstanding-amount').text('{{ Setting("currency_symbol") }}' + payableAmount.toFixed(2));
+    }
+
+    // Helper to format YYYY-MM to localized "Mon YYYY"
+    function formatBillingPeriod(period) {
+        if (!period || period.length < 7) return period || '—';
+        const parts = period.split('-');
+        const y = parseInt(parts[0]);
+        const m = parseInt(parts[1]);
+        const d = new Date(y, m - 1, 1);
+        return isNaN(d.getTime()) ? period : d.toLocaleString(undefined, { month: 'short', year: 'numeric' });
     }
 });
 </script>

@@ -68,6 +68,55 @@ class FeesCollectRepository implements FeesCollectInterface
 
                 $paymentMethodInt = $paymentMethodMap[$request->payment_method] ?? 1;
 
+                // Service-based processing: mark generated unpaid fees as paid (full payment only for now)
+                if ($request->fees_source === 'service_based') {
+                    // Only support full outstanding payment to avoid partial allocation ambiguity
+                    $academicYearId = session('academic_year_id') ?: \App\Models\Session::active()->value('id');
+                    $unpaid = \App\Models\Fees\FeesCollect::query()
+                        ->where('student_id', $request->student_id)
+                        ->when($academicYearId, function($q) use ($academicYearId) {
+                            $q->where('academic_year_id', $academicYearId);
+                        })
+                        ->whereNull('payment_method')
+                        ->orderBy('due_date')
+                        ->get();
+
+                    $outstandingTotal = 0;
+                    foreach ($unpaid as $row) {
+                        $outstandingTotal += $row->getNetAmount();
+                    }
+
+                    // Normalize floats
+                    $payAmount = (float) $request->payment_amount;
+                    $epsilon = 0.01;
+
+                    if (abs($payAmount - $outstandingTotal) > $epsilon) {
+                        DB::rollBack();
+                        return $this->responseWithError('Payment amount must equal the outstanding total for service-based fees.', []);
+                    }
+
+                    foreach ($unpaid as $row) {
+                        $row->date = $request->payment_date ?? date('Y-m-d');
+                        $row->payment_method = $paymentMethodInt;
+                        $row->payment_gateway = $request->payment_method;
+                        $row->fees_collect_by = Auth::user()->id;
+                        $row->journal_id = $request->journal_id;
+                        $row->transaction_reference = $request->transaction_reference;
+                        $row->payment_notes = $request->payment_notes;
+                        $row->save();
+
+                        if ($firstPaymentId === null) {
+                            $firstPaymentId = $row->id;
+                        }
+                    }
+
+                    DB::commit();
+                    return $this->responseWithSuccess(___('alert.created_successfully'), [
+                        'payment_id' => $firstPaymentId,
+                        'journal_name' => $journal ? $journal->display_name : null
+                    ]);
+                }
+
                 // Calculate discount amount
                 $discountAmount = 0;
                 if ($request->discount_type && $request->discount_amount) {
@@ -320,7 +369,16 @@ class FeesCollectRepository implements FeesCollectInterface
 
     public function feesShow($request)
     {
-        $data['fees_assign_children'] = $this->feesAssigned($request->student_id)->whereIn('id', $request->fees_assign_childrens);
+        $allAssigned = $this->feesAssigned($request->student_id);
+
+        // If specific fees were requested, filter to those; otherwise include all unpaid
+        if ($request->has('fees_assign_childrens') && is_array($request->fees_assign_childrens) && count($request->fees_assign_childrens) > 0) {
+            $data['fees_assign_children'] = $allAssigned->whereIn('id', $request->fees_assign_childrens);
+        } else {
+            $data['fees_assign_children'] = $allAssigned->filter(function ($child) {
+                return !$child->feesCollect || !$child->feesCollect->isPaid();
+            })->values();
+        }
 
         $data['student_id']           = $request->student_id;
         $data['discount_amount']      = $request->discount_amount;

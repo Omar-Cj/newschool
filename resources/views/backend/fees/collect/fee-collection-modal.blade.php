@@ -15,6 +15,7 @@
         @csrf
         <input type="hidden" name="student_id" id="modal_student_id">
         <input type="hidden" name="fees_assign_childrens" id="modal_fees_assign_childrens">
+        <input type="hidden" name="fees_source" id="fees_source" value="legacy">
 
         <div class="modal-body p-4">
             <!-- Selected Fees Summary -->

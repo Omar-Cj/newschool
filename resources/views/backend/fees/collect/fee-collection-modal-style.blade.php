@@ -264,4 +264,15 @@
             font-size: 0.9rem;
         }
     }
+
+    /* Monthly grouping for service-based summary */
+    #selected-fees-summary .fee-period-group { margin-top: 0.5rem; }
+    #selected-fees-summary .fee-period-heading {
+        display: flex; justify-content: space-between; align-items: center;
+        font-weight: 600; color: #495057; padding: 0.25rem 0;
+        border-bottom: 1px dashed #e9ecef; margin-bottom: 0.25rem;
+        cursor: pointer;
+    }
+    #selected-fees-summary .fee-period-caret { transition: transform 0.2s ease; color: #6c757d; }
+    #selected-fees-summary .fee-period-heading.collapsed .fee-period-caret { transform: rotate(-90deg); }
 </style>

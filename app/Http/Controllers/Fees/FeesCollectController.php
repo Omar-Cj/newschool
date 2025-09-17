@@ -237,38 +237,38 @@ class FeesCollectController extends Controller
             }
         }
 
-        // Return JSON for AJAX requests
+        // Return JSON for AJAX requests (Service-based only)
         if ($request->ajax()) {
             try {
-                // Transform fee assignment data for modal
                 $fees = [];
                 $totalAmount = 0;
+                $academicYearId = session('academic_year_id') ?: \App\Models\Session::active()->value('id');
 
-                if (isset($data['fees_assign_children']) && $data['fees_assign_children']) {
-                    foreach ($data['fees_assign_children'] as $item) {
-                        // Skip if already paid
-                        if ($item->fees_collect_count && $item->feesCollect && $item->feesCollect->isPaid()) {
-                            continue;
-                        }
+                $generated = \App\Models\Fees\FeesCollect::query()
+                    ->where('student_id', $request->student_id)
+                    ->when($academicYearId, function($q) use ($academicYearId) {
+                        $q->where('academic_year_id', $academicYearId);
+                    })
+                    ->whereNull('payment_method')
+                    ->get();
 
-                        $feeAmount = $item->feesMaster->amount ?? 0;
-                        $taxAmount = calculateTax($feeAmount);
-                        $discountAmount = calculateDiscount($feeAmount, $item->feesDiscount->discount_percentage ?? 0);
-                        $payableAmount = $feeAmount + $taxAmount - $discountAmount;
-
-                        $fees[] = [
-                            'id' => $item->id,
-                            'name' => ($item->feesMaster->group->name ?? '') . ' - ' . ($item->feesMaster->type->name ?? ''),
-                            'amount' => number_format($payableAmount, 2)
-                        ];
-
-                        $totalAmount += $payableAmount;
-                    }
+                foreach ($generated as $row) {
+                    $net = $row->getNetAmount();
+                    if ($net <= 0) continue;
+                    $fees[] = [
+                        'fees_collect_id' => $row->id,
+                        'name' => $row->getFeeName(),
+                        'amount' => number_format($net, 2),
+                        'billing_period' => $row->billing_period,
+                        'due_date' => optional($row->due_date)->format('Y-m-d'),
+                    ];
+                    $totalAmount += $net;
                 }
 
                 return response()->json([
                     'success' => true,
                     'data' => [
+                        'source' => 'service_based',
                         'fees' => $fees,
                         'totalAmount' => $totalAmount,
                         'payableAmount' => $totalAmount
