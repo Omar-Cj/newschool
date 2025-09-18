@@ -362,6 +362,9 @@
                                 <li class="sidebar-menu-item {{ set_menu(['fees-collect*']) }}">
                                     <a href="{{ route('fees-collect.index') }}">{{ ___('settings.collect') }}</a>
                                 </li>
+                                <li class="sidebar-menu-item {{ set_menu(['fees.receipt.list', 'fees/receipt/*']) }}">
+                                    <a href="{{ route('fees.receipt.list') }}">{{ ___('fees.receipts') }}</a>
+                                </li>
                             @endif
                             @if (hasPermission('fees_generate_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['fees-generation*']) }}">

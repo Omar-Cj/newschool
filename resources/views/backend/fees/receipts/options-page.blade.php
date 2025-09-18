@@ -169,7 +169,7 @@
         {{-- Payment Information --}}
         <div class="payment-info">
             <div>
-                <div class="payment-number">{{ ___('fees.receipt_no') }}: RCT-{{ date('Y') }}-{{ str_pad($payment->id, 6, '0', STR_PAD_LEFT) }}</div>
+            <div class="payment-number">{{ ___('fees.receipt_no') }}: {{ $payment->receipt_number ?? ('RCT-' . date('Y') . '-' . str_pad($payment->id, 6, '0', STR_PAD_LEFT)) }}</div>
                 <div class="payment-date">{{ dateFormat($payment->date) }}</div>
             </div>
         </div>
@@ -194,7 +194,7 @@
         
         {{-- Payment Amount --}}
         <div class="amount-display">
-            <div class="amount-paid">{{ Setting('currency_symbol') }} {{ number_format(($payment->total_amount ?? $payment->amount) + ($payment->total_fine ?? $payment->fine_amount ?? 0), 2) }}</div>
+            <div class="amount-paid">{{ Setting('currency_symbol') }} {{ number_format($payment->grand_total ?? (($payment->total_amount ?? $payment->amount) + ($payment->total_fine ?? $payment->fine_amount ?? 0)), 2) }}</div>
             <div>{{ ___('fees.amount_paid') }}</div>
         </div>
         
@@ -204,7 +204,7 @@
                class="download-btn" target="_blank">
                 📄 {{ ___('fees.download_receipt') }}
             </a>
-            
+
             <button type="button" class="download-btn print-btn" 
                     onclick="printReceipt({{ $payment->id }})">
                 🖨️ {{ ___('fees.print_receipt') }}
@@ -225,74 +225,25 @@
     </div>
 </div>
 
-<script>
-function printReceipt(paymentId) {
-    try {
-        // Build print URL using proper Laravel URL construction
-        const baseUrl = '{{ url("fees/receipt/individual") }}';
-        const printUrl = baseUrl + '/' + paymentId + '?print=1';
-        
-        console.log('Attempting to open print URL:', printUrl);
-        
-        // Open print-ready version of the receipt
-        const printWindow = window.open(printUrl, '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes');
-        
-        if (printWindow) {
-            console.log('Print window opened successfully');
-            printWindow.focus();
-            
-            // Enhanced error detection for the new window
-            printWindow.addEventListener('load', function() {
-                console.log('Print window loaded successfully');
-            });
-            
-            // Detect if window fails to load properly
-            setTimeout(function() {
-                try {
-                    if (printWindow.closed) {
-                        console.warn('Print window was closed prematurely');
-                        return;
-                    }
-                    
-                    // Check if window loaded properly
-                    if (printWindow.document.body && printWindow.document.body.innerHTML.trim() === '') {
-                        console.error('Print window loaded but appears empty');
-                        alert('Print preview failed to load. Please try using the Download Receipt button instead.');
-                    }
-                } catch (e) {
-                    console.log('Cannot access print window content (likely due to same-origin policy)');
-                }
-            }, 2000);
-            
-        } else {
-            console.error('Print window was blocked or failed to open');
-            // Enhanced fallback handling
-            if (confirm('Popup blocker may be preventing the print window from opening. Would you like to try opening in the same tab?')) {
-                window.location.href = printUrl;
-            } else {
-                alert('Please disable popup blocker for this site to use the print feature, or use the Download Receipt button instead.');
-            }
-        }
-    } catch (error) {
-        console.error('Error in printReceipt function:', error);
-        alert('An error occurred while trying to open the print preview. Please try the Download Receipt button instead.');
-    }
-}
-
-// Handle page load effects
-document.addEventListener('DOMContentLoaded', function() {
-    // Add smooth animations
-    const container = document.querySelector('.receipt-options-container');
-    if (container) {
-        container.style.opacity = '0';
-        container.style.transform = 'translateY(20px)';
-        container.style.transition = 'all 0.5s ease';
-        
-        setTimeout(() => {
-            container.style.opacity = '1';
-            container.style.transform = 'translateY(0)';
-        }, 100);
-    }
-});
-</script>
 @endsection
+
+@push('script')
+    @include('backend.fees.receipts.partials.actions-script')
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const container = document.querySelector('.receipt-options-container');
+            if (!container) {
+                return;
+            }
+
+            container.style.opacity = '0';
+            container.style.transform = 'translateY(20px)';
+            container.style.transition = 'all 0.5s ease';
+
+            setTimeout(() => {
+                container.style.opacity = '1';
+                container.style.transform = 'translateY(0)';
+            }, 100);
+        });
+    </script>
+@endpush

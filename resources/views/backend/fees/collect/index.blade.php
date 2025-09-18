@@ -164,6 +164,7 @@
 
 @push('script')
     @include('backend.partials.delete-ajax')
+    @include('backend.fees.receipts.partials.actions-script')
     @include('backend.fees.collect.fee-collection-modal-script')
 
     <script>

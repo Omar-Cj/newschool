@@ -179,6 +179,7 @@
 </div>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+@include('backend.fees.receipts.partials.actions-script')
 <script>
     $('#applyDiscount').on('click', function () {
         let userDiscountPercentage = parseFloat($('input[name="discount_amount_value"]').val()) || 0;
@@ -445,13 +446,13 @@
                                         <div class="row mt-3">
                                             <div class="col-md-6">
                                                 <button type="button" class="btn btn-outline-primary btn-sm w-100" 
-                                                        onclick="printReceipt(${paymentId})">
+                                                        onclick="ReceiptActions.printReceipt(${paymentId})">
                                                     <i class="fa-solid fa-print me-2"></i>{{ ___('fees.print_receipt') }}
                                                 </button>
                                             </div>
                                             <div class="col-md-6">
                                                 <button type="button" class="btn btn-outline-success btn-sm w-100" 
-                                                        onclick="emailReceipt(${paymentId})">
+                                                        onclick="ReceiptActions.emailReceipt(${paymentId})">
                                                     <i class="fa-solid fa-envelope me-2"></i>{{ ___('fees.email_receipt') }}
                                                 </button>
                                             </div>
@@ -492,21 +493,10 @@
         return `${baseUrl}/fees/receipt/${type}/${id}`;
     }
 
-    function printReceipt(paymentId) {
-        const printWindow = window.open(getReceiptUrl('individual', paymentId), '_blank', 'width=800,height=600');
-        printWindow.onload = function() {
-            printWindow.print();
-        };
-    }
-
-    function emailReceipt(paymentId) {
-        showAlert('{{ ___("fees.email_feature_coming_soon") }}', 'info');
-    }
-
-    function collectAnotherPayment() {
+    window.collectAnotherPayment = function() {
         $('#receiptOptionsModal').modal('hide');
         window.location.reload();
-    }
+    };
 
 
     function showAlert(message, type) {
@@ -529,4 +519,3 @@
     }
 
 </script>
-

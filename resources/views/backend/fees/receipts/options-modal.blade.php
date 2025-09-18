@@ -32,10 +32,14 @@
                                    {{ $payment->student->admission_no }}</p>
                             </div>
                             <div class="col-md-6">
+                                <p><strong>{{ ___('fees.receipt_no') }}:</strong><br>
+                                   {{ $payment->receipt_number ?? ('RCT-' . date('Y') . '-' . str_pad($payment->id, 6, '0', STR_PAD_LEFT)) }}</p>
                                 <p><strong>{{ ___('fees.payment_date') }}:</strong><br>
                                    {{ dateFormat($payment->date) }}</p>
                                 <p><strong>{{ ___('fees.amount_paid') }}:</strong><br>
-                                   <span class="h5 text-success">{{ Setting('currency_symbol') }} {{ number_format($payment->amount, 2) }}</span></p>
+                                   <span class="h5 text-success">{{ Setting('currency_symbol') }} {{ number_format($payment->grand_total ?? (($payment->total_amount ?? $payment->amount) + ($payment->total_fine ?? $payment->fine_amount ?? 0)), 2) }}</span></p>
+                                <p class="mb-0"><strong>{{ ___('fees.payment_method') }}:</strong><br>
+                                   {{ ___($payment->payment_method_label ?? (Config::get('site.payment_methods')[$payment->payment_method] ?? 'Cash')) }}</p>
                             </div>
                         </div>
                     </div>
@@ -125,101 +129,3 @@
         </div>
     </div>
 </div>
-
-<script>
-// Show receipt options modal after payment success
-function showReceiptOptions(paymentId) {
-    // Check if there are multiple payments today for group receipt option
-    checkGroupReceiptAvailability();
-    
-    $('#receiptOptionsModal').modal('show');
-}
-
-// Check if group receipt is available
-function checkGroupReceiptAvailability() {
-    $.get('{{ route("fees.receipt.check-group-availability") }}')
-        .done(function(response) {
-            if (response.has_multiple_payments) {
-                $('#group-receipt-option').show();
-            }
-        });
-}
-
-// Print receipt function
-function printReceipt(paymentId) {
-    const printWindow = window.open(
-        '{{ route("fees.receipt.individual", ":id") }}'.replace(':id', paymentId),
-        '_blank',
-        'width=800,height=600'
-    );
-    
-    printWindow.onload = function() {
-        printWindow.print();
-    };
-}
-
-// Email receipt function
-function emailReceipt(paymentId) {
-    // Show email form or send directly
-    $.post('{{ route("fees.receipt.email") }}', {
-        payment_id: paymentId,
-        _token: '{{ csrf_token() }}'
-    })
-    .done(function(response) {
-        if (response.success) {
-            showAlert('{{ ___("fees.receipt_emailed_successfully") }}', 'success');
-        } else {
-            showAlert(response.message, 'error');
-        }
-    })
-    .fail(function() {
-        showAlert('{{ ___("fees.email_failed") }}', 'error');
-    });
-}
-
-// Generate group receipt
-function generateGroupReceipt() {
-    $.get('{{ route("fees.receipt.today-payments") }}')
-        .done(function(response) {
-            if (response.payment_ids && response.payment_ids.length > 0) {
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = '{{ route("fees.receipt.group") }}';
-                form.target = '_blank';
-                
-                // Add CSRF token
-                const csrfInput = document.createElement('input');
-                csrfInput.type = 'hidden';
-                csrfInput.name = '_token';
-                csrfInput.value = '{{ csrf_token() }}';
-                form.appendChild(csrfInput);
-                
-                // Add payment IDs
-                response.payment_ids.forEach(id => {
-                    const input = document.createElement('input');
-                    input.type = 'hidden';
-                    input.name = 'payment_ids[]';
-                    input.value = id;
-                    form.appendChild(input);
-                });
-                
-                document.body.appendChild(form);
-                form.submit();
-                document.body.removeChild(form);
-            }
-        });
-}
-
-// Collect another payment
-function collectAnotherPayment() {
-    $('#receiptOptionsModal').modal('hide');
-    // Reload the fee collection page or reset form
-    window.location.reload();
-}
-
-// Alert function (you can customize this based on your alert system)
-function showAlert(message, type) {
-    // Implementation depends on your alert system (toastr, SweetAlert, etc.)
-    alert(message);
-}
-</script>

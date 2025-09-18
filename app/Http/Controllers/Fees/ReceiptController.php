@@ -5,10 +5,9 @@ namespace App\Http\Controllers\Fees;
 use App\Http\Controllers\Controller;
 use App\Models\Fees\FeesCollect;
 use App\Models\Student;
-use App\Models\Setting;
+use App\Models\User;
 use App\Repositories\StudentInfo\StudentRepository;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use PDF;
 use Carbon\Carbon;
 
@@ -36,29 +35,7 @@ class ReceiptController extends Controller
                 'collectBy'
             ])->findOrFail($paymentId);
 
-            // Get all payments that are part of the same transaction
-            // This could be based on same student + same date + same collection session
-            $allPayments = FeesCollect::with([
-                'feesAssignChildren.feesMaster.type',
-                'feesAssignChildren.feesMaster.group'
-            ])
-            ->where('student_id', $mainPayment->student_id)
-            ->where('date', $mainPayment->date)
-            ->where('fees_collect_by', $mainPayment->fees_collect_by)
-            ->whereNotNull('payment_method') // Only paid fees
-            ->get();
-
-            // If there's a batch ID, use that for more accurate grouping
-            if ($mainPayment->generation_batch_id) {
-                $allPayments = FeesCollect::with([
-                    'feesAssignChildren.feesMaster.type',
-                    'feesAssignChildren.feesMaster.group'
-                ])
-                ->where('generation_batch_id', $mainPayment->generation_batch_id)
-                ->where('student_id', $mainPayment->student_id)
-                ->whereNotNull('payment_method')
-                ->get();
-            }
+            $allPayments = $this->getRelatedPayments($mainPayment);
 
             $data = [
                 'title' => ___('fees.payment_receipt'),
@@ -231,43 +208,117 @@ class ReceiptController extends Controller
      */
     public function showReceiptOptions($paymentId)
     {
-        // Get the main payment record with proper relationships
         $payment = FeesCollect::with([
             'student.sessionStudentDetails.class',
             'student.sessionStudentDetails.section',
             'feesAssignChildren.feesMaster.type',
             'feesAssignChildren.feesMaster.group',
-            'collectBy'
+        'collectBy'
         ])->findOrFail($paymentId);
 
-        // Get all related payments for total amount calculation
-        $allPayments = FeesCollect::with([
-            'feesAssignChildren.feesMaster.type',
-            'feesAssignChildren.feesMaster.group'
-        ])
-        ->where('student_id', $payment->student_id)
-        ->where('date', $payment->date)
-        ->where('fees_collect_by', $payment->fees_collect_by)
-        ->whereNotNull('payment_method')
-        ->get();
+        $allPayments = $this->getRelatedPayments($payment);
 
-        // If there's a batch ID, use that for more accurate grouping
-        if ($payment->generation_batch_id) {
-            $allPayments = FeesCollect::with([
-                'feesAssignChildren.feesMaster.type',
-                'feesAssignChildren.feesMaster.group'
-            ])
-            ->where('generation_batch_id', $payment->generation_batch_id)
-            ->where('student_id', $payment->student_id)
-            ->whereNotNull('payment_method')
-            ->get();
-        }
-
-        // Calculate total amount for display
         $payment->total_amount = $allPayments->sum('amount');
         $payment->total_fine = $allPayments->sum('fine_amount');
-        
+        $payment->grand_total = $payment->total_amount + $payment->total_fine;
+        $payment->receipt_number = $this->generateReceiptNumber($payment);
+        $payment->payment_method_label = config('site.payment_methods')[$payment->payment_method] ?? 'Unknown';
+
+        if (request()->ajax()) {
+            $html = view('backend.fees.receipts.options-modal', compact('payment'))->render();
+
+            return response()->json([
+                'success' => true,
+                'html' => $html,
+                'meta' => [
+                    'receipt_number' => $payment->receipt_number,
+                    'grand_total' => $payment->grand_total,
+                    'total_amount' => $payment->total_amount,
+                    'total_fine' => $payment->total_fine,
+                    'currency' => setting('currency_symbol'),
+                ],
+            ]);
+        }
+
         return view('backend.fees.receipts.options-page', compact('payment'));
+    }
+
+    /**
+     * Display paginated list of receipts with filtering options.
+     */
+    public function index(Request $request)
+    {
+        $paymentMethods = config('site.payment_methods');
+
+        $receiptsQuery = FeesCollect::with([
+            'student.sessionStudentDetails.class',
+            'student.sessionStudentDetails.section',
+            'collectBy'
+        ])->paid();
+
+        $receiptsQuery->when($request->filled('q'), function ($query) use ($request) {
+            $search = trim($request->get('q', ''));
+
+            if ($search === '') {
+                return;
+            }
+
+            $query->where(function ($subQuery) use ($search) {
+                $subQuery->where('id', (int) $search)
+                    ->orWhere('transaction_reference', 'like', "%{$search}%")
+                    ->orWhereHas('student', function ($studentQuery) use ($search) {
+                        $studentQuery->where('first_name', 'like', "%{$search}%")
+                            ->orWhere('last_name', 'like', "%{$search}%")
+                            ->orWhere('admission_no', 'like', "%{$search}%");
+                    });
+            });
+        });
+
+        $receiptsQuery->when($request->filled('from_date'), function ($query) use ($request) {
+            $query->whereDate('date', '>=', $request->get('from_date'));
+        });
+
+        $receiptsQuery->when($request->filled('to_date'), function ($query) use ($request) {
+            $query->whereDate('date', '<=', $request->get('to_date'));
+        });
+
+        $receiptsQuery->when($request->filled('payment_method'), function ($query) use ($request) {
+            $query->where('payment_method', $request->get('payment_method'));
+        });
+
+        $receiptsQuery->when($request->filled('collector_id'), function ($query) use ($request) {
+            $query->where('fees_collect_by', $request->get('collector_id'));
+        });
+
+        $receipts = $receiptsQuery
+            ->orderByDesc('date')
+            ->orderByDesc('id')
+            ->paginate(20)
+            ->withQueryString();
+
+        $receipts->getCollection()->transform(function ($payment) use ($paymentMethods) {
+            $relatedPayments = $this->getRelatedPayments($payment);
+
+            $payment->receipt_number = $this->generateReceiptNumber($payment);
+            $payment->total_amount = $relatedPayments->sum('amount');
+            $payment->total_fine = $relatedPayments->sum('fine_amount');
+            $payment->grand_total = $payment->total_amount + $payment->total_fine;
+            $payment->related_payment_count = $relatedPayments->count();
+            $payment->payment_method_label = $paymentMethods[$payment->payment_method] ?? 'Unknown';
+
+            return $payment;
+        });
+
+        $collectorIds = FeesCollect::paid()->distinct()->pluck('fees_collect_by')->filter()->unique();
+        $collectors = $collectorIds->isEmpty()
+            ? collect()
+            : User::whereIn('id', $collectorIds)->orderBy('name')->get();
+
+        return view('backend.fees.receipts.index', [
+            'receipts' => $receipts,
+            'availableMethods' => $paymentMethods,
+            'collectors' => $collectors,
+        ]);
     }
 
     /**
@@ -397,6 +448,30 @@ class ReceiptController extends Controller
         return response()->json([
             'payment_ids' => $paymentIds
         ]);
+    }
+
+    /**
+     * Fetch payments that are part of the same receipt transaction.
+     */
+    private function getRelatedPayments(FeesCollect $payment)
+    {
+        $relations = [
+            'feesAssignChildren.feesMaster.type',
+            'feesAssignChildren.feesMaster.group'
+        ];
+
+        $query = FeesCollect::with($relations)
+            ->where('student_id', $payment->student_id)
+            ->whereNotNull('payment_method');
+
+        if ($payment->generation_batch_id) {
+            $query->where('generation_batch_id', $payment->generation_batch_id);
+        } else {
+            $query->where('date', $payment->date)
+                ->where('fees_collect_by', $payment->fees_collect_by);
+        }
+
+        return $query->get();
     }
 
     /**

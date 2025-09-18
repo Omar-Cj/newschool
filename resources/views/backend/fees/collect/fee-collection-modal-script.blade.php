@@ -182,17 +182,49 @@ $(document).ready(function() {
                 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
             },
             success: function(response) {
-                if (response.success) {
-                    showSuccessMessage(response.message);
+                if (!response || !response.success) {
+                    showErrorMessage(response?.message || '{{ ___("fees.payment_failed") }}');
+                    return;
+                }
 
-                    // Close modal after 2 seconds
-                    setTimeout(function() {
-                        $('#modalCustomizeWidth').modal('hide');
-                        // Refresh the page or update the fee list
-                        location.reload();
-                    }, 2000);
+                showSuccessMessage(response.message);
+
+                const paymentId = response.payment_id;
+                const paymentDetails = response.payment_details || {};
+
+                selectedFees = [];
+                totalAmount = 0;
+                payableAmount = 0;
+
+                // Close the collection modal to reveal the options modal
+                $('#modalCustomizeWidth').modal('hide');
+
+                if (paymentId) {
+                    // Attempt to open print window immediately
+                    if (window.ReceiptActions) {
+                        window.ReceiptActions.printReceipt(paymentId);
+
+                        window.ReceiptActions.loadOptionsModal(paymentId, {
+                            onShown: function () {
+                                // Optionally, we could inject extra details here if needed
+                            }
+                        }).then(function(modal) {
+                            if (!modal) {
+                                return;
+                            }
+
+                            // Refresh the page when the modal is closed to reflect updated balances
+                            modal.on('hidden.bs.modal', function () {
+                                window.location.reload();
+                            });
+                        });
+                    } else {
+                        window.open(`{{ route('fees.receipt.individual', '__PAYMENT_ID__') }}`.replace('__PAYMENT_ID__', paymentId) + '?print=1', '_blank');
+                        window.location.href = `{{ route('fees.receipt.options', '__PAYMENT_ID__') }}`.replace('__PAYMENT_ID__', paymentId);
+                    }
                 } else {
-                    showErrorMessage(response.message || '{{ ___("fees.payment_failed") }}');
+                    // Fallback for unexpected missing payment id
+                    window.location.reload();
                 }
             },
             error: function(xhr) {
