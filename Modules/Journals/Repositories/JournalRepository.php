@@ -4,6 +4,7 @@ namespace Modules\Journals\Repositories;
 
 use Modules\Journals\Interfaces\JournalInterface;
 use Modules\Journals\Entities\Journal;
+use Modules\MultiBranch\Entities\Branch;
 use App\Traits\ReturnFormatTrait;
 use Illuminate\Support\Facades\Auth;
 
@@ -35,7 +36,7 @@ class JournalRepository implements JournalInterface
 
     public function getPaginateAll()
     {
-        return $this->model::with(['createdBy'])->latest()->paginate(10);
+        return $this->model::with(['createdBy', 'branch'])->latest()->paginate(10);
     }
 
     public function search($request)
@@ -50,11 +51,16 @@ class JournalRepository implements JournalInterface
             $query->where('status', $request->status);
         }
 
+        // Handle both old branch text filter and new branch_id filter
         if ($request->has('branch') && !empty($request->branch)) {
             $query->where('branch', 'LIKE', "%{$request->branch}%");
         }
 
-        return $query->with(['createdBy'])->latest()->paginate(10);
+        if ($request->has('branch_id') && !empty($request->branch_id)) {
+            $query->byBranch($request->branch_id);
+        }
+
+        return $query->with(['createdBy', 'branch'])->latest()->paginate(10);
     }
 
     public function store($request)
@@ -62,7 +68,17 @@ class JournalRepository implements JournalInterface
         try {
             $row = new $this->model;
             $row->name = $request->name;
-            $row->branch = $request->branch;
+
+            // Handle both old branch text and new branch_id
+            if ($request->has('branch_id') && !empty($request->branch_id)) {
+                $row->branch_id = $request->branch_id;
+                // Also set branch text for backward compatibility (until old column is removed)
+                $branch = Branch::find($request->branch_id);
+                $row->branch = $branch ? $branch->name : null;
+            } else if ($request->has('branch')) {
+                $row->branch = $request->branch;
+            }
+
             $row->description = $request->description;
             $row->status = $request->status ?? 'active';
             $row->school_id = $request->school_id ?? Auth::user()->school_id;
@@ -77,7 +93,7 @@ class JournalRepository implements JournalInterface
 
     public function show($id)
     {
-        return $this->model->with(['createdBy', 'school'])->find($id);
+        return $this->model->with(['createdBy', 'school', 'branch'])->find($id);
     }
 
     public function update($request, $id)
@@ -85,7 +101,17 @@ class JournalRepository implements JournalInterface
         try {
             $row = $this->model->findOrFail($id);
             $row->name = $request->name;
-            $row->branch = $request->branch;
+
+            // Handle both old branch text and new branch_id
+            if ($request->has('branch_id') && !empty($request->branch_id)) {
+                $row->branch_id = $request->branch_id;
+                // Also set branch text for backward compatibility (until old column is removed)
+                $branch = Branch::find($request->branch_id);
+                $row->branch = $branch ? $branch->name : $row->branch;
+            } else if ($request->has('branch')) {
+                $row->branch = $request->branch;
+            }
+
             $row->description = $request->description;
             $row->status = $request->status ?? $row->status;
             $row->save();
@@ -123,12 +149,27 @@ class JournalRepository implements JournalInterface
             $query->forSchool(Auth::user()->school_id);
         }
 
-        return $query->select('id', 'name', 'branch')->get()->map(function ($journal) {
+        return $query->with('branch')->select('id', 'name', 'branch', 'branch_id')->get()->map(function ($journal) {
             return [
                 'id' => $journal->id,
                 'text' => $journal->display_name,
                 'name' => $journal->name,
-                'branch' => $journal->branch
+                'branch' => $journal->branch,
+                'branch_id' => $journal->branch_id
+            ];
+        });
+    }
+
+    /**
+     * Get all active branches for dropdown
+     */
+    public function getBranchesForDropdown()
+    {
+        return Branch::active()->select('id', 'name')->get()->map(function ($branch) {
+            return [
+                'id' => $branch->id,
+                'text' => $branch->name,
+                'name' => $branch->name
             ];
         });
     }

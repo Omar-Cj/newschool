@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Models\User;
 use App\Models\School;
 use App\Models\Fees\FeesCollect;
+use Modules\MultiBranch\Entities\Branch;
 
 class Journal extends Model
 {
@@ -17,6 +18,7 @@ class Journal extends Model
     protected $fillable = [
         'name',
         'branch',
+        'branch_id',
         'description',
         'school_id',
         'status',
@@ -41,6 +43,14 @@ class Journal extends Model
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
+     * Get the branch that owns the journal
+     */
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
     }
 
     /**
@@ -74,8 +84,19 @@ class Journal extends Model
     {
         return $query->where(function ($q) use ($search) {
             $q->where('name', 'LIKE', "%{$search}%")
-              ->orWhere('branch', 'LIKE', "%{$search}%");
+              ->orWhere('branch', 'LIKE', "%{$search}%")
+              ->orWhereHas('branch', function ($branchQuery) use ($search) {
+                  $branchQuery->where('name', 'LIKE', "%{$search}%");
+              });
         });
+    }
+
+    /**
+     * Scope to filter journals by branch_id
+     */
+    public function scopeByBranch($query, $branchId)
+    {
+        return $query->where('branch_id', $branchId);
     }
 
     /**
@@ -83,7 +104,8 @@ class Journal extends Model
      */
     public function getDisplayNameAttribute(): string
     {
-        return "{$this->name} ({$this->branch})";
+        $branchName = is_object($this->branch) ? $this->branch->name : $this->branch;
+        return "{$this->name} ({$branchName})";
     }
 
     /**

@@ -661,10 +661,10 @@
 
                 {{-- Start Accounts --}}
                 @if (
-                    (hasPermission('account_head_read') || hasPermission('income_read') || hasPermission('expense_read')) &&
+                    (hasPermission('account_head_read') || hasPermission('income_read') || hasPermission('expense_read') || hasPermission('journal_read')) &&
                         hasFeature('account'))
                     <li
-                        class="sidebar-menu-item {{ set_menu(['account_head.index', 'account_head.create', 'account_head.edit']) }}">
+                        class="sidebar-menu-item {{ set_menu(['account_head.index', 'account_head.create', 'account_head.edit', 'journals*']) }}">
                         <a class="parent-item-content has-arrow">
                             <i class="las la-dolly"></i>
                             <span class="on-half-expanded">{{ ___('account.Accounts') }}</span>
@@ -685,6 +685,11 @@
                             @if (hasPermission('expense_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['expense*']) }}">
                                     <a href="{{ route('expense.index') }}">{{ ___('account.expense') }}</a>
+                                </li>
+                            @endif
+                            @if (hasPermission('journal_read') && hasModule('Journals'))
+                                <li class="sidebar-menu-item {{ set_menu(['journals*']) }}">
+                                    <a href="{{ route('journals.index') }}">{{ ___('journals.journals') }}</a>
                                 </li>
                             @endif
                         </ul>

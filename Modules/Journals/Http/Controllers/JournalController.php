@@ -25,11 +25,14 @@ class JournalController extends Controller
     {
         $data['title'] = ___('journals.journals');
 
-        if ($request->has('search') || $request->has('status') || $request->has('branch')) {
+        if ($request->has('search') || $request->has('status') || $request->has('branch') || $request->has('branch_id')) {
             $data['journals'] = $this->repo->search($request);
         } else {
             $data['journals'] = $this->repo->getPaginateAll();
         }
+
+        // Load branches for filter dropdown
+        $data['branches'] = $this->repo->getBranchesForDropdown();
 
         return view('journals::index', compact('data'));
     }
@@ -40,6 +43,7 @@ class JournalController extends Controller
     public function create()
     {
         $data['title'] = ___('journals.add_journal');
+        $data['branches'] = $this->repo->getBranchesForDropdown();
         return view('journals::create', compact('data'));
     }
 
@@ -84,6 +88,7 @@ class JournalController extends Controller
             return redirect()->route('journals.index')->with('danger', ___('alert.data_not_found'));
         }
 
+        $data['branches'] = $this->repo->getBranchesForDropdown();
         return view('journals::edit', compact('data'));
     }
 
