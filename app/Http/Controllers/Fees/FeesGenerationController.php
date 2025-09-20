@@ -861,4 +861,228 @@ class FeesGenerationController extends Controller
 
         return $years;
     }
+
+    /**
+     * Generate preview for grade-based fee generation
+     */
+    public function previewByGrades(Request $request): JsonResponse
+    {
+        try {
+            $filters = $request->validate([
+                'grades' => 'required|array',
+                'grades.*' => 'in:KG-1,KG-2,Grade1,Grade2,Grade3,Grade4,Grade5,Grade6,Grade7,Grade8,Form1,Form2,Form3,Form4',
+                'classes' => 'nullable|array',
+                'classes.*' => 'exists:classes,id',
+                'sections' => 'nullable|array',
+                'sections.*' => 'exists:sections,id',
+                'month' => 'required|integer|between:1,12',
+                'year' => 'required|integer|in:' . date('Y'),
+                'fees_groups' => 'nullable|array',
+                'fees_groups.*' => 'exists:fees_groups,id'
+            ]);
+
+            $preview = $this->service->generatePreviewByGrades($filters);
+
+            return response()->json([
+                'success' => true,
+                'data' => $preview
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 422);
+        }
+    }
+
+    /**
+     * Generate fees for students filtered by grades
+     */
+    public function generateByGrades(Request $request): JsonResponse
+    {
+        try {
+            $data = $request->validate([
+                'grades' => 'required|array',
+                'grades.*' => 'in:KG-1,KG-2,Grade1,Grade2,Grade3,Grade4,Grade5,Grade6,Grade7,Grade8,Form1,Form2,Form3,Form4',
+                'classes' => 'nullable|array',
+                'classes.*' => 'exists:classes,id',
+                'sections' => 'nullable|array',
+                'sections.*' => 'exists:sections,id',
+                'month' => 'required|integer|between:1,12',
+                'year' => 'required|integer|in:' . date('Y'),
+                'fees_groups' => 'required|array',
+                'fees_groups.*' => 'exists:fees_groups,id',
+                'selected_students' => 'nullable|array',
+                'selected_students.*' => 'exists:students,id',
+                'notes' => 'nullable|string|max:500'
+            ]);
+
+            // Add required data for generation
+            $data['batch_id'] = $this->batchIdService->generateBatchId();
+            $data['created_by'] = auth()->id();
+            $data['school_id'] = auth()->user()->school_id ?? 1;
+
+            $generation = $this->service->generateFeesByGrades($data);
+
+            return response()->json([
+                'success' => true,
+                'message' => ___('fees.generation_started'),
+                'data' => [
+                    'generation_id' => $generation->id,
+                    'batch_id' => $generation->batch_id
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 422);
+        }
+    }
+
+    /**
+     * Get student count by grades
+     */
+    public function getStudentCountByGrades(Request $request): JsonResponse
+    {
+        try {
+            $filters = $request->validate([
+                'grades' => 'required|array',
+                'grades.*' => 'in:KG-1,KG-2,Grade1,Grade2,Grade3,Grade4,Grade5,Grade6,Grade7,Grade8,Form1,Form2,Form3,Form4',
+                'classes' => 'nullable|array',
+                'classes.*' => 'exists:classes,id',
+                'sections' => 'nullable|array',
+                'sections.*' => 'exists:sections,id'
+            ]);
+
+            $count = $this->service->getStudentCountByGrades($filters);
+
+            return response()->json([
+                'success' => true,
+                'data' => ['count' => $count]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 422);
+        }
+    }
+
+    /**
+     * Get grade-wise student distribution
+     */
+    public function getGradeDistribution(): JsonResponse
+    {
+        try {
+            $distribution = $this->service->getGradeDistribution();
+
+            return response()->json([
+                'success' => true,
+                'data' => $distribution
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get available grades with academic level grouping
+     */
+    public function getAvailableGrades(): JsonResponse
+    {
+        try {
+            $gradeOptions = \App\Models\StudentInfo\Student::getGradeOptions();
+            $distribution = $this->service->getGradeDistribution();
+
+            // Add student counts to grade options
+            $gradesWithCounts = [];
+            foreach ($gradeOptions as $level => $grades) {
+                $gradesWithCounts[$level] = [];
+                foreach ($grades as $gradeValue => $gradeName) {
+                    $studentCount = collect($distribution)->where('grade', $gradeValue)->first()['count'] ?? 0;
+                    $gradesWithCounts[$level][] = [
+                        'value' => $gradeValue,
+                        'name' => $gradeName,
+                        'student_count' => $studentCount,
+                        'academic_level' => $level
+                    ];
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'grade_options' => $gradesWithCounts,
+                    'distribution' => $distribution
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Generate fees for all students in specific grades (bulk operation)
+     */
+    public function bulkGenerateByGrades(Request $request): JsonResponse
+    {
+        try {
+            $data = $request->validate([
+                'grades' => 'required|array',
+                'grades.*' => 'in:KG-1,KG-2,Grade1,Grade2,Grade3,Grade4,Grade5,Grade6,Grade7,Grade8,Form1,Form2,Form3,Form4',
+                'fees_groups' => 'required|array',
+                'fees_groups.*' => 'exists:fees_groups,id',
+                'month' => 'required|integer|between:1,12',
+                'year' => 'required|integer|in:' . date('Y'),
+                'auto_assign_mandatory' => 'boolean',
+                'notes' => 'nullable|string|max:500'
+            ]);
+
+            // Auto-assign mandatory services if requested
+            if ($data['auto_assign_mandatory'] ?? false) {
+                $assignmentResults = $this->serviceManager->bulkSubscribeByGrade(
+                    $data['grades'],
+                    session('academic_year_id')
+                );
+
+                if (!empty($assignmentResults['errors'])) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Some mandatory service assignments failed',
+                        'data' => $assignmentResults
+                    ], 422);
+                }
+            }
+
+            // Generate fees for all grades
+            $data['batch_id'] = $this->batchIdService->generateBatchId();
+            $data['created_by'] = auth()->id();
+            $data['school_id'] = auth()->user()->school_id ?? 1;
+
+            $generation = $this->service->generateFeesByGrades($data);
+
+            return response()->json([
+                'success' => true,
+                'message' => ___('fees.bulk_generation_started'),
+                'data' => [
+                    'generation_id' => $generation->id,
+                    'batch_id' => $generation->batch_id,
+                    'total_students' => $generation->total_students,
+                    'assignment_results' => $assignmentResults ?? null
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 422);
+        }
+    }
 }

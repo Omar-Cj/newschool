@@ -117,9 +117,7 @@ class StudentRepository implements StudentInterface
             $row->image_id             = $user->upload_id;
             $row->email                = $request->email;
             $row->dob                  = $request->date_of_birth;
-            $row->religion_id          = $request->religion != "" ? $request->religion :  NULL;
             $row->gender_id            = $request->gender != "" ? $request->gender :  NULL;
-            $row->blood_group_id       = $request->blood != "" ? $request->blood :  NULL;
             $row->admission_date       = $request->admission_date;
             $row->parent_guardian_id   = $request->parent != "" ? $request->parent :  NULL;
             $row->student_category_id  = $request->category != "" ? $request->category :  NULL;
@@ -128,25 +126,12 @@ class StudentRepository implements StudentInterface
             $row->previous_school_info = $request->previous_school_info;
             $row->previous_school_image_id = $this->UploadImageCreate($request->previous_school_image, 'backend/uploads/students');
             $row->place_of_birth = $request->place_of_birth;
-            $row->nationality = $request->nationality;
-            $row->cpr_no = $request->cpr_no;
-            $row->spoken_lang_at_home = $request->spoken_lang_at_home;
             $row->residance_address = $request->residance_address;
+            $row->grade = $request->grade; // Add the grade field assignment
 
             $row->status               = $request->status;
             $row->siblings_discount   = $request->siblings_discount;
             $row->upload_documents     = $this->uploadDocuments($request);
-            $row->place_of_birth = $request->place_of_birth;
-            $row->nationality = $request->nationality;
-
-            $row->health_status = $request->health_status;
-            $row->rank_in_family = !empty($request->rank_in_family) ? $request->rank_in_family : 0;
-            $row->siblings = !empty($request->siblings) ? $request->siblings : 0;
-
-            $row->cpr_no = $request->cpr_no;
-            $row->spoken_lang_at_home = $request->spoken_lang_at_home;
-            $row->residance_address = $request->residance_address;
-            $row->department_id = $request->department_id;
             $row->save();
 
             $session_class                      = new SessionClassStudent();
@@ -247,9 +232,7 @@ class StudentRepository implements StudentInterface
             $row->image_id             = $user->upload_id;
             $row->email                = $request->email;
             $row->dob                  = $request->date_of_birth;
-            $row->religion_id          = $request->religion != "" ? $request->religion :  NULL;
             $row->gender_id            = $request->gender != "" ? $request->gender :  NULL;
-            $row->blood_group_id       = $request->blood != "" ? $request->blood :  NULL;
             $row->admission_date       = $request->admission_date;
             $row->parent_guardian_id   = $request->parent != "" ? $request->parent :  NULL;
             $row->student_category_id  = $request->category != "" ? $request->category :  NULL;
@@ -258,18 +241,11 @@ class StudentRepository implements StudentInterface
             $row->previous_school_info = $request->previous_school ? $request->previous_school_info : null;
             $row->previous_school_image_id = $request->previous_school ? $this->UploadImageCreate($request->previous_school_image, 'backend/uploads/students') : null;
             $row->place_of_birth = $request->place_of_birth;
-            $row->nationality = $request->nationality;
-            $row->cpr_no = $request->cpr_no;
-            $row->spoken_lang_at_home = $request->spoken_lang_at_home;
             $row->residance_address = $request->residance_address;
-
-            $row->health_status = $request->health_status;
-            $row->rank_in_family = !empty($request->rank_in_family) ? $request->rank_in_family : 0;
-            $row->siblings = !empty($request->siblings) ? $request->siblings : 0;
+            $row->grade = $request->grade; // Update the grade field
 
             $row->status               = $request->status;
             $row->upload_documents     = $row->upload_documents ?? $this->uploadDocuments($request, $row->upload_documents);
-            $row->department_id        = $request->department_id;
             $row->save();
 
             $session_class = SessionClassStudent::where('session_id', setting('session'))->where('student_id', $row->id)->first();
@@ -452,5 +428,283 @@ class StudentRepository implements StudentInterface
             // Create service
             \App\Models\StudentService::create($data);
         }
+    }
+
+    /**
+     * Get students filtered by grades
+     */
+    public function getStudentsByGrades(array $grades, array $options = [])
+    {
+        $query = SessionClassStudent::query()
+            ->where('session_id', setting('session'))
+            ->whereHas('student', function($q) use ($grades) {
+                $q->whereIn('grade', $grades)
+                  ->where('status', \App\Enums\Status::ACTIVE);
+            })
+            ->with(['student.upload', 'student.user', 'class', 'section']);
+
+        // Apply additional filters if provided
+        if (!empty($options['classes'])) {
+            $query->whereIn('classes_id', $options['classes']);
+        }
+
+        if (!empty($options['sections'])) {
+            $query->whereIn('section_id', $options['sections']);
+        }
+
+        if (!empty($options['gender'])) {
+            $query->whereHas('student', function($q) use ($options) {
+                $q->where('gender_id', $options['gender']);
+            });
+        }
+
+        if (!empty($options['keyword'])) {
+            $query->whereHas('student', function($q) use ($options) {
+                $q->where('first_name', 'LIKE', "%{$options['keyword']}%")
+                  ->orWhere('last_name', 'LIKE', "%{$options['keyword']}%");
+            });
+        }
+
+        return $query->latest()->paginate($options['per_page'] ?? Settings::PAGINATE);
+    }
+
+    /**
+     * Search students with grade-based filtering
+     */
+    public function searchStudentsWithGrades($request)
+    {
+        $query = SessionClassStudent::query()
+            ->where('session_id', setting('session'));
+
+        // Filter by class
+        if ($request->class != "") {
+            $query->where('classes_id', $request->class);
+        }
+
+        // Filter by section
+        if ($request->section != "") {
+            $query->where('section_id', $request->section);
+        }
+
+        // Filter by grades
+        if (!empty($request->grades)) {
+            $query->whereHas('student', function($q) use ($request) {
+                $q->whereIn('grade', $request->grades);
+            });
+        }
+
+        // Filter by academic level (derived from grade)
+        if (!empty($request->academic_level)) {
+            $gradesByLevel = [
+                'kg' => ['KG-1', 'KG-2'],
+                'primary' => ['Grade1', 'Grade2', 'Grade3', 'Grade4', 'Grade5', 'Grade6', 'Grade7', 'Grade8'],
+                'secondary' => ['Form1', 'Form2', 'Form3', 'Form4']
+            ];
+
+            if (isset($gradesByLevel[$request->academic_level])) {
+                $query->whereHas('student', function($q) use ($gradesByLevel, $request) {
+                    $q->whereIn('grade', $gradesByLevel[$request->academic_level]);
+                });
+            }
+        }
+
+        // Filter by keyword
+        if ($request->keyword != "") {
+            $query->whereHas('student', function($q) use ($request) {
+                $q->where('first_name', 'LIKE', "%{$request->keyword}%")
+                  ->orWhere('last_name', 'LIKE', "%{$request->keyword}%")
+                  ->orWhere('dob', 'LIKE', "%{$request->keyword}%");
+            });
+        }
+
+        // Filter by gender
+        if (!empty($request->gender)) {
+            $query->whereHas('student', function($q) use ($request) {
+                $q->where('gender_id', $request->gender);
+            });
+        }
+
+        return $query->with(['student.upload', 'student.user', 'class', 'section'])
+                     ->paginate(Settings::PAGINATE);
+    }
+
+    /**
+     * Get grade distribution statistics
+     */
+    public function getGradeDistribution(): array
+    {
+        $currentSession = setting('session');
+
+        if (!$currentSession) {
+            return [];
+        }
+
+        $distribution = SessionClassStudent::where('session_id', $currentSession)
+            ->whereHas('student', function($query) {
+                $query->where('status', \App\Enums\Status::ACTIVE);
+            })
+            ->with('student')
+            ->get()
+            ->pluck('student')
+            ->filter()
+            ->groupBy('grade')
+            ->map(function($students, $grade) {
+                $gradeLabel = $grade ?: 'Not Set';
+                $academicLevel = 'primary'; // default
+
+                if ($grade) {
+                    $student = new Student(['grade' => $grade]);
+                    $academicLevel = $student->getAcademicLevelFromGrade();
+                }
+
+                return [
+                    'grade' => $gradeLabel,
+                    'academic_level' => $academicLevel,
+                    'count' => $students->count(),
+                    'percentage' => 0, // Will be calculated after getting totals
+                ];
+            })
+            ->values()
+            ->toArray();
+
+        // Calculate percentages
+        $totalStudents = array_sum(array_column($distribution, 'count'));
+        if ($totalStudents > 0) {
+            $distribution = array_map(function($item) use ($totalStudents) {
+                $item['percentage'] = round(($item['count'] / $totalStudents) * 100, 2);
+                return $item;
+            }, $distribution);
+        }
+
+        return $distribution;
+    }
+
+    /**
+     * Get students count by specific grade
+     */
+    public function getStudentCountByGrade(string $grade): int
+    {
+        return SessionClassStudent::where('session_id', setting('session'))
+            ->whereHas('student', function($query) use ($grade) {
+                $query->where('grade', $grade)
+                      ->where('status', \App\Enums\Status::ACTIVE);
+            })
+            ->count();
+    }
+
+    /**
+     * Get students by academic level using grade
+     */
+    public function getStudentsByAcademicLevel(string $academicLevel, array $options = [])
+    {
+        $gradesByLevel = [
+            'kg' => ['KG-1', 'KG-2'],
+            'primary' => ['Grade1', 'Grade2', 'Grade3', 'Grade4', 'Grade5', 'Grade6', 'Grade7', 'Grade8'],
+            'secondary' => ['Form1', 'Form2', 'Form3', 'Form4']
+        ];
+
+        if (!isset($gradesByLevel[$academicLevel])) {
+            return collect();
+        }
+
+        return $this->getStudentsByGrades($gradesByLevel[$academicLevel], $options);
+    }
+
+    /**
+     * Get students who don't have a grade assigned
+     */
+    public function getStudentsWithoutGrade(array $options = [])
+    {
+        $query = SessionClassStudent::query()
+            ->where('session_id', setting('session'))
+            ->whereHas('student', function($q) {
+                $q->where('status', \App\Enums\Status::ACTIVE)
+                  ->where(function($subQ) {
+                      $subQ->whereNull('grade')->orWhere('grade', '');
+                  });
+            })
+            ->with(['student.upload', 'student.user', 'class', 'section']);
+
+        return $query->latest()->paginate($options['per_page'] ?? Settings::PAGINATE);
+    }
+
+    /**
+     * Bulk update grades for students
+     */
+    public function bulkUpdateGrades(array $studentGrades): array
+    {
+        $results = ['success' => [], 'errors' => []];
+
+        DB::beginTransaction();
+        try {
+            foreach ($studentGrades as $studentId => $grade) {
+                $student = $this->model->find($studentId);
+
+                if (!$student) {
+                    $results['errors'][] = "Student with ID {$studentId} not found";
+                    continue;
+                }
+
+                // Validate grade
+                if (!in_array($grade, Student::getAllGrades())) {
+                    $results['errors'][] = "Invalid grade '{$grade}' for student {$student->full_name}";
+                    continue;
+                }
+
+                $student->update(['grade' => $grade]);
+                $results['success'][] = "Updated grade for {$student->full_name} to {$grade}";
+            }
+
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollback();
+            $results['errors'][] = "Transaction failed: " . $e->getMessage();
+        }
+
+        return $results;
+    }
+
+    /**
+     * Get grade options for forms
+     */
+    public function getGradeOptions(): array
+    {
+        return Student::getGradeOptions();
+    }
+
+    /**
+     * Get grade-based statistics for dashboard
+     */
+    public function getGradeStatistics(): array
+    {
+        $distribution = $this->getGradeDistribution();
+        $totalStudents = array_sum(array_column($distribution, 'count'));
+
+        $stats = [
+            'total_students' => $totalStudents,
+            'by_academic_level' => [],
+            'by_grade' => $distribution,
+        ];
+
+        // Group by academic level
+        $byLevel = [];
+        foreach ($distribution as $item) {
+            $level = $item['academic_level'];
+            if (!isset($byLevel[$level])) {
+                $byLevel[$level] = ['count' => 0, 'grades' => []];
+            }
+            $byLevel[$level]['count'] += $item['count'];
+            $byLevel[$level]['grades'][] = $item['grade'];
+        }
+
+        foreach ($byLevel as $level => $data) {
+            $stats['by_academic_level'][$level] = [
+                'count' => $data['count'],
+                'percentage' => $totalStudents > 0 ? round(($data['count'] / $totalStudents) * 100, 2) : 0,
+                'grades' => $data['grades']
+            ];
+        }
+
+        return $stats;
     }
 }

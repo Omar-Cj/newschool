@@ -67,12 +67,6 @@
                                         </div>
                                     @enderror
                                 </div>
-                                <div class="col-md-3 mb-3">
-                                    <label class="form-label">{{ ___('frontend.Arabic_Name') }} </label>
-                                    <input name="student_ar_name" placeholder="{{ ___('frontend.Arabic_Name') }}"
-                                        class="email form-control ot-input mb_30" type="text"
-                                        value="{{ old('student_ar_name') }}">
-                                </div>
 
                                 <div class="col-md-3 mb-3">
                                     <label for="exampleDataList" class="form-label ">{{ ___('student_info.mobile') }} <span
@@ -108,28 +102,46 @@
                                     @endif
                                 </div>
 
-                                <div class="col-md-3 mb-3">
-                                    <label for="departmentId" class="form-label">{{ ___('common.Department') }}
-                                        <span class="fillable">*</span></label>
-                                    <select
-                                        class="nice-select niceSelect bordered_style wide @error('department_id') is-invalid @enderror"
-                                        name="department_id" id="departmentId">
-                                        <option value="">{{ ___('student_info.select Department') }}</option>
-                                        @foreach ($data['departments'] ?? [] as $id => $name)
-                                            <option {{ old('department_id') == $id ? 'selected' : '' }} value="{{ $id }}">{{ $name }} </option>
-                                        @endforeach
-                                    </select>
 
-                                    @error('department_id')
+                                <input type="hidden" id="siblings_discount" name="siblings_discount" value="0">
+                                
+                                <!-- Grade Field - First Priority -->
+                                <div class="col-md-3 mb-3">
+                                    <label for="gradeSelect" class="form-label">{{ ___('student_info.grade') }}
+                                        <span class="fillable">*</span></label>
+                                    <select class="nice-select niceSelect bordered_style wide @error('grade') is-invalid @enderror"
+                                        name="grade" id="gradeSelect" required>
+                                        <option value="">{{ ___('student_info.select_grade') }}</option>
+                                        <optgroup label="Kindergarten">
+                                            <option {{ old('grade') == 'KG-1' ? 'selected' : '' }} value="KG-1">KG-1</option>
+                                            <option {{ old('grade') == 'KG-2' ? 'selected' : '' }} value="KG-2">KG-2</option>
+                                        </optgroup>
+                                        <optgroup label="Primary">
+                                            <option {{ old('grade') == 'Grade1' ? 'selected' : '' }} value="Grade1">Grade 1</option>
+                                            <option {{ old('grade') == 'Grade2' ? 'selected' : '' }} value="Grade2">Grade 2</option>
+                                            <option {{ old('grade') == 'Grade3' ? 'selected' : '' }} value="Grade3">Grade 3</option>
+                                            <option {{ old('grade') == 'Grade4' ? 'selected' : '' }} value="Grade4">Grade 4</option>
+                                            <option {{ old('grade') == 'Grade5' ? 'selected' : '' }} value="Grade5">Grade 5</option>
+                                            <option {{ old('grade') == 'Grade6' ? 'selected' : '' }} value="Grade6">Grade 6</option>
+                                            <option {{ old('grade') == 'Grade7' ? 'selected' : '' }} value="Grade7">Grade 7</option>
+                                            <option {{ old('grade') == 'Grade8' ? 'selected' : '' }} value="Grade8">Grade 8</option>
+                                        </optgroup>
+                                        <optgroup label="Secondary">
+                                            <option {{ old('grade') == 'Form1' ? 'selected' : '' }} value="Form1">Form 1</option>
+                                            <option {{ old('grade') == 'Form2' ? 'selected' : '' }} value="Form2">Form 2</option>
+                                            <option {{ old('grade') == 'Form3' ? 'selected' : '' }} value="Form3">Form 3</option>
+                                            <option {{ old('grade') == 'Form4' ? 'selected' : '' }} value="Form4">Form 4</option>
+                                        </optgroup>
+                                    </select>
+                                    @error('grade')
                                         <div id="validationServer04Feedback" class="invalid-feedback">
                                             {{ $message }}
                                         </div>
                                     @enderror
                                 </div>
 
-                                <input type="hidden" id="siblings_discount" name="siblings_discount" value="0">
+                                <!-- Class Field - Second Priority -->
                                 <div class="col-md-3">
-
                                     <label for="getSections" class="form-label">{{ ___('student_info.class') }}
                                         <span class="fillable">*</span></label>
                                     <select id="getSections"
@@ -149,9 +161,9 @@
                                             {{ $message }}
                                         </div>
                                     @enderror
-
                                 </div>
 
+                                <!-- Section Field - Third Priority -->
                                 <div class="col-md-3">
                                     <label for="sectionSelect" class="form-label">{{ ___('student_info.section') }}
                                         <span class="fillable">*</span></label>
@@ -207,28 +219,6 @@
 
                                 <div class="col-md-3">
 
-                                    <label for="validationServer04" class="form-label">{{ ___('student_info.religion') }}
-                                        <span class="fillable"></span></label>
-                                    <select
-                                        class="nice-select niceSelect bordered_style wide @error('religion') is-invalid @enderror"
-                                        name="religion" id="validationServer04_religion"
-                                        aria-describedby="validationServer04Feedback">
-                                        <option value="">{{ ___('student_info.select_religion') }}</option>
-                                        @foreach ($data['religions'] as $item)
-                                            <option {{ old('religion') == $item->id ? 'selected' : '' }}
-                                                value="{{ $item->id }}">{{ $item->name }}
-                                        @endforeach
-                                    </select>
-
-                                    @error('religion')
-                                        <div id="validationServer04Feedback" class="invalid-feedback">
-                                            {{ $message }}
-                                        </div>
-                                    @enderror
-
-                                </div>
-                                <div class="col-md-3">
-
                                     <label for="validationServer04" class="form-label">{{ ___('common.gender') }} <span
                                             class="fillable"></span></label>
                                     <select
@@ -265,28 +255,6 @@
                                     </select>
 
                                     @error('category')
-                                        <div id="validationServer04Feedback" class="invalid-feedback">
-                                            {{ $message }}
-                                        </div>
-                                    @enderror
-
-                                </div>
-                                <div class="col-md-3">
-
-                                    <label for="validationServer04" class="form-label">{{ ___('student_info.blood') }}
-                                        <span class="fillable"></span></label>
-                                    <select
-                                        class="nice-select niceSelect bordered_style wide @error('blood') is-invalid @enderror"
-                                        name="blood" id="validationServer04_blood"
-                                        aria-describedby="validationServer04Feedback">
-                                        <option value="">{{ ___('student_info.select_blood') }}</option>
-                                        @foreach ($data['bloods'] as $item)
-                                            <option {{ old('blood') == $item->id ? 'selected' : '' }}
-                                                value="{{ $item->id }}">{{ $item->name }}
-                                        @endforeach
-                                    </select>
-
-                                    @error('blood')
                                         <div id="validationServer04Feedback" class="invalid-feedback">
                                             {{ $message }}
                                         </div>
@@ -399,24 +367,6 @@
                                         class="email form-control ot-input mb_30" type="text">
                                 </div>
                                 <div class="col-md-3 mb-3">
-                                    <label class="form-label">{{ ___('frontend.Student_Nationality') }}
-                                    </label>
-                                    <input name="nationality" placeholder="{{ ___('frontend.Student_Nationality') }}"
-                                        class="email form-control ot-input mb_30" type="text">
-                                </div>
-                                <div class="col-md-3 mb-3">
-                                    <label class="form-label">{{ ___('frontend.CPR_Number') }} </label>
-                                    <input name="cpr_no" placeholder="{{ ___('frontend.CPR_Number') }}"
-                                        class="email form-control ot-input mb_30" type="text">
-                                </div>
-                                <div class="col-md-3 mb-3">
-                                    <label class="form-label">{{ ___('frontend.Student_Sponken_Language_At_Home') }}
-                                    </label>
-                                    <input name="spoken_lang_at_home"
-                                        placeholder="{{ ___('frontend.Student_Sponken_Language_At_Home') }}"
-                                        class="email form-control ot-input mb_30" type="text">
-                                </div>
-                                <div class="col-md-3 mb-3">
                                     <label class="form-label">{{ ___('frontend.Residance_Address') }} </label>
                                     <input name="residance_address"
                                         placeholder="{{ ___('frontend.Residance_Address') }}"
@@ -449,64 +399,9 @@
                                     @enderror
 
                                 </div>
-                                <div class="col-md-3 mb-3">
-                                    <label class="form-label">{{ ___('frontend.ID_Certificate') }} </label>
-                                    <input name="student_id_certificate"
-                                        placeholder="{{ ___('frontend.ID_Certificate') }}"
-                                        class="email form-control ot-input mb_30" type="text"
-                                        value="{{ old('student_id_certificate') }}">
-                                </div>
-                                <div class="col-md-3 mb-3">
-                                    <label class="form-label">{{ ___('frontend.Emergency_Contact') }} </label>
-                                    <input name="emergency_contact"
-                                        placeholder="{{ ___('frontend.Emergency_Contact') }}"
-                                        class="email form-control ot-input mb_30" type="text"
-                                        value="{{ old('emergency_contact') }}">
-                                </div>
 
 
 
-                                <div class="col-md-3 mb-3">
-                                    <label for="HealthStatus" class="form-label ">{{ ___('common.Health Status') }}</label>
-                                    <input type="text"
-                                        class="form-control ot-input @error('health_status') is-invalid @enderror"
-                                        name="health_status" id="HealthStatus"
-                                        placeholder="{{ ___('common.Health Status') }}"
-                                        value="{{ old('health_status') }}">
-                                    @error('health_status')
-                                        <div id="validationServer04Feedback" class="invalid-feedback">
-                                            {{ $message }}
-                                        </div>
-                                    @enderror
-                                </div>
-
-                                <div class="col-md-3 mb-3">
-                                    <label for="rank_in_family" class="form-label ">{{ ___('common.Rank in family') }}</label>
-                                    <input type="number"
-                                        class="form-control ot-input @error('rank_in_family') is-invalid @enderror"
-                                        name="rank_in_family" id="rank_in_family"
-                                        placeholder="{{ ___('common.1st child, 2nd child ...') }}"
-                                        value="{{ old('rank_in_family', 1) }}">
-                                    @error('rank_in_family')
-                                        <div id="validationServer04Feedback" class="invalid-feedback">
-                                            {{ $message }}
-                                        </div>
-                                    @enderror
-                                </div>
-
-                                <div class="col-md-3 mb-3">
-                                    <label for="siblings" class="form-label ">{{ ___('common.Number of brothers/sisters') }}</label>
-                                    <input type="number"
-                                        class="form-control ot-input @error('siblings') is-invalid @enderror"
-                                        name="siblings" id="siblings"
-                                        placeholder="{{ ___('common.Number of brothers/sisters') }}"
-                                        value="{{ old('siblings', 0) }}">
-                                    @error('siblings')
-                                        <div id="validationServer04Feedback" class="invalid-feedback">
-                                            {{ $message }}
-                                        </div>
-                                    @enderror
-                                </div>
 
                                 <div class="col-md-3">
                                     <div class="form-group mb-3">

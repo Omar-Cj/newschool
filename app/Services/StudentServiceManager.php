@@ -518,4 +518,110 @@ class StudentServiceManager
 
         return $newService;
     }
+
+    /**
+     * Get services available for a specific grade
+     */
+    public function getServicesForGrade(string $grade): Collection
+    {
+        $student = new Student(['grade' => $grade]);
+        $academicLevel = $student->getAcademicLevelFromGrade();
+
+        return FeesType::active()
+            ->forAcademicLevel($academicLevel)
+            ->orderBy('is_mandatory_for_level', 'desc')
+            ->orderBy('category')
+            ->orderBy('name')
+            ->get();
+    }
+
+    /**
+     * Get mandatory services for a specific grade
+     */
+    public function getMandatoryServicesForGrade(string $grade): Collection
+    {
+        $student = new Student(['grade' => $grade]);
+        $academicLevel = $student->getAcademicLevelFromGrade();
+
+        return FeesType::active()
+            ->mandatoryForLevel($academicLevel)
+            ->orderBy('category')
+            ->orderBy('name')
+            ->get();
+    }
+
+    /**
+     * Bulk subscribe students by grade to mandatory services
+     */
+    public function bulkSubscribeByGrade(array $grades, $academicYearId = null, array $options = []): array
+    {
+        $academicYearId = $academicYearId ?? session('academic_year_id');
+        $results = ['success' => [], 'errors' => []];
+
+        foreach ($grades as $grade) {
+            $students = Student::byGrade($grade)->active()->get();
+            $mandatoryServices = $this->getMandatoryServicesForGrade($grade);
+
+            foreach ($students as $student) {
+                foreach ($mandatoryServices as $service) {
+                    try {
+                        $subscription = $this->subscribeToService($student, $service, array_merge($options, [
+                            'academic_year_id' => $academicYearId,
+                            'skip_conflict_check' => true // Skip during bulk operations
+                        ]));
+
+                        $results['success'][] = [
+                            'student_id' => $student->id,
+                            'student_name' => $student->full_name,
+                            'grade' => $grade,
+                            'service_name' => $service->name,
+                            'subscription_id' => $subscription->id
+                        ];
+                    } catch (\Exception $e) {
+                        $results['errors'][] = [
+                            'student_id' => $student->id,
+                            'student_name' => $student->full_name,
+                            'grade' => $grade,
+                            'service_name' => $service->name,
+                            'error' => $e->getMessage()
+                        ];
+
+                        Log::warning('Failed to subscribe student to service during bulk operation', [
+                            'student_id' => $student->id,
+                            'grade' => $grade,
+                            'service_id' => $service->id,
+                            'error' => $e->getMessage()
+                        ]);
+                    }
+                }
+            }
+        }
+
+        return $results;
+    }
+
+    /**
+     * Get service statistics by grade
+     */
+    public function getServiceStatsByGrade(): array
+    {
+        $grades = Student::getAllGrades();
+        $stats = [];
+
+        foreach ($grades as $grade) {
+            $studentCount = Student::byGrade($grade)->active()->count();
+            $mandatoryServices = $this->getMandatoryServicesForGrade($grade);
+            $allServices = $this->getServicesForGrade($grade);
+
+            $stats[$grade] = [
+                'student_count' => $studentCount,
+                'mandatory_services_count' => $mandatoryServices->count(),
+                'total_services_count' => $allServices->count(),
+                'mandatory_services' => $mandatoryServices->pluck('name')->toArray(),
+                'estimated_mandatory_fees' => $mandatoryServices->sum('amount') * $studentCount
+            ];
+        }
+
+        return $stats;
+    }
 }

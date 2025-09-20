@@ -557,5 +557,248 @@ class FeesGenerationService
     {
         return $this->getEligibleStudents($filters)->count();
     }
-    
+
+    /**
+     * Get eligible students filtered by grades instead of classes/sections
+     */
+    public function getEligibleStudentsByGrades(array $filters): Collection
+    {
+        $currentSession = setting('session');
+
+        if (!$currentSession) {
+            throw new \Exception('No active session found. Please configure the current academic session.');
+        }
+
+        $query = SessionClassStudent::query()
+            ->where('session_id', $currentSession)
+            ->with([
+                'student' => function($query) {
+                    $query->where('status', Status::ACTIVE);
+                },
+                'class',
+                'section',
+                'shift'
+            ])
+            ->whereHas('student', function($query) {
+                $query->where('status', Status::ACTIVE);
+            });
+
+        // Filter by grades if provided
+        if (!empty($filters['grades'])) {
+            $query->whereHas('student', function($q) use ($filters) {
+                $q->whereIn('grade', $filters['grades']);
+            });
+        }
+
+        // Apply additional filters if provided
+        if (!empty($filters['classes'])) {
+            $query->whereIn('classes_id', $filters['classes']);
+        }
+
+        if (!empty($filters['sections'])) {
+            $query->whereIn('section_id', $filters['sections']);
+        }
+
+        return $query->get()->pluck('student')->filter();
+    }
+
+    /**
+     * Generate preview for grade-based fee generation
+     */
+    public function generatePreviewByGrades(array $filters): array
+    {
+        $students = $this->getEligibleStudentsByGrades($filters);
+
+        if ($students->isEmpty()) {
+            throw new \Exception('No eligible students found for the selected grades.');
+        }
+
+        // Check if fee groups are selected
+        if (empty($filters['fees_groups'])) {
+            throw new \Exception('Please select at least one fee group.');
+        }
+
+        // Validate that fee masters exist for selected groups
+        $feeMastersCount = \App\Models\Fees\FeesMaster::whereIn('fees_group_id', $filters['fees_groups'])
+            ->where('session_id', setting('session'))
+            ->count();
+
+        if ($feeMastersCount === 0) {
+            throw new \Exception('No fee masters found for the selected fee groups. Please set up fee masters first.');
+        }
+
+        $feesData = $this->calculateFeesForStudentsByGrades($students, $filters);
+
+        return [
+            'total_students' => $students->count(),
+            'estimated_amount' => $feesData['total_amount'],
+            'grades_breakdown' => $feesData['grades_breakdown'],
+            'fees_breakdown' => $feesData['fees_breakdown'],
+            'duplicate_warning' => $this->checkForDuplicates($students, $filters),
+            'students_preview' => $students->take(10)->map(function ($student) {
+                return [
+                    'id' => $student->id,
+                    'name' => $student->full_name ?? ($student->first_name . ' ' . $student->last_name),
+                    'grade' => $student->grade ?? 'Not Set',
+                    'class' => $student->sessionStudentDetails->class->name ?? '',
+                    'section' => $student->sessionStudentDetails->section->name ?? '',
+                ];
+            })
+        ];
+    }
+
+    /**
+     * Calculate fees for students grouped by grades
+     */
+    private function calculateFeesForStudentsByGrades(Collection $students, array $filters): array
+    {
+        $totalAmount = 0;
+        $gradesBreakdown = [];
+        $feesBreakdown = [];
+
+        $students->each(function ($student) use (&$totalAmount, &$gradesBreakdown, &$feesBreakdown, $filters) {
+            $studentAmount = 0;
+
+            try {
+                // Get fee assignments for this student
+                $feeAssignments = $this->getOrCreateStudentFeeAssignments($student, $filters);
+
+                $feeAssignments->each(function ($feeAssignment) use (&$studentAmount, &$feesBreakdown) {
+                    $feeMaster = $feeAssignment->feesMaster;
+                    if ($feeMaster) {
+                        $amount = $feeMaster->amount ?? 0;
+                        $studentAmount += $amount;
+
+                        $feeName = $feeMaster->name ?? 'Unknown Fee';
+                        $feesBreakdown[$feeName] = ($feesBreakdown[$feeName] ?? 0) + $amount;
+                    }
+                });
+            } catch (\Exception $e) {
+                // Skip students with issues during preview
+                return;
+            }
+
+            $totalAmount += $studentAmount;
+
+            // Get grade from student
+            $grade = $student->grade ?? 'Not Set';
+            $gradesBreakdown[$grade] = [
+                'students' => ($gradesBreakdown[$grade]['students'] ?? 0) + 1,
+                'amount' => ($gradesBreakdown[$grade]['amount'] ?? 0) + $studentAmount
+            ];
+        });
+
+        return [
+            'total_amount' => $totalAmount,
+            'grades_breakdown' => $gradesBreakdown,
+            'fees_breakdown' => $feesBreakdown
+        ];
+    }
+
+    /**
+     * Generate fees for students filtered by grades
+     */
+    public function generateFeesByGrades(array $data): FeesGeneration
+    {
+        return DB::transaction(function () use ($data) {
+            // Get eligible students by grades
+            $students = $this->getEligibleStudentsByGrades($data);
+
+            if ($students->isEmpty()) {
+                throw new \Exception(___('fees.no_eligible_students'));
+            }
+
+            // Filter by selected students if provided
+            if (!empty($data['selected_students'])) {
+                $students = $students->whereIn('id', $data['selected_students']);
+            }
+
+            // Create generation record
+            $generation = $this->repo->create([
+                'batch_id' => $data['batch_id'],
+                'status' => 'pending',
+                'total_students' => $students->count(),
+                'filters' => $this->sanitizeFiltersForGrades($data),
+                'notes' => $data['notes'] ?? null,
+                'created_by' => $data['created_by'],
+                'school_id' => $data['school_id'],
+            ]);
+
+            // Generate fees for each student
+            $students->each(function ($student) use ($generation, $data) {
+                $this->generateFeesForStudent($student, $generation, $data);
+            });
+
+            // Update completion status
+            $generation->update([
+                'status' => 'completed',
+                'completed_at' => now()
+            ]);
+
+            return $generation;
+        });
+    }
+
+    /**
+     * Sanitize filters for grade-based generation
+     */
+    private function sanitizeFiltersForGrades(array $data): array
+    {
+        return [
+            'grades' => $data['grades'] ?? [],
+            'classes' => $data['classes'] ?? [],
+            'sections' => $data['sections'] ?? [],
+            'fees_groups' => $data['fees_groups'] ?? [],
+            'month' => $data['month'] ?? date('n'),
+            'year' => $data['year'] ?? date('Y'),
+            'generation_type' => 'grade_based'
+        ];
+    }
+
+    /**
+     * Get student count by grades
+     */
+    public function getStudentCountByGrades(array $filters): int
+    {
+        return $this->getEligibleStudentsByGrades($filters)->count();
+    }
+
+    /**
+     * Get grade-wise student distribution
+     */
+    public function getGradeDistribution(): array
+    {
+        $currentSession = setting('session');
+
+        if (!$currentSession) {
+            return [];
+        }
+
+        return SessionClassStudent::where('session_id', $currentSession)
+            ->whereHas('student', function($query) {
+                $query->where('status', Status::ACTIVE);
+            })
+            ->with('student')
+            ->get()
+            ->pluck('student')
+            ->filter()
+            ->groupBy('grade')
+            ->map(function($students, $grade) {
+                return [
+                    'grade' => $grade ?: 'Not Set',
+                    'count' => $students->count(),
+                    'students' => $students->map(function($student) {
+                        return [
+                            'id' => $student->id,
+                            'name' => $student->full_name,
+                            'class' => $student->sessionStudentDetails->class->name ?? '',
+                            'section' => $student->sessionStudentDetails->section->name ?? '',
+                        ];
+                    })
+                ];
+            })
+            ->values()
+            ->toArray();
+    }
+
 }

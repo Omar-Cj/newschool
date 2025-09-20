@@ -102,7 +102,7 @@
                                     <tr>
                                         <th class="serial">{{ ___('common.sr_no') }}</th>
                                         <th class="purchase">{{ ___('student_info.student_name') }}</th>
-                                        <th class="purchase">{{ ___('student_info.Department') }}</th>
+                                        <th class="purchase">{{ ___('student_info.Grade') }}</th>
                                         <th class="purchase">{{ ___('academic.class') }} ({{ ___('academic.section') }})
                                         </th>
                                         <th class="purchase">{{ ___('student_info.guardian_name') }}</th>
@@ -142,7 +142,7 @@
                                                     </a>
                                                 </div>
                                             </td>
-                                            <td class="serial">{{ @$row->student->department->name }}</td>
+                                            <td class="serial">{{ @$row->student->grade ?? 'Not Set' }}</td>
                                             <td>{{ @$row->class->name }} ({{ @$row->section->name }})</td>
                                             <td>{{ @$row->student->parent->guardian_name }}</td>
                                             <td>{{ dateFormat(@$row->student->dob) }}</td>

@@ -41,26 +41,18 @@ class Student extends BaseModel
         'dob',
         'admission_date',
         'student_category_id',
-        'religion_id',
-        'blood_group_id',
+        'grade', // New required grade field
         'gender_id',
         'category_id',
         'image_id',
         'parent_guardian_id',
-        'department_id',
         'upload_documents',
         'status',
         'siblings_discount',
         'previous_school',
         'previous_school_info',
         'previous_school_image_id',
-        'health_status',
-        'rank_in_family',
-        'siblings',
         'place_of_birth',
-        'nationality',
-        'cpr_no',
-        'spoken_lang_at_home',
         'residance_address'
     ];
 
@@ -103,30 +95,18 @@ class Student extends BaseModel
         return $this->belongsTo(User::class, 'user_id', 'id');
     }
 
-    public function department()
-    {
-        return $this->belongsTo(Department::class, 'department_id', 'id');
-    }
 
     public function shift()
     {
         return $this->belongsTo(Shift::class, 'shift_id', 'id');
     }
 
-    public function religion()
-    {
-        return $this->belongsTo(Religion::class, 'religion_id', 'id');
-    }
 
     public function gender()
     {
         return $this->belongsTo(Gender::class, 'gender_id', 'id');
     }
 
-    public function blood()
-    {
-        return $this->belongsTo(BloodGroup::class, 'blood_group_id', 'id');
-    }
 
     public function parent()
     {
@@ -228,14 +208,19 @@ class Student extends BaseModel
 
     public function getAcademicLevel(): string
     {
-        // NEW SCALABLE APPROACH: Use explicit academic level from class
+        // PRIORITY 1: Use grade field if available (new approach)
+        if ($this->grade) {
+            return $this->getAcademicLevelFromGrade();
+        }
+
+        // PRIORITY 2: Use explicit academic level from class
         if ($this->sessionStudentDetails?->class?->academic_level) {
             return $this->sessionStudentDetails->class->academic_level;
         }
 
-        // Fallback to legacy detection for backward compatibility
+        // PRIORITY 3: Fallback to legacy detection for backward compatibility
         $className = $this->sessionStudentDetails?->class?->name ?? '';
-        
+
         // Try AcademicLevelConfig detection first
         if ($className) {
             $detectedLevel = \App\Models\AcademicLevelConfig::detectAcademicLevel($className);
@@ -243,7 +228,7 @@ class Student extends BaseModel
                 return $detectedLevel;
             }
         }
-        
+
         // Final fallback: Enhanced detection with form-based and numeric parsing
         // Priority 1: Check for Form-based classes (Form 1-4 = secondary)
         if (preg_match('/form\s*(\d+)/i', $className, $matches)) {
@@ -269,6 +254,97 @@ class Student extends BaseModel
 
         // Priority 3: Safe default
         return 'primary';
+    }
+
+    /**
+     * Get academic level directly from grade field
+     */
+    public function getAcademicLevelFromGrade(): string
+    {
+        if (!$this->grade) {
+            return 'primary'; // Default fallback
+        }
+
+        return match($this->grade) {
+            'KG-1', 'KG-2' => 'kg',
+            'Grade1', 'Grade2', 'Grade3', 'Grade4', 'Grade5', 'Grade6', 'Grade7', 'Grade8' => 'primary',
+            'Form1', 'Form2', 'Form3', 'Form4' => 'secondary',
+            default => 'primary'
+        };
+    }
+
+    /**
+     * Get all available grade options grouped by academic level
+     */
+    public static function getGradeOptions(): array
+    {
+        return [
+            'kg' => [
+                'KG-1' => 'KG-1 (Kindergarten 1)',
+                'KG-2' => 'KG-2 (Kindergarten 2)',
+            ],
+            'primary' => [
+                'Grade1' => 'Grade 1',
+                'Grade2' => 'Grade 2',
+                'Grade3' => 'Grade 3',
+                'Grade4' => 'Grade 4',
+                'Grade5' => 'Grade 5',
+                'Grade6' => 'Grade 6',
+                'Grade7' => 'Grade 7',
+                'Grade8' => 'Grade 8',
+            ],
+            'secondary' => [
+                'Form1' => 'Form 1',
+                'Form2' => 'Form 2',
+                'Form3' => 'Form 3',
+                'Form4' => 'Form 4',
+            ],
+        ];
+    }
+
+    /**
+     * Get flat array of all grade options
+     */
+    public static function getAllGrades(): array
+    {
+        return [
+            'KG-1', 'KG-2', 'Grade1', 'Grade2', 'Grade3', 'Grade4',
+            'Grade5', 'Grade6', 'Grade7', 'Grade8', 'Form1', 'Form2', 'Form3', 'Form4'
+        ];
+    }
+
+    /**
+     * Scope to filter students by grade
+     */
+    public function scopeByGrade($query, $grade)
+    {
+        return $query->where('grade', $grade);
+    }
+
+    /**
+     * Scope to filter students by multiple grades
+     */
+    public function scopeByGrades($query, array $grades)
+    {
+        return $query->whereIn('grade', $grades);
+    }
+
+    /**
+     * Scope to filter students by academic level using grade
+     */
+    public function scopeByAcademicLevel($query, string $academicLevel)
+    {
+        $gradesByLevel = [
+            'kg' => ['KG-1', 'KG-2'],
+            'primary' => ['Grade1', 'Grade2', 'Grade3', 'Grade4', 'Grade5', 'Grade6', 'Grade7', 'Grade8'],
+            'secondary' => ['Form1', 'Form2', 'Form3', 'Form4']
+        ];
+
+        if (!isset($gradesByLevel[$academicLevel])) {
+            return $query->whereRaw('1 = 0'); // Return empty result
+        }
+
+        return $query->whereIn('grade', $gradesByLevel[$academicLevel]);
     }
 
     public function getOutstandingFees(int $academicYearId = null): Collection

@@ -109,6 +109,14 @@ Route::middleware(saasMiddleware())->group(function () {
                     Route::post('/switch-system',       'switchSystem')->name('fees-generation.switch-system')->middleware('PermissionCheck:fees_generate_create', 'DemoCheck');
                     Route::post('/preview-managed',     'generatePreviewWithManager')->name('fees-generation.preview-managed')->middleware('PermissionCheck:fees_generate_create');
                     Route::post('/generate-managed',    'generateFeesWithManager')->name('fees-generation.generate-managed')->middleware('PermissionCheck:fees_generate_create', 'DemoCheck');
+
+                    // Grade-based fee generation endpoints
+                    Route::post('/preview-by-grades',   'previewByGrades')->name('fees-generation.preview-by-grades')->middleware('PermissionCheck:fees_generate_create');
+                    Route::post('/generate-by-grades',  'generateByGrades')->name('fees-generation.generate-by-grades')->middleware('PermissionCheck:fees_generate_create', 'DemoCheck');
+                    Route::post('/bulk-generate-by-grades', 'bulkGenerateByGrades')->name('fees-generation.bulk-generate-by-grades')->middleware('PermissionCheck:fees_generate_create', 'DemoCheck');
+                    Route::get('/student-count-by-grades', 'getStudentCountByGrades')->name('fees-generation.student-count-by-grades');
+                    Route::get('/grade-distribution',   'getGradeDistribution')->name('fees-generation.grade-distribution');
+                    Route::get('/available-grades',     'getAvailableGrades')->name('fees-generation.available-grades');
                 });
 
                 // Receipt Generation Routes

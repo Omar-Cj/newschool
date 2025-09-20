@@ -14,14 +14,11 @@ use App\Models\Attendance\Attendance;
 use App\Models\Examination\ExamAssign;
 use App\Models\Examination\MarksGrade;
 use App\Repositories\GenderRepository;
-use App\Repositories\ReligionRepository;
 use App\Models\Examination\MarksRegister;
-use App\Repositories\BloodGroupRepository;
 use App\Interfaces\Fees\FeesCollectInterface;
 use App\Repositories\Academic\ShiftRepository;
 use App\Repositories\Academic\ClassesRepository;
 use App\Repositories\Academic\SectionRepository;
-use App\Repositories\Staff\DepartmentRepository;
 use App\Repositories\Academic\ClassSetupRepository;
 use App\Repositories\StudentInfo\StudentRepository;
 use App\Repositories\Examination\ExamAssignRepository;
@@ -41,12 +38,9 @@ class StudentController extends Controller
     private $sectionRepo;
     private $classSetupRepo;
     private $shiftRepo;
-    private $bloodRepo;
-    private $religionRepo;
     private $genderRepo;
     private $categoryRepo;
     private $examAssignRepo;
-    private $departmentRepo;
     private $parentGuardianRepo;
     private $feesAssignedRepo;
     private $serviceManager;
@@ -57,12 +51,9 @@ class StudentController extends Controller
         SectionRepository $sectionRepo,
         ClassSetupRepository $classSetupRepo,
         ShiftRepository   $shiftRepo,
-        BloodGroupRepository         $bloodRepo,
-        ReligionRepository           $religionRepo,
         GenderRepository             $genderRepo,
         StudentCategoryRepository    $categoryRepo,
         ExamAssignRepository         $examAssignRepo,
-        DepartmentRepository         $departmentRepo,
         ParentGuardianRepository     $parentGuardianRepo,
         FeesCollectInterface         $feesAssignedRepo,
         StudentServiceManager        $serviceManager,
@@ -72,12 +63,9 @@ class StudentController extends Controller
         $this->sectionRepo        = $sectionRepo;
         $this->classSetupRepo     = $classSetupRepo;
         $this->shiftRepo          = $shiftRepo;
-        $this->bloodRepo          = $bloodRepo;
-        $this->religionRepo       = $religionRepo;
         $this->genderRepo         = $genderRepo;
         $this->categoryRepo       = $categoryRepo;
         $this->examAssignRepo     = $examAssignRepo;
-        $this->departmentRepo     = $departmentRepo;
         $this->parentGuardianRepo = $parentGuardianRepo;
         $this->feesAssignedRepo   = $feesAssignedRepo;
         $this->serviceManager     = $serviceManager;
@@ -116,9 +104,6 @@ class StudentController extends Controller
         $data['classes']         = $this->classRepo->assignedAll();
         $data['sections']        = [];
         $data['shifts']          = $this->shiftRepo->all();
-        $data['departments']     = $this->departmentRepo->getAsOptions();
-        $data['bloods']          = $this->bloodRepo->all();
-        $data['religions']       = $this->religionRepo->all();
         $data['genders']         = $this->genderRepo->all();
         $data['categories']      = $this->categoryRepo->all();
         $data['parentGuardians'] = $this->parentGuardianRepo->get();
@@ -191,11 +176,8 @@ class StudentController extends Controller
         $data['session_class_student'] = $this->repo->getSessionStudent($id);
         $data['student']               = $this->repo->show($data['session_class_student']->student_id);
         $data['classes']               = $this->classRepo->assignedAll();
-        $data['departments']           = $this->departmentRepo->getAsOptions();
         $data['sections']              = $this->classSetupRepo->getSections($data['session_class_student']->classes_id);
         $data['shifts']                = $this->shiftRepo->all();
-        $data['bloods']                = $this->bloodRepo->all();
-        $data['religions']             = $this->religionRepo->all();
         $data['genders']               = $this->genderRepo->all();
         $data['categories']            = $this->categoryRepo->all();
         $data['parentGuardians']       = $this->parentGuardianRepo->get();

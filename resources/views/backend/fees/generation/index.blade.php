@@ -217,38 +217,135 @@
                                     <form id="fee-generation-form">
                                         @csrf
                         
-                        {{-- Generation Parameters --}}
-                        <div class="row mb-3">
-                                            {{-- Class Selection --}}
-                            <div class="col-md-6 mb-3">
-                                                <label for="classes" class="form-label">{{ ___('academic.class') }} <span class="text-danger">*</span></label>
-                                <select name="classes[]" id="classes" class="form-control select2" multiple required>
-                                                    @foreach($data['classes'] as $classSetup)
-                                                        <option value="{{ $classSetup->classes_id }}">{{ $classSetup->class->name ?? 'Unknown Class' }}</option>
-                                                    @endforeach
-                                                </select>
-                                                <div class="form-check mt-1">
-                                                    <input class="form-check-input" type="checkbox" id="select-all-classes">
-                                    <label class="form-check-label small" for="select-all-classes">
-                                                        {{ ___('common.select_all') }}
+                        {{-- Selection Method Toggle --}}
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="card bg-light">
+                                    <div class="card-body p-3">
+                                        <h6 class="mb-3">{{ ___('fees.student_selection_method') }}</h6>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="selection_method" id="class_section_method" value="class_section" checked>
+                                                    <label class="form-check-label" for="class_section_method">
+                                                        <strong>{{ ___('fees.by_class_section') }}</strong>
+                                                        <small class="d-block text-muted">{{ ___('fees.traditional_class_section_selection') }}</small>
                                                     </label>
                                                 </div>
                                             </div>
-
-                                            {{-- Section Selection --}}
-                            <div class="col-md-6 mb-3">
-                                                <label for="sections" class="form-label">{{ ___('academic.section') }}</label>
-                                                <select name="sections[]" id="sections" class="form-control select2" multiple>
-                                                    <option value="">{{ ___('common.select_class_first') }}</option>
-                                                </select>
-                                                <div class="form-check mt-1">
-                                                    <input class="form-check-input" type="checkbox" id="select-all-sections">
-                                    <label class="form-check-label small" for="select-all-sections">
-                                                        {{ ___('common.select_all') }}
+                                            <div class="col-md-6">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="selection_method" id="grade_method" value="grade">
+                                                    <label class="form-check-label" for="grade_method">
+                                                        <strong>{{ ___('fees.by_grade_level') }}</strong>
+                                                        <small class="d-block text-muted">{{ ___('fees.modern_grade_based_selection') }}</small>
                                                     </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                                                </div>
-                                            </div>
+                            </div>
+                        </div>
+
+                        {{-- Class/Section Selection (Traditional) --}}
+                        <div id="class-section-selection" class="row mb-3">
+                            {{-- Class Selection --}}
+                            <div class="col-md-6 mb-3">
+                                <label for="classes" class="form-label">{{ ___('academic.class') }} <span class="text-danger">*</span></label>
+                                <select name="classes[]" id="classes" class="form-control select2" multiple>
+                                    @foreach($data['classes'] as $classSetup)
+                                        <option value="{{ $classSetup->classes_id }}">{{ $classSetup->class->name ?? 'Unknown Class' }}</option>
+                                    @endforeach
+                                </select>
+                                <div class="form-check mt-1">
+                                    <input class="form-check-input" type="checkbox" id="select-all-classes">
+                                    <label class="form-check-label small" for="select-all-classes">
+                                        {{ ___('common.select_all') }}
+                                    </label>
+                                </div>
+                            </div>
+
+                            {{-- Section Selection --}}
+                            <div class="col-md-6 mb-3">
+                                <label for="sections" class="form-label">{{ ___('academic.section') }}</label>
+                                <select name="sections[]" id="sections" class="form-control select2" multiple>
+                                    <option value="">{{ ___('common.select_class_first') }}</option>
+                                </select>
+                                <div class="form-check mt-1">
+                                    <input class="form-check-input" type="checkbox" id="select-all-sections">
+                                    <label class="form-check-label small" for="select-all-sections">
+                                        {{ ___('common.select_all') }}
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Grade Selection (Modern) --}}
+                        <div id="grade-selection" class="row mb-3" style="display: none;">
+                            <div class="col-md-12 mb-3">
+                                <label for="grades" class="form-label">{{ ___('student_info.grade') }} <span class="text-danger">*</span></label>
+                                <select name="grades[]" id="grades" class="form-control select2" multiple>
+                                    <optgroup label="{{ ___('fees.kindergarten') }}">
+                                        <option value="KG-1">KG-1</option>
+                                        <option value="KG-2">KG-2</option>
+                                    </optgroup>
+                                    <optgroup label="{{ ___('fees.primary') }}">
+                                        <option value="Grade1">Grade 1</option>
+                                        <option value="Grade2">Grade 2</option>
+                                        <option value="Grade3">Grade 3</option>
+                                        <option value="Grade4">Grade 4</option>
+                                        <option value="Grade5">Grade 5</option>
+                                        <option value="Grade6">Grade 6</option>
+                                        <option value="Grade7">Grade 7</option>
+                                        <option value="Grade8">Grade 8</option>
+                                    </optgroup>
+                                    <optgroup label="{{ ___('fees.secondary') }}">
+                                        <option value="Form1">Form 1</option>
+                                        <option value="Form2">Form 2</option>
+                                        <option value="Form3">Form 3</option>
+                                        <option value="Form4">Form 4</option>
+                                    </optgroup>
+                                </select>
+                                <div class="row mt-2">
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="select-all-grades">
+                                            <label class="form-check-label small" for="select-all-grades">
+                                                {{ ___('common.select_all') }}
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="select-kindergarten">
+                                            <label class="form-check-label small" for="select-kindergarten">
+                                                {{ ___('fees.select_all_kindergarten') }}
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="select-primary">
+                                            <label class="form-check-label small" for="select-primary">
+                                                {{ ___('fees.select_all_primary') }}
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row mt-1">
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="select-secondary">
+                                            <label class="form-check-label small" for="select-secondary">
+                                                {{ ___('fees.select_all_secondary') }}
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <small class="text-muted">{{ ___('fees.grade_selection_info') }}</small>
+                            </div>
+                        </div>
 
                         <div class="row mb-3">
                             {{-- Month & Year Combined --}}
@@ -365,13 +462,27 @@
                     {{-- Student Count Display --}}
                     <div class="row mb-3" id="student-count-display" style="display: none;">
                         <div class="col-12">
-                                <div class="alert alert-info d-flex align-items-center">
-                                    <i class="fa-solid fa-users me-2"></i>
-                                    <div>
-                                        <strong id="student-count-text">{{ ___('fees.calculating_students') }}</strong>
-                                        <small class="d-block text-muted">{{ ___('fees.students_matching_criteria') }}</small>
+                            <div class="alert alert-info d-flex align-items-center">
+                                <i class="fa-solid fa-users me-2"></i>
+                                <div>
+                                    <strong id="student-count-text">{{ ___('fees.calculating_students') }}</strong>
+                                    <small class="d-block text-muted" id="student-count-details">{{ ___('fees.students_matching_criteria') }}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Grade Distribution Display (for grade-based selection) --}}
+                    <div class="row mb-3" id="grade-distribution-display" style="display: none;">
+                        <div class="col-12">
+                            <div class="card bg-light">
+                                <div class="card-body p-3">
+                                    <h6 class="mb-3">{{ ___('fees.grade_distribution') }}</h6>
+                                    <div id="grade-breakdown" class="row">
+                                        {{-- Grade distribution will be loaded here --}}
                                     </div>
                                 </div>
+                            </div>
                         </div>
                     </div>
 
@@ -548,7 +659,7 @@ $(document).ready(function() {
             maximumSelectionLength: 50,
             closeOnSelect: false
         });
-        
+
         // Custom handler for classes selection display
         $('#classes').on('select2:select select2:unselect', function() {
             updateClassesDisplay();
@@ -563,10 +674,26 @@ $(document).ready(function() {
             maximumSelectionLength: 50,
             closeOnSelect: false
         });
-        
+
         // Custom handler for sections selection display
         $('#sections').on('select2:select select2:unselect', function() {
             updateSectionsDisplay();
+        });
+
+        // Initialize Select2 for grades with custom display
+        $('#grades').select2({
+            placeholder: "{{ ___('student_info.select_grade') }}",
+            allowClear: true,
+            width: '100%',
+            dropdownParent: $('#feeGenerationModal'),
+            maximumSelectionLength: 14,
+            closeOnSelect: false
+        });
+
+        // Custom handler for grades selection display
+        $('#grades').on('select2:select select2:unselect', function() {
+            updateGradesDisplay();
+            updateGradeBasedStudentCount();
         });
 
         // Initialize Select2 for fee groups with custom display
@@ -578,7 +705,7 @@ $(document).ready(function() {
             maximumSelectionLength: 20,
             closeOnSelect: false
         });
-        
+
         // Custom handler for fee groups selection display
         $('#fees_groups').on('select2:select select2:unselect', function() {
             updateFeeGroupsDisplay();
@@ -612,6 +739,82 @@ $(document).ready(function() {
         setTimeout(updateSectionsDisplay, 100); // Update display after select2 processes
     });
 
+    // Grade selection toggle functionality
+    $('input[name="selection_method"]').on('change', function() {
+        const method = $(this).val();
+        if (method === 'grade') {
+            $('#class-section-selection').hide();
+            $('#grade-selection').show();
+            // Clear class/section requirements
+            $('#classes').prop('required', false);
+            $('#grades').prop('required', true);
+        } else {
+            $('#class-section-selection').show();
+            $('#grade-selection').hide();
+            // Set class/section requirements
+            $('#classes').prop('required', true);
+            $('#grades').prop('required', false);
+        }
+        // Clear previous selections and counts
+        resetSelectionCounts();
+    });
+
+    // Grade selection helpers
+    $('#select-all-grades').on('change', function() {
+        if ($(this).is(':checked')) {
+            $('#grades option').prop('selected', true);
+        } else {
+            $('#grades option').prop('selected', false);
+        }
+        $('#grades').trigger('change');
+        setTimeout(updateGradesDisplay, 100);
+    });
+
+    $('#select-kindergarten').on('change', function() {
+        const kgGrades = ['KG-1', 'KG-2'];
+        if ($(this).is(':checked')) {
+            kgGrades.forEach(grade => {
+                $(`#grades option[value="${grade}"]`).prop('selected', true);
+            });
+        } else {
+            kgGrades.forEach(grade => {
+                $(`#grades option[value="${grade}"]`).prop('selected', false);
+            });
+        }
+        $('#grades').trigger('change');
+        setTimeout(updateGradesDisplay, 100);
+    });
+
+    $('#select-primary').on('change', function() {
+        const primaryGrades = ['Grade1', 'Grade2', 'Grade3', 'Grade4', 'Grade5', 'Grade6', 'Grade7', 'Grade8'];
+        if ($(this).is(':checked')) {
+            primaryGrades.forEach(grade => {
+                $(`#grades option[value="${grade}"]`).prop('selected', true);
+            });
+        } else {
+            primaryGrades.forEach(grade => {
+                $(`#grades option[value="${grade}"]`).prop('selected', false);
+            });
+        }
+        $('#grades').trigger('change');
+        setTimeout(updateGradesDisplay, 100);
+    });
+
+    $('#select-secondary').on('change', function() {
+        const secondaryGrades = ['Form1', 'Form2', 'Form3', 'Form4'];
+        if ($(this).is(':checked')) {
+            secondaryGrades.forEach(grade => {
+                $(`#grades option[value="${grade}"]`).prop('selected', true);
+            });
+        } else {
+            secondaryGrades.forEach(grade => {
+                $(`#grades option[value="${grade}"]`).prop('selected', false);
+            });
+        }
+        $('#grades').trigger('change');
+        setTimeout(updateGradesDisplay, 100);
+    });
+
     // System toggle functionality
     $('#systemToggle').on('change', function() {
         const targetSystem = $(this).is(':checked') ? 'enhanced' : 'legacy';
@@ -638,7 +841,11 @@ $(document).ready(function() {
 
     // Update student count when filters change
     $('#sections, #month_year, #fees_groups').on('change', function() {
-        updateStudentCount();
+        if ($('input[name="selection_method"]:checked').val() === 'grade') {
+            updateGradeBasedStudentCount();
+        } else {
+            updateStudentCount();
+        }
     });
 
     // Preview button click
@@ -1276,6 +1483,110 @@ $(document).ready(function() {
                 const message = xhr.responseJSON?.message || '{{ ___("common.error") }}';
                 showAlert(message, 'error');
             });
+    }
+
+    // Grade-based selection functions
+    function updateGradesDisplay() {
+        const $container = $('#grades').next('.select2-container').find('.select2-selection__rendered');
+        const selectedCount = $('#grades').val() ? $('#grades').val().length : 0;
+
+        if (selectedCount > 4) {
+            $container.find('.select2-selection__choice').hide();
+            let $countDisplay = $container.find('.select2-selection__choice--count');
+            if ($countDisplay.length === 0) {
+                $countDisplay = $('<li class="select2-selection__choice select2-selection__choice--count">' + selectedCount + ' grades selected</li>');
+                $container.prepend($countDisplay);
+            } else {
+                $countDisplay.text(selectedCount + ' grades selected');
+            }
+        } else {
+            $container.find('.select2-selection__choice').show();
+            $container.find('.select2-selection__choice--count').remove();
+        }
+    }
+
+    function updateGradeBasedStudentCount() {
+        const grades = $('#grades').val();
+        if (!grades || grades.length === 0) {
+            $('#student-count-display').hide();
+            $('#grade-distribution-display').hide();
+            return;
+        }
+
+        const formData = {
+            grades: grades,
+            month_year: $('#month_year').val(),
+            _token: '{{ csrf_token() }}'
+        };
+
+        $('#student-count-display').show();
+        $('#student-count-text').text('Calculating students...');
+        $('#grade-distribution-display').hide();
+
+        $.post('{{ route('fees-generation.student-count-by-grades') }}', formData)
+            .done(function(response) {
+                if (response.success) {
+                    const data = response.data;
+                    $('#student-count-text').text(`Total students found: ${data.total_count}`);
+                    $('#student-count-details').text(`Across ${grades.length} grades`);
+
+                    if (data.grade_breakdown && Object.keys(data.grade_breakdown).length > 0) {
+                        displayGradeDistribution(data.grade_breakdown);
+                        $('#grade-distribution-display').show();
+                    }
+
+                    $('#preview-btn').prop('disabled', data.total_count === 0);
+                } else {
+                    $('#student-count-text').text('Error calculating students');
+                    $('#student-count-details').text('');
+                }
+            })
+            .fail(function() {
+                $('#student-count-text').text('Error calculating students');
+                $('#student-count-details').text('');
+            });
+    }
+
+    function displayGradeDistribution(gradeBreakdown) {
+        let html = '';
+        Object.entries(gradeBreakdown).forEach(([grade, count]) => {
+            const academicLevel = getAcademicLevelFromGrade(grade);
+            const levelClass = {
+                'kg': 'text-info',
+                'primary': 'text-success',
+                'secondary': 'text-warning'
+            }[academicLevel] || 'text-muted';
+
+            html += `
+                <div class="col-md-3 mb-2">
+                    <div class="text-center p-2 border rounded">
+                        <h6 class="${levelClass} mb-1">${grade}</h6>
+                        <small class="text-muted">${count} students</small>
+                    </div>
+                </div>
+            `;
+        });
+        $('#grade-breakdown').html(html);
+    }
+
+    function getAcademicLevelFromGrade(grade) {
+        const kgGrades = ['KG-1', 'KG-2'];
+        const primaryGrades = ['Grade1', 'Grade2', 'Grade3', 'Grade4', 'Grade5', 'Grade6', 'Grade7', 'Grade8'];
+        const secondaryGrades = ['Form1', 'Form2', 'Form3', 'Form4'];
+
+        if (kgGrades.includes(grade)) return 'kg';
+        if (primaryGrades.includes(grade)) return 'primary';
+        if (secondaryGrades.includes(grade)) return 'secondary';
+        return 'unknown';
+    }
+
+    function resetSelectionCounts() {
+        $('#student-count-display').hide();
+        $('#grade-distribution-display').hide();
+        $('#preview-section').hide();
+        $('#generate-all-btn').hide();
+        $('#student-count-text').text('Calculating students...');
+        $('#student-count-details').text('Students matching criteria');
     }
 });
 </script>
