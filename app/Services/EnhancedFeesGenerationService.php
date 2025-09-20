@@ -158,17 +158,6 @@ class EnhancedFeesGenerationService
                 continue;
             }
 
-            // Check for existing fee record to prevent duplicates
-            $existing = FeesCollect::where('student_id', $student->id)
-                ->where('fee_type_id', $service->fee_type_id)
-                ->where('academic_year_id', $academicYearId)
-                ->where('generation_batch_id', $batchId)
-                ->first();
-
-            if ($existing) {
-                continue; // Skip if already generated
-            }
-
             // Determine due date
             $dueDate = $criteria['due_date'] ?? $service->due_date ?? now()->addDays(30);
             if (is_string($dueDate)) {
@@ -179,12 +168,14 @@ class EnhancedFeesGenerationService
             $billingPeriod = null;
             $billingYear = null;
             $billingMonth = null;
+            $billingDate = null;
 
             if (isset($criteria['generation_month']) && $criteria['generation_month'] instanceof Carbon) {
                 // Monthly generation - use the specified month
-                $billingPeriod = $criteria['generation_month']->format('Y-m');
-                $billingYear = $criteria['generation_month']->year;
-                $billingMonth = $criteria['generation_month']->month;
+                $billingDate = $criteria['generation_month']->copy();
+                $billingPeriod = $billingDate->format('Y-m');
+                $billingYear = $billingDate->year;
+                $billingMonth = $billingDate->month;
             } elseif ($this->isMonthlyFeeType($service->feeType)) {
                 // Monthly fee type - infer billing period from due date
                 $billingPeriod = FeesCollect::inferBillingPeriodFromDueDate($dueDate);
@@ -193,6 +184,42 @@ class EnhancedFeesGenerationService
                 $billingMonth = $billingDate->month;
             }
             // For one-time fees, leave billing period as null
+
+            // Check for existing fee record to prevent duplicates
+            $existingQuery = FeesCollect::where('student_id', $student->id)
+                ->where('fee_type_id', $service->fee_type_id)
+                ->where('academic_year_id', $academicYearId);
+
+            if ($billingPeriod) {
+                $existingQuery->where(function ($query) use ($billingPeriod, $billingDate) {
+                    $query->where('billing_period', $billingPeriod);
+
+                    if ($billingDate) {
+                        $query->orWhere(function ($legacyQuery) use ($billingDate) {
+                            $legacyQuery->whereNull('billing_period')
+                                ->where(function ($dateMatchQuery) use ($billingDate) {
+                                    $dateMatchQuery->where(function ($q) use ($billingDate) {
+                                        $q->where('billing_year', $billingDate->year)
+                                          ->where('billing_month', $billingDate->month);
+                                    })->orWhere(function ($q) use ($billingDate) {
+                                        $q->whereYear('date', $billingDate->year)
+                                          ->whereMonth('date', $billingDate->month);
+                                    })->orWhere(function ($q) use ($billingDate) {
+                                        $q->whereYear('due_date', $billingDate->year)
+                                          ->whereMonth('due_date', $billingDate->month);
+                                    });
+                                });
+                        });
+                    }
+                });
+            } else {
+                // Fallback to batch-based duplicate prevention for one-time fees
+                $existingQuery->where('generation_batch_id', $batchId);
+            }
+
+            if ($existingQuery->exists()) {
+                continue; // Skip if already generated
+            }
 
             // Create fees collect record with new structure
             $feesCollect = FeesCollect::create([
@@ -310,9 +337,21 @@ class EnhancedFeesGenerationService
      */
     private function getEligibleStudents(array $criteria): Collection
     {
+        // Debug logging for enhanced service student filtering
+        \Log::debug('Enhanced Service - Getting Eligible Students', [
+            'criteria' => $criteria,
+            'has_grades' => !empty($criteria['grades']),
+            'grades' => $criteria['grades'] ?? []
+        ]);
+
         $query = Student::query()
             ->where('status', \App\Enums\Status::ACTIVE)
             ->with(['session_class_student']);
+
+        // Apply grade filters - THIS WAS MISSING!
+        if (isset($criteria['grades']) && !empty($criteria['grades'])) {
+            $query->whereIn('grade', $criteria['grades']);
+        }
 
         // Apply filters based on criteria
         if (isset($criteria['class_ids']) && !empty($criteria['class_ids'])) {
@@ -349,7 +388,22 @@ class EnhancedFeesGenerationService
             $q->where('is_active', true);
         });
 
-        return $query->get();
+        $result = $query->get();
+
+        // Debug logging for final result
+        \Log::debug('Enhanced Service - Eligible Students Result', [
+            'student_count' => $result->count(),
+            'unique_grades' => $result->pluck('grade')->unique()->sort()->values()->toArray(),
+            'sample_students' => $result->take(5)->map(function($student) {
+                return [
+                    'id' => $student->id,
+                    'name' => $student->first_name . ' ' . $student->last_name,
+                    'grade' => $student->grade
+                ];
+            })->toArray()
+        ]);
+
+        return $result;
     }
 
     /**
@@ -1085,13 +1139,29 @@ class EnhancedFeesGenerationService
      */
     private function convertLegacyFilters(array $filters): array
     {
+        // Debug logging for enhanced service
+        \Log::debug('Enhanced Service - Converting Legacy Filters', [
+            'input_filters' => $filters,
+            'has_grades' => !empty($filters['grades']),
+            'selection_method' => $filters['selection_method'] ?? 'not_set'
+        ]);
+
         // Get academic year ID, fallback to session ID 1 if not available
         $academicYearId = $filters['academic_year_id'] ?? session('academic_year_id') ?? 1;
-        
+
         $criteria = [
             'academic_year_id' => $academicYearId,
             'include_one_time_fees' => true
         ];
+
+        // Convert selection method and grade filters - THIS WAS MISSING!
+        if (!empty($filters['selection_method'])) {
+            $criteria['selection_method'] = $filters['selection_method'];
+        }
+
+        if (!empty($filters['grades'])) {
+            $criteria['grades'] = $filters['grades'];
+        }
 
         // Convert class filters
         if (!empty($filters['classes'])) {
@@ -1110,7 +1180,7 @@ class EnhancedFeesGenerationService
                 ->whereIn('fees_group_id', $filters['fees_groups'])
                 ->pluck('id')
                 ->toArray();
-            
+
             if (!empty($feeTypeIds)) {
                 $criteria['fee_type_ids'] = $feeTypeIds;
             }
@@ -1121,6 +1191,12 @@ class EnhancedFeesGenerationService
             $criteria['generation_month'] = Carbon::createFromDate($filters['year'], $filters['month'], 1);
         }
 
+        // Debug logging for converted criteria
+        \Log::debug('Enhanced Service - Converted Criteria', [
+            'output_criteria' => $criteria,
+            'grades_included' => !empty($criteria['grades'])
+        ]);
+
         return $criteria;
     }
 
@@ -1129,6 +1205,13 @@ class EnhancedFeesGenerationService
      */
     private function convertLegacyGenerationData(array $data): array
     {
+        // Debug logging for enhanced service generation
+        \Log::debug('Enhanced Service - Converting Legacy Generation Data', [
+            'input_data' => $data,
+            'has_grades' => !empty($data['grades']),
+            'selection_method' => $data['selection_method'] ?? 'not_set'
+        ]);
+
         // Get academic year ID, fallback to session ID 1 if not available
         $academicYearId = $data['academic_year_id'] ?? session('academic_year_id') ?? 1;
         
@@ -1176,6 +1259,20 @@ class EnhancedFeesGenerationService
         if (isset($data['month']) && isset($data['year'])) {
             $criteria['generation_month'] = Carbon::createFromDate($data['year'], $data['month'], 1);
         }
+
+        // Convert selection method and grade filters - THIS WAS MISSING!
+        if (!empty($data['selection_method'])) {
+            $criteria['selection_method'] = $data['selection_method'];
+        }
+        if (!empty($data['grades'])) {
+            $criteria['grades'] = $data['grades'];
+        }
+
+        // Debug logging for converted criteria
+        \Log::debug('Enhanced Service - Converted Generation Criteria', [
+            'output_criteria' => $criteria,
+            'grades_included' => !empty($criteria['grades'])
+        ]);
 
         return $criteria;
     }

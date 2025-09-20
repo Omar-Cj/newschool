@@ -19,36 +19,6 @@
         </div>
         {{-- breadcrumb Area E n d --}}
 
-        {{-- Enhanced Fee System Status & Toggle --}}
-        <div class="card mb-4" id="system-status-card">
-            <div class="card-header">
-                <div class="row align-items-center">
-                    <div class="col-md-6">
-                        <h5 class="mb-0">{{ ___('fees.fee_processing_system') }}</h5>
-                        <small class="text-muted">{{ ___('fees.system_management') }}</small>
-                    </div>
-                    <div class="col-md-6 text-end">
-                        <div class="d-flex justify-content-end align-items-center">
-                            <span class="me-2">{{ ___('fees.legacy_system') }}</span>
-                            <div class="form-check form-switch me-2">
-                                <input class="form-check-input" type="checkbox" id="systemToggle" checked>
-                            </div>
-                            <span>{{ ___('fees.enhanced_system') }}</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="card-body">
-                <div class="row" id="system-status-display">
-                    <div class="col-12 text-center">
-                        <div class="spinner-border spinner-border-sm" role="status">
-                            <span class="sr-only">Loading...</span>
-                        </div>
-                        <span class="ms-2">{{ ___('fees.loading_system_status') }}</span>
-                    </div>
-                </div>
-            </div>
-        </div>
 
         {{-- Fee Generation Overview --}}
         <div class="table-content table-basic mt-20">
@@ -64,32 +34,32 @@
                         <div class="col-lg-3 col-md-6 mb-3">
                             <div class="card ot-card border-primary">
                                 <div class="card-body text-center p-3">
-                                    <h3 class="text-primary mb-1">{{ count($data['classes']) }}</h3>
-                                    <small class="text-muted">{{ ___('academic.total_classes') }}</small>
+                                    <h3 class="text-primary mb-1">{{ $data['total_available_services'] }}</h3>
+                                    <small class="text-muted">{{ ___('fees.available_services') }}</small>
                                 </div>
                             </div>
                         </div>
                         <div class="col-lg-3 col-md-6 mb-3">
                             <div class="card ot-card border-info">
                                 <div class="card-body text-center p-3">
-                                    <h3 class="text-info mb-1">{{ count($data['fees_groups']) }}</h3>
-                                    <small class="text-muted">{{ ___('fees.fee_groups') }}</small>
+                                    <h3 class="text-info mb-1">{{ $data['enhanced_stats']['students_with_services'] ?? 0 }}</h3>
+                                    <small class="text-muted">{{ ___('fees.students_with_services') }}</small>
                                 </div>
                             </div>
                         </div>
                         <div class="col-lg-3 col-md-6 mb-3">
                             <div class="card ot-card border-success">
                                 <div class="card-body text-center p-3">
-                                    <h3 class="text-success mb-1">{{ $data['generations']->where('status', 'completed')->count() }}</h3>
-                                    <small class="text-muted">{{ ___('fees.completed_generations') }}</small>
+                                    <h3 class="text-success mb-1">{{ $data['enhanced_stats']['total_active_services'] ?? 0 }}</h3>
+                                    <small class="text-muted">{{ ___('fees.active_service_subscriptions') }}</small>
                                 </div>
                             </div>
                         </div>
                         <div class="col-lg-3 col-md-6 mb-3">
                             <div class="card ot-card border-warning">
                                 <div class="card-body text-center p-3">
-                                    <h3 class="text-warning mb-1">{{ $data['generations']->where('status', 'processing')->count() }}</h3>
-                                    <small class="text-muted">{{ ___('fees.processing_generations') }}</small>
+                                    <h3 class="text-warning mb-1">{{ $data['total_classes'] ?? 0 }}</h3>
+                                    <small class="text-muted">{{ ___('academic.total_classes') }}</small>
                                 </div>
                             </div>
                         </div>
@@ -217,72 +187,12 @@
                                     <form id="fee-generation-form">
                                         @csrf
                         
-                        {{-- Selection Method Toggle --}}
-                        <div class="row mb-4">
-                            <div class="col-12">
-                                <div class="card bg-light">
-                                    <div class="card-body p-3">
-                                        <h6 class="mb-3">{{ ___('fees.student_selection_method') }}</h6>
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="radio" name="selection_method" id="class_section_method" value="class_section" checked>
-                                                    <label class="form-check-label" for="class_section_method">
-                                                        <strong>{{ ___('fees.by_class_section') }}</strong>
-                                                        <small class="d-block text-muted">{{ ___('fees.traditional_class_section_selection') }}</small>
-                                                    </label>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="radio" name="selection_method" id="grade_method" value="grade">
-                                                    <label class="form-check-label" for="grade_method">
-                                                        <strong>{{ ___('fees.by_grade_level') }}</strong>
-                                                        <small class="d-block text-muted">{{ ___('fees.modern_grade_based_selection') }}</small>
-                                                    </label>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        {{-- Hidden input to always use grade-based selection --}}
+                        <input type="hidden" name="selection_method" value="grade">
 
-                        {{-- Class/Section Selection (Traditional) --}}
-                        <div id="class-section-selection" class="row mb-3">
-                            {{-- Class Selection --}}
-                            <div class="col-md-6 mb-3">
-                                <label for="classes" class="form-label">{{ ___('academic.class') }} <span class="text-danger">*</span></label>
-                                <select name="classes[]" id="classes" class="form-control select2" multiple>
-                                    @foreach($data['classes'] as $classSetup)
-                                        <option value="{{ $classSetup->classes_id }}">{{ $classSetup->class->name ?? 'Unknown Class' }}</option>
-                                    @endforeach
-                                </select>
-                                <div class="form-check mt-1">
-                                    <input class="form-check-input" type="checkbox" id="select-all-classes">
-                                    <label class="form-check-label small" for="select-all-classes">
-                                        {{ ___('common.select_all') }}
-                                    </label>
-                                </div>
-                            </div>
 
-                            {{-- Section Selection --}}
-                            <div class="col-md-6 mb-3">
-                                <label for="sections" class="form-label">{{ ___('academic.section') }}</label>
-                                <select name="sections[]" id="sections" class="form-control select2" multiple>
-                                    <option value="">{{ ___('common.select_class_first') }}</option>
-                                </select>
-                                <div class="form-check mt-1">
-                                    <input class="form-check-input" type="checkbox" id="select-all-sections">
-                                    <label class="form-check-label small" for="select-all-sections">
-                                        {{ ___('common.select_all') }}
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-
-                        {{-- Grade Selection (Modern) --}}
-                        <div id="grade-selection" class="row mb-3" style="display: none;">
+                        {{-- Grade Selection --}}
+                        <div id="grade-selection" class="row mb-3">
                             <div class="col-md-12 mb-3">
                                 <label for="grades" class="form-label">{{ ___('student_info.grade') }} <span class="text-danger">*</span></label>
                                 <select name="grades[]" id="grades" class="form-control select2" multiple>
@@ -406,19 +316,8 @@
                         </div>
 
                         <div class="row mb-3">
-                            {{-- Fee Groups (Legacy System) --}}
-                            <div class="col-md-6 mb-3" id="legacy-fee-groups">
-                                                <label for="fees_groups" class="form-label">{{ ___('fees.fee_groups') }}</label>
-                                                <select name="fees_groups[]" id="fees_groups" class="form-control select2" multiple>
-                                                    @foreach($data['fees_groups'] as $group)
-                                                        <option value="{{ $group->id }}">{{ $group->name ?? 'Unknown Group' }}</option>
-                                                    @endforeach
-                                                </select>
-                                                <small class="text-muted">{{ ___('fees.leave_empty_for_all') }}</small>
-                                            </div>
-
-                            {{-- Service Categories (Enhanced System) --}}
-                            <div class="col-md-6 mb-3" id="enhanced-service-categories" style="display: none;">
+                            {{-- Service Categories --}}
+                            <div class="col-md-6 mb-3" id="enhanced-service-categories">
                                 <label for="service_categories" class="form-label">{{ ___('fees.service_categories') }}</label>
                                 <div class="service-categories-container">
                                     <div class="form-check">
@@ -643,10 +542,8 @@
 $(document).ready(function() {
     let currentBatchId = null;
     let progressInterval = null;
-    let currentSystem = 'enhanced'; // Default to enhanced system
-    
-    // Load system status on page load
-    loadSystemStatus();
+    // Always use enhanced system
+    let currentSystem = 'enhanced';
 
     // Initialize modal event handlers
     $('#feeGenerationModal').on('shown.bs.modal', function() {
@@ -660,10 +557,6 @@ $(document).ready(function() {
             closeOnSelect: false
         });
 
-        // Custom handler for classes selection display
-        $('#classes').on('select2:select select2:unselect', function() {
-            updateClassesDisplay();
-        });
 
         // Initialize Select2 for sections with custom display
         $('#sections').select2({
@@ -675,10 +568,6 @@ $(document).ready(function() {
             closeOnSelect: false
         });
 
-        // Custom handler for sections selection display
-        $('#sections').on('select2:select select2:unselect', function() {
-            updateSectionsDisplay();
-        });
 
         // Initialize Select2 for grades with custom display
         $('#grades').select2({
@@ -706,10 +595,6 @@ $(document).ready(function() {
             closeOnSelect: false
         });
 
-        // Custom handler for fee groups selection display
-        $('#fees_groups').on('select2:select select2:unselect', function() {
-            updateFeeGroupsDisplay();
-        });
     });
 
     // Reset modal when closed
@@ -717,47 +602,7 @@ $(document).ready(function() {
         resetGenerationForm();
     });
 
-    // Select All Classes
-    $('#select-all-classes').on('change', function() {
-        if ($(this).is(':checked')) {
-            $('#classes option').prop('selected', true);
-        } else {
-            $('#classes option').prop('selected', false);
-        }
-        $('#classes').trigger('change');
-        setTimeout(updateClassesDisplay, 100); // Update display after select2 processes
-    });
 
-    // Select All Sections
-    $('#select-all-sections').on('change', function() {
-        if ($(this).is(':checked')) {
-            $('#sections option').prop('selected', true);
-        } else {
-            $('#sections option').prop('selected', false);
-        }
-        $('#sections').trigger('change');
-        setTimeout(updateSectionsDisplay, 100); // Update display after select2 processes
-    });
-
-    // Grade selection toggle functionality
-    $('input[name="selection_method"]').on('change', function() {
-        const method = $(this).val();
-        if (method === 'grade') {
-            $('#class-section-selection').hide();
-            $('#grade-selection').show();
-            // Clear class/section requirements
-            $('#classes').prop('required', false);
-            $('#grades').prop('required', true);
-        } else {
-            $('#class-section-selection').show();
-            $('#grade-selection').hide();
-            // Set class/section requirements
-            $('#classes').prop('required', true);
-            $('#grades').prop('required', false);
-        }
-        // Clear previous selections and counts
-        resetSelectionCounts();
-    });
 
     // Grade selection helpers
     $('#select-all-grades').on('change', function() {
@@ -815,18 +660,7 @@ $(document).ready(function() {
         setTimeout(updateGradesDisplay, 100);
     });
 
-    // System toggle functionality
-    $('#systemToggle').on('change', function() {
-        const targetSystem = $(this).is(':checked') ? 'enhanced' : 'legacy';
-        switchSystem(targetSystem);
-    });
 
-    // Load sections when classes change
-    $('#classes').on('change', function() {
-        const classIds = $(this).val();
-        loadSections(classIds);
-        updateStudentCount();
-    });
 
     // Handle month-year combined dropdown change
     $('#month_year').on('change', function() {
@@ -865,26 +699,6 @@ $(document).ready(function() {
         }
     });
 
-    function loadSections(classIds) {
-        if (!classIds || classIds.length === 0) {
-            $('#sections').html('<option value="">{{ ___("common.select_class_first") }}</option>');
-            return;
-        }
-
-        $.get('{{ route("fees-generation.index") }}/get-sections', {
-            class_ids: classIds
-        }).done(function(response) {
-            if (response.success) {
-                let options = '<option value="">{{ ___("common.all_sections") }}</option>';
-                response.data.forEach(section => {
-                    options += `<option value="${section.id}">${section.name}</option>`;
-                });
-                $('#sections').html(options);
-            }
-        }).fail(function() {
-            showAlert('{{ ___("common.error") }}', 'error');
-        });
-    }
 
     function updateStudentCount() {
         const formData = $('#fee-generation-form').serialize();
@@ -907,26 +721,6 @@ $(document).ready(function() {
             });
     }
 
-    function loadPreview() {
-        const formData = $('#fee-generation-form').serialize();
-        
-        $('#preview-content').html('<div class="text-center"><i class="fa-solid fa-spinner fa-spin"></i> {{ ___("common.loading") }}</div>');
-        $('#preview-section').show();
-
-        $.post('{{ route("fees-generation.preview") }}', formData)
-            .done(function(response) {
-                if (response.success) {
-                    displayPreview(response.data);
-                    $('#generate-all-btn').show().prop('disabled', false);
-                } else {
-                    $('#preview-content').html(`<div class="alert alert-danger">${response.message}</div>`);
-                }
-            })
-            .fail(function(xhr) {
-                const message = xhr.responseJSON?.message || '{{ ___("common.error") }}';
-                $('#preview-content').html(`<div class="alert alert-danger">${message}</div>`);
-            });
-    }
 
     // Store preview data for duplicate checking
     let currentPreviewData = null;
@@ -934,6 +728,22 @@ $(document).ready(function() {
     function displayPreview(data) {
         // Store preview data for duplicate checking
         currentPreviewData = data;
+
+        const isGradeSelection = data.selection_method === 'grade';
+        const breakdownType = isGradeSelection ? 'grade' : 'class';
+        const breakdown = isGradeSelection ? (data.grades_breakdown || {}) : (data.classes_breakdown || {});
+        const classesAffectedText = @json(___('fees.classes_affected'));
+        const gradeDistributionText = @json(___('fees.grade_distribution'));
+        const breakdownLabel = isGradeSelection ? gradeDistributionText : classesAffectedText;
+        const classBreakdownText = @json(___('fees.class_breakdown'));
+        const gradeBreakdownText = @json(___('fees.grade_distribution'));
+        const breakdownTitle = isGradeSelection ? gradeBreakdownText : classBreakdownText;
+        const classColumnLabel = @json(___('academic.class'));
+        const gradeColumnLabel = @json(___('student_info.grade'));
+        const columnLabel = isGradeSelection ? gradeColumnLabel : classColumnLabel;
+        const studentsLabel = @json(___('fees.students'));
+        const amountLabel = @json(___('fees.amount'));
+
         let html = `
             <div class="row">
                 <div class="col-md-4">
@@ -955,8 +765,8 @@ $(document).ready(function() {
                 <div class="col-md-4">
                     <div class="card border-warning">
                         <div class="card-body text-center">
-                            <h3 class="text-warning">${Object.keys(data.classes_breakdown).length}</h3>
-                            <p class="mb-0">{{ ___('fees.classes_affected') }}</p>
+                            <h3 class="text-warning">${Object.keys(breakdown).length}</h3>
+                            <p class="mb-0">${breakdownLabel}</p>
                         </div>
                     </div>
                 </div>
@@ -976,37 +786,27 @@ $(document).ready(function() {
             </div>`;
         }
 
-        html += '<div class="mt-4"><h6>{{ ___("fees.class_breakdown") }}</h6><div class="table-responsive"><table class="table table-sm"><thead><tr><th>{{ ___("academic.class") }}</th><th>{{ ___("fees.students") }}</th><th>{{ ___("fees.amount") }}</th></tr></thead><tbody>';
-        
-        Object.entries(data.classes_breakdown).forEach(([className, breakdown]) => {
-            html += `<tr><td>${className}</td><td>${breakdown.students}</td><td>${formatCurrency(breakdown.amount)}</td></tr>`;
+        html += `<div class="mt-4"><h6>${breakdownTitle}</h6><div class="table-responsive"><table class="table table-sm"><thead><tr><th>${columnLabel}</th><th>${studentsLabel}</th><th>${amountLabel}</th></tr></thead><tbody>`;
+
+        Object.entries(breakdown).forEach(([groupName, groupData]) => {
+            html += `<tr><td>${groupName}</td><td>${groupData.students}</td><td>${formatCurrency(groupData.amount)}</td></tr>`;
         });
         
         html += '</tbody></table></div></div>';
 
+        if (isGradeSelection && data.classes_breakdown && Object.keys(data.classes_breakdown).length > 0) {
+            html += `<div class="mt-4"><h6>${classBreakdownText}</h6><div class="table-responsive"><table class="table table-sm"><thead><tr><th>${classColumnLabel}</th><th>${studentsLabel}</th><th>${amountLabel}</th></tr></thead><tbody>`;
+
+            Object.entries(data.classes_breakdown).forEach(([className, classData]) => {
+                html += `<tr><td>${className}</td><td>${classData.students}</td><td>${formatCurrency(classData.amount)}</td></tr>`;
+            });
+
+            html += '</tbody></table></div></div>';
+        }
+
         $('#preview-content').html(html);
     }
 
-    function startGeneration(generateAll) {
-        const formData = $('#fee-generation-form').serializeArray();
-        
-        $.post('{{ route("fees-generation.generate") }}', formData)
-            .done(function(response) {
-                if (response.success) {
-                    currentBatchId = response.data.batch_id;
-                    // Close generation modal and show progress modal
-                    $('#feeGenerationModal').modal('hide');
-                    $('#progressModal').modal('show');
-                    startProgressTracking(currentBatchId);
-                } else {
-                    showAlert(response.message, 'error');
-                }
-            })
-            .fail(function(xhr) {
-                const message = xhr.responseJSON?.message || '{{ ___("common.error") }}';
-                showAlert(message, 'error');
-            });
-    }
 
     function startProgressTracking(batchId) {
         progressInterval = setInterval(() => {
@@ -1227,81 +1027,12 @@ $(document).ready(function() {
         $('#year').val(currentYear);
         
         // Reset checkboxes
-        $('#select-all-classes').prop('checked', false);
-        $('#select-all-sections').prop('checked', false);
-        
         // Hide sections
         $('#student-count-display').hide();
         $('#preview-section').hide();
         $('#generate-all-btn').hide();
-        
-        // Reset sections dropdown
-        $('#sections').html('<option value="">{{ ___("common.select_class_first") }}</option>');
     }
 
-    // Custom display functions for better UX
-    function updateClassesDisplay() {
-        const $container = $('#classes').next('.select2-container').find('.select2-selection__rendered');
-        const selectedCount = $('#classes').val() ? $('#classes').val().length : 0;
-        
-        if (selectedCount > 3) {
-            // Hide individual selections and show count
-            $container.find('.select2-selection__choice').hide();
-            
-            // Add or update count display
-            let $countDisplay = $container.find('.select2-selection__choice--count');
-            if ($countDisplay.length === 0) {
-                $countDisplay = $('<li class="select2-selection__choice select2-selection__choice--count">' + selectedCount + ' {{ ___("academic.classes_selected") }}</li>');
-                $container.prepend($countDisplay);
-            } else {
-                $countDisplay.text(selectedCount + ' {{ ___("academic.classes_selected") }}');
-            }
-        } else {
-            // Show individual selections
-            $container.find('.select2-selection__choice').show();
-            $container.find('.select2-selection__choice--count').remove();
-        }
-    }
-
-    function updateSectionsDisplay() {
-        const $container = $('#sections').next('.select2-container').find('.select2-selection__rendered');
-        const selectedCount = $('#sections').val() ? $('#sections').val().length : 0;
-        
-        if (selectedCount > 3) {
-            $container.find('.select2-selection__choice').hide();
-            
-            let $countDisplay = $container.find('.select2-selection__choice--count');
-            if ($countDisplay.length === 0) {
-                $countDisplay = $('<li class="select2-selection__choice select2-selection__choice--count">' + selectedCount + ' {{ ___("academic.sections_selected") }}</li>');
-                $container.prepend($countDisplay);
-            } else {
-                $countDisplay.text(selectedCount + ' {{ ___("academic.sections_selected") }}');
-            }
-        } else {
-            $container.find('.select2-selection__choice').show();
-            $container.find('.select2-selection__choice--count').remove();
-        }
-    }
-
-    function updateFeeGroupsDisplay() {
-        const $container = $('#fees_groups').next('.select2-container').find('.select2-selection__rendered');
-        const selectedCount = $('#fees_groups').val() ? $('#fees_groups').val().length : 0;
-        
-        if (selectedCount > 2) {
-            $container.find('.select2-selection__choice').hide();
-            
-            let $countDisplay = $container.find('.select2-selection__choice--count');
-            if ($countDisplay.length === 0) {
-                $countDisplay = $('<li class="select2-selection__choice select2-selection__choice--count">' + selectedCount + ' {{ ___("fees.fee_groups_selected") }}</li>');
-                $container.prepend($countDisplay);
-            } else {
-                $countDisplay.text(selectedCount + ' {{ ___("fees.fee_groups_selected") }}');
-            }
-        } else {
-            $container.find('.select2-selection__choice').show();
-            $container.find('.select2-selection__choice--count').remove();
-        }
-    }
 
     // Cancel generation buttons in table
     $('.cancel-generation').on('click', function() {
@@ -1319,134 +1050,14 @@ $(document).ready(function() {
         }
     });
 
-    // Enhanced Fee System Management Functions
-    function loadSystemStatus() {
-        $.get('{{ route("fees-generation.system-status") }}')
-            .done(function(response) {
-                if (response.success) {
-                    displaySystemStatus(response.data);
-                } else {
-                    $('#system-status-display').html('<div class="col-12 text-center text-danger">Failed to load system status</div>');
-                }
-            })
-            .fail(function() {
-                $('#system-status-display').html('<div class="col-12 text-center text-danger">Error loading system status</div>');
-            });
-    }
-
-    function displaySystemStatus(data) {
-        const compatibility = data.compatibility_report;
-        const statistics = data.usage_statistics;
-        
-        let html = `
-            <div class="col-md-3">
-                <div class="text-center">
-                    <h6 class="text-primary">${statistics.active_system || 'Enhanced'}</h6>
-                    <small class="text-muted">{{ ___('fees.active_system') }}</small>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="text-center">
-                    <h6 class="text-success">${statistics.students_with_services || 0}</h6>
-                    <small class="text-muted">{{ ___('fees.students_with_services') }}</small>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="text-center">
-                    <h6 class="text-info">${statistics.total_active_services || 0}</h6>
-                    <small class="text-muted">{{ ___('fees.total_active_services') }}</small>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="text-center">
-                    <h6 class="${compatibility.migration_ready ? 'text-success' : 'text-warning'}">${compatibility.migration_ready ? '✓' : '⚠'}</h6>
-                    <small class="text-muted">{{ ___('fees.system_compatibility') }}</small>
-                </div>
-            </div>
-        `;
-
-        $('#system-status-display').html(html);
-        
-        // Update system toggle based on current system
-        currentSystem = statistics.active_system === 'Enhanced' ? 'enhanced' : 'legacy';
-        $('#systemToggle').prop('checked', currentSystem === 'enhanced');
-        updateSystemUI();
-    }
-
-    function switchSystem(targetSystem) {
-        if (targetSystem === currentSystem) {
-            return; // No change needed
-        }
-
-        const confirmMessage = targetSystem === 'enhanced' 
-            ? '{{ ___("fees.confirm_switch_to_enhanced") }}' 
-            : '{{ ___("fees.confirm_switch_to_legacy") }}';
-            
-        if (!confirm(confirmMessage)) {
-            // Reset toggle to current system
-            $('#systemToggle').prop('checked', currentSystem === 'enhanced');
-            return;
-        }
-
-        $.post('{{ route("fees-generation.switch-system") }}', {
-            system: targetSystem,
-            _token: '{{ csrf_token() }}'
-        })
-        .done(function(response) {
-            if (response.success) {
-                currentSystem = targetSystem;
-                updateSystemUI();
-                showAlert(response.message, 'success');
-                
-                if (response.warnings && response.warnings.length > 0) {
-                    setTimeout(() => {
-                        showAlert('Warnings: ' + response.warnings.join(', '), 'warning');
-                    }, 2000);
-                }
-                
-                // Reload system status
-                loadSystemStatus();
-            } else {
-                showAlert(response.message, 'error');
-                // Reset toggle
-                $('#systemToggle').prop('checked', currentSystem === 'enhanced');
-            }
-        })
-        .fail(function(xhr) {
-            const message = xhr.responseJSON?.message || '{{ ___("common.error") }}';
-            showAlert(message, 'error');
-            // Reset toggle
-            $('#systemToggle').prop('checked', currentSystem === 'enhanced');
-        });
-    }
-
-    function updateSystemUI() {
-        if (currentSystem === 'enhanced') {
-            $('#legacy-fee-groups').hide();
-            $('#enhanced-service-categories').show();
-            
-            // Update modal title to indicate enhanced system
-            $('#feeGenerationModalLabel').html('<i class="fa-solid fa-cogs me-2"></i>{{ ___("fees.enhanced_fee_generation") }}');
-        } else {
-            $('#enhanced-service-categories').hide();
-            $('#legacy-fee-groups').show();
-            
-            // Update modal title to indicate legacy system
-            $('#feeGenerationModalLabel').html('<i class="fa-solid fa-cogs me-2"></i>{{ ___("fees.legacy_fee_generation") }}');
-        }
-    }
-
-    // Override preview and generation functions to use appropriate system
+    // Simplified preview and generation functions (Enhanced System Only)
     function loadPreview() {
         const formData = $('#fee-generation-form').serialize();
-        const endpoint = currentSystem === 'enhanced' ? 
-            '{{ route("fees-generation.preview-managed") }}' : 
-            '{{ route("fees-generation.preview") }}';
-        
+
         $('#preview-content').html('<div class="text-center"><i class="fa-solid fa-spinner fa-spin"></i> {{ ___("common.loading") }}</div>');
         $('#preview-section').show();
 
-        $.post(endpoint, formData)
+        $.post('{{ route("fees-generation.preview-managed") }}', formData)
             .done(function(response) {
                 if (response.success) {
                     displayPreview(response.data);
@@ -1463,11 +1074,8 @@ $(document).ready(function() {
 
     function startGeneration(generateAll) {
         const formData = $('#fee-generation-form').serializeArray();
-        const endpoint = currentSystem === 'enhanced' ? 
-            '{{ route("fees-generation.generate-managed") }}' : 
-            '{{ route("fees-generation.generate") }}';
-        
-        $.post(endpoint, formData)
+
+        $.post('{{ route("fees-generation.generate-managed") }}', formData)
             .done(function(response) {
                 if (response.success) {
                     currentBatchId = response.data.batch_id;

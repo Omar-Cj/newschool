@@ -14,9 +14,13 @@ use App\Repositories\Academic\SectionRepository;
 use App\Repositories\Academic\ClassSetupRepository;
 use App\Repositories\StudentInfo\StudentRepository;
 use App\Repositories\Fees\FeesMasterRepository;
+use App\Models\StudentInfo\Student;
+use App\Models\Academic\Classes as AcademicClass;
+use App\Models\Fees\FeesType;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
+use Illuminate\Validation\Rule;
 
 class FeesGenerationController extends Controller
 {
@@ -58,11 +62,20 @@ class FeesGenerationController extends Controller
     public function index()
     {
         $data['title'] = ___('fees.fee_generation');
-        $data['classes'] = $this->classRepo->assignedAll();
-        $data['sections'] = [];
-        $data['fees_groups'] = $this->feesMasterRepo->allGroups();
+
+        // Get enhanced service statistics
+        $stats = $this->serviceManager->getUsageStatistics();
+        $data['enhanced_stats'] = $stats;
+
+        // Get total available services
+        $data['total_available_services'] = FeesType::active()->count();
+
+        // Total active classes for dashboard summary
+        $data['total_classes'] = AcademicClass::active()->count();
+
+        // Get service-based generation history
         $data['generations'] = $this->repo->getPaginateAll();
-        
+
         return view('backend.fees.generation.index', compact('data'));
     }
 
@@ -79,16 +92,36 @@ class FeesGenerationController extends Controller
     public function preview(Request $request): JsonResponse
     {
         try {
-            $filters = $request->validate([
-                'classes' => 'nullable|array',
-                'classes.*' => 'exists:classes,id',
-                'sections' => 'nullable|array', 
-                'sections.*' => 'exists:sections,id',
+            $selectionMethod = $request->input('selection_method', 'class_section');
+
+            $rules = [
+                'selection_method' => ['required', Rule::in(['class_section', 'grade'])],
+                'classes' => ['nullable', 'array'],
+                'classes.*' => ['exists:classes,id'],
+                'sections' => ['nullable', 'array'],
+                'sections.*' => ['exists:sections,id'],
+                'grades' => ['nullable', 'array'],
+                'grades.*' => [Rule::in(Student::getAllGrades())],
                 'month' => 'required|integer|between:1,12',
                 'year' => 'required|integer|in:' . date('Y'),
-                'fees_groups' => 'nullable|array',
-                'fees_groups.*' => 'exists:fees_groups,id'
-            ]);
+                'fees_groups' => ['nullable', 'array'],
+                'fees_groups.*' => ['exists:fees_groups,id']
+            ];
+
+            if ($selectionMethod === 'class_section') {
+                $rules['classes'][] = 'required';
+            }
+
+            if ($selectionMethod === 'grade') {
+                $rules['grades'][] = 'required';
+            }
+
+            $filters = $request->validate($rules);
+            $filters['selection_method'] = $selectionMethod;
+            $filters['classes'] = $filters['classes'] ?? [];
+            $filters['sections'] = $filters['sections'] ?? [];
+            $filters['grades'] = $filters['grades'] ?? [];
+            $filters['fees_groups'] = $filters['fees_groups'] ?? [];
 
             $preview = $this->service->generatePreview($filters);
 
@@ -107,20 +140,41 @@ class FeesGenerationController extends Controller
     public function generate(Request $request): JsonResponse
     {
         try {
-            $data = $request->validate([
-                'classes' => 'nullable|array',
-                'classes.*' => 'exists:classes,id',
-                'sections' => 'nullable|array',
-                'sections.*' => 'exists:sections,id', 
+            $selectionMethod = $request->input('selection_method', 'class_section');
+
+            $rules = [
+                'selection_method' => ['required', Rule::in(['class_section', 'grade'])],
+                'classes' => ['nullable', 'array'],
+                'classes.*' => ['exists:classes,id'],
+                'sections' => ['nullable', 'array'],
+                'sections.*' => ['exists:sections,id'],
+                'grades' => ['nullable', 'array'],
+                'grades.*' => [Rule::in(Student::getAllGrades())],
                 'month' => 'required|integer|between:1,12',
                 'year' => 'required|integer|in:' . date('Y'),
-                'fees_groups' => 'nullable|array',
-                'fees_groups.*' => 'exists:fees_groups,id',
-                'selected_students' => 'nullable|array',
-                'selected_students.*' => 'exists:students,id',
+                'fees_groups' => ['nullable', 'array'],
+                'fees_groups.*' => ['exists:fees_groups,id'],
+                'selected_students' => ['nullable', 'array'],
+                'selected_students.*' => ['exists:students,id'],
                 'due_date' => 'nullable|date|after:today',
                 'notes' => 'nullable|string|max:500'
-            ]);
+            ];
+
+            if ($selectionMethod === 'class_section') {
+                $rules['classes'][] = 'required';
+            }
+
+            if ($selectionMethod === 'grade') {
+                $rules['grades'][] = 'required';
+            }
+
+            $data = $request->validate($rules);
+            $data['selection_method'] = $selectionMethod;
+            $data['classes'] = $data['classes'] ?? [];
+            $data['sections'] = $data['sections'] ?? [];
+            $data['grades'] = $data['grades'] ?? [];
+            $data['fees_groups'] = $data['fees_groups'] ?? [];
+            $data['selected_students'] = $data['selected_students'] ?? [];
 
             // Generate batch ID using BatchIdService
             $batchId = $this->batchIdService->generateBatchId();
@@ -272,76 +326,6 @@ class FeesGenerationController extends Controller
         }
     }
 
-    /**
-     * Get system status and compatibility report
-     */
-    public function getSystemStatus(): JsonResponse
-    {
-        try {
-            $report = $this->serviceManager->getSystemCompatibilityReport();
-            $statistics = $this->serviceManager->getUsageStatistics();
-
-            return response()->json([
-                'success' => true,
-                'data' => [
-                    'compatibility_report' => $report,
-                    'usage_statistics' => $statistics
-                ]
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Switch between fee generation systems
-     */
-    public function switchSystem(Request $request): JsonResponse
-    {
-        try {
-            $targetSystem = $request->input('system'); // 'legacy' or 'enhanced'
-            
-            if (!in_array($targetSystem, ['legacy', 'enhanced'])) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Invalid system type. Must be "legacy" or "enhanced".'
-                ], 422);
-            }
-
-            // Validate system switch
-            $validation = $this->serviceManager->validateSystemSwitch($targetSystem);
-            
-            if (!$validation['is_valid']) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Cannot switch to ' . $targetSystem . ' system.',
-                    'errors' => $validation['errors']
-                ], 422);
-            }
-
-            // Perform the switch
-            if ($targetSystem === 'enhanced') {
-                $this->serviceManager->enableEnhancedSystem();
-            } else {
-                $this->serviceManager->enableLegacySystem();
-            }
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Successfully switched to ' . $targetSystem . ' fee system.',
-                'warnings' => $validation['warnings'] ?? []
-            ]);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage()
-            ], 500);
-        }
-    }
 
     /**
      * Generate preview using the active service
@@ -351,8 +335,10 @@ class FeesGenerationController extends Controller
         try {
             // Get all form data and process array parameters
             $filters = [
+                'selection_method' => $request->input('selection_method', 'class_section'),
                 'classes' => $request->input('classes', []),
                 'sections' => $request->input('sections', []),
+                'grades' => $request->input('grades', []),
                 'month' => $request->input('month'),
                 'year' => $request->input('year'),
                 'fees_groups' => $request->input('fees_groups', []),
@@ -411,8 +397,10 @@ class FeesGenerationController extends Controller
     {
         return [
             'batch_id' => $this->batchIdService->generateBatchId(),
+            'selection_method' => $request->input('selection_method', 'class_section'),
             'classes' => $request->input('classes', []),
             'sections' => $request->input('sections', []),
+            'grades' => $request->input('grades', []),
             'month' => $request->input('month'),
             'year' => $request->input('year'),
             'fees_groups' => $request->input('fees_groups', []),
@@ -869,19 +857,24 @@ class FeesGenerationController extends Controller
     {
         try {
             $filters = $request->validate([
-                'grades' => 'required|array',
-                'grades.*' => 'in:KG-1,KG-2,Grade1,Grade2,Grade3,Grade4,Grade5,Grade6,Grade7,Grade8,Form1,Form2,Form3,Form4',
-                'classes' => 'nullable|array',
-                'classes.*' => 'exists:classes,id',
-                'sections' => 'nullable|array',
-                'sections.*' => 'exists:sections,id',
+                'grades' => ['required', 'array'],
+                'grades.*' => [Rule::in(Student::getAllGrades())],
+                'classes' => ['nullable', 'array'],
+                'classes.*' => ['exists:classes,id'],
+                'sections' => ['nullable', 'array'],
+                'sections.*' => ['exists:sections,id'],
                 'month' => 'required|integer|between:1,12',
                 'year' => 'required|integer|in:' . date('Y'),
-                'fees_groups' => 'nullable|array',
-                'fees_groups.*' => 'exists:fees_groups,id'
+                'fees_groups' => ['nullable', 'array'],
+                'fees_groups.*' => ['exists:fees_groups,id']
             ]);
 
-            $preview = $this->service->generatePreviewByGrades($filters);
+            $filters['selection_method'] = 'grade';
+            $filters['classes'] = $filters['classes'] ?? [];
+            $filters['sections'] = $filters['sections'] ?? [];
+            $filters['fees_groups'] = $filters['fees_groups'] ?? [];
+
+            $preview = $this->service->generatePreview($filters);
 
             return response()->json([
                 'success' => true,
@@ -902,27 +895,33 @@ class FeesGenerationController extends Controller
     {
         try {
             $data = $request->validate([
-                'grades' => 'required|array',
-                'grades.*' => 'in:KG-1,KG-2,Grade1,Grade2,Grade3,Grade4,Grade5,Grade6,Grade7,Grade8,Form1,Form2,Form3,Form4',
-                'classes' => 'nullable|array',
-                'classes.*' => 'exists:classes,id',
-                'sections' => 'nullable|array',
-                'sections.*' => 'exists:sections,id',
+                'grades' => ['required', 'array'],
+                'grades.*' => [Rule::in(Student::getAllGrades())],
+                'classes' => ['nullable', 'array'],
+                'classes.*' => ['exists:classes,id'],
+                'sections' => ['nullable', 'array'],
+                'sections.*' => ['exists:sections,id'],
                 'month' => 'required|integer|between:1,12',
                 'year' => 'required|integer|in:' . date('Y'),
-                'fees_groups' => 'required|array',
-                'fees_groups.*' => 'exists:fees_groups,id',
-                'selected_students' => 'nullable|array',
-                'selected_students.*' => 'exists:students,id',
+                'fees_groups' => ['required', 'array'],
+                'fees_groups.*' => ['exists:fees_groups,id'],
+                'selected_students' => ['nullable', 'array'],
+                'selected_students.*' => ['exists:students,id'],
                 'notes' => 'nullable|string|max:500'
             ]);
+
+            $data['selection_method'] = 'grade';
+            $data['classes'] = $data['classes'] ?? [];
+            $data['sections'] = $data['sections'] ?? [];
+            $data['fees_groups'] = $data['fees_groups'] ?? [];
+            $data['selected_students'] = $data['selected_students'] ?? [];
 
             // Add required data for generation
             $data['batch_id'] = $this->batchIdService->generateBatchId();
             $data['created_by'] = auth()->id();
             $data['school_id'] = auth()->user()->school_id ?? 1;
 
-            $generation = $this->service->generateFeesByGrades($data);
+            $generation = $this->service->generateFees($data);
 
             return response()->json([
                 'success' => true,
@@ -947,19 +946,23 @@ class FeesGenerationController extends Controller
     {
         try {
             $filters = $request->validate([
-                'grades' => 'required|array',
-                'grades.*' => 'in:KG-1,KG-2,Grade1,Grade2,Grade3,Grade4,Grade5,Grade6,Grade7,Grade8,Form1,Form2,Form3,Form4',
-                'classes' => 'nullable|array',
-                'classes.*' => 'exists:classes,id',
-                'sections' => 'nullable|array',
-                'sections.*' => 'exists:sections,id'
+                'grades' => ['required', 'array'],
+                'grades.*' => [Rule::in(Student::getAllGrades())],
+                'classes' => ['nullable', 'array'],
+                'classes.*' => ['exists:classes,id'],
+                'sections' => ['nullable', 'array'],
+                'sections.*' => ['exists:sections,id']
             ]);
 
-            $count = $this->service->getStudentCountByGrades($filters);
+            $filters['selection_method'] = 'grade';
+            $filters['classes'] = $filters['classes'] ?? [];
+            $filters['sections'] = $filters['sections'] ?? [];
+
+            $data = $this->service->getStudentCountByGrades($filters);
 
             return response()->json([
                 'success' => true,
-                'data' => ['count' => $count]
+                'data' => $data
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -1035,8 +1038,8 @@ class FeesGenerationController extends Controller
     {
         try {
             $data = $request->validate([
-                'grades' => 'required|array',
-                'grades.*' => 'in:KG-1,KG-2,Grade1,Grade2,Grade3,Grade4,Grade5,Grade6,Grade7,Grade8,Form1,Form2,Form3,Form4',
+                'grades' => ['required', 'array'],
+                'grades.*' => [Rule::in(Student::getAllGrades())],
                 'fees_groups' => 'required|array',
                 'fees_groups.*' => 'exists:fees_groups,id',
                 'month' => 'required|integer|between:1,12',
@@ -1065,8 +1068,12 @@ class FeesGenerationController extends Controller
             $data['batch_id'] = $this->batchIdService->generateBatchId();
             $data['created_by'] = auth()->id();
             $data['school_id'] = auth()->user()->school_id ?? 1;
+            $data['selection_method'] = 'grade';
+            $data['classes'] = $data['classes'] ?? [];
+            $data['sections'] = $data['sections'] ?? [];
+            $data['selected_students'] = $data['selected_students'] ?? [];
 
-            $generation = $this->service->generateFeesByGrades($data);
+            $generation = $this->service->generateFees($data);
 
             return response()->json([
                 'success' => true,
