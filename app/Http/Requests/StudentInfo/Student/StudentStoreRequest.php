@@ -57,7 +57,6 @@ class StudentStoreRequest extends FormRequest
             'services' => 'nullable|array',
             'services.*.fee_type_id' => 'required_with:services.*|exists:fees_types,id',
             'services.*.amount' => 'required_with:services.*|numeric|min:0',
-            'services.*.due_date' => 'nullable|date',
             'services.*.discount_type' => 'required_with:services.*|in:none,percentage,fixed',
             'services.*.discount_value' => 'nullable|numeric|min:0',
             'services.*.is_active' => 'required_with:services.*|boolean'

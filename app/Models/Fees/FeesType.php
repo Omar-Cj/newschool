@@ -19,7 +19,6 @@ class FeesType extends BaseModel
         'description',
         'academic_level',
         'amount',
-        'due_date_offset',
         'is_mandatory_for_level',
         'category',
         'fee_frequency',
@@ -31,7 +30,6 @@ class FeesType extends BaseModel
         'amount' => 'decimal:2',
         'is_mandatory_for_level' => 'boolean',
         'is_prorated' => 'boolean',
-        'due_date_offset' => 'integer',
         'status' => 'integer'
     ];
 
@@ -94,10 +92,6 @@ class FeesType extends BaseModel
     }
 
     // Helper methods
-    public function calculateDueDate(Carbon $termStart): Carbon
-    {
-        return $termStart->copy()->addDays($this->due_date_offset);
-    }
 
     public function isApplicableFor(string $academicLevel): bool
     {

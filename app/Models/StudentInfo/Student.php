@@ -412,7 +412,7 @@ class Student extends BaseModel
     public function getServicesSummary(int $academicYearId = null): array
     {
         $services = $this->activeServices($academicYearId)->get();
-        
+
         return [
             'total_services' => $services->count(),
             'total_original_amount' => $services->sum('amount'),
@@ -426,13 +426,7 @@ class Student extends BaseModel
                     'total_amount' => $categoryServices->sum('final_amount'),
                     'services' => $categoryServices->pluck('feeType.name')->toArray()
                 ];
-            })->toArray(),
-            'overdue_services' => $services->filter(function ($service) {
-                return $service->isOverdue();
-            })->count(),
-            'due_soon_services' => $services->filter(function ($service) {
-                return $service->isDueSoon();
-            })->count()
+            })->toArray()
         ];
     }
 }

@@ -18,7 +18,6 @@ class StudentService extends BaseModel
         'fee_type_id',
         'academic_year_id',
         'amount',
-        'due_date',
         'discount_type',
         'discount_value',
         'final_amount',
@@ -33,7 +32,6 @@ class StudentService extends BaseModel
         'amount' => 'decimal:2',
         'discount_value' => 'decimal:2',
         'final_amount' => 'decimal:2',
-        'due_date' => 'date',
         'subscription_date' => 'datetime',
         'is_active' => 'boolean'
     ];
@@ -90,15 +88,6 @@ class StudentService extends BaseModel
         return $query->where('student_id', $studentId);
     }
 
-    public function scopeDueWithin($query, int $days)
-    {
-        return $query->where('due_date', '<=', now()->addDays($days));
-    }
-
-    public function scopeOverdue($query)
-    {
-        return $query->where('due_date', '<', now());
-    }
 
     public function scopeWithDiscount($query)
     {
@@ -163,15 +152,6 @@ class StudentService extends BaseModel
         return $this->discount_type !== 'none' && $this->discount_value > 0;
     }
 
-    public function isOverdue(): bool
-    {
-        return $this->due_date && $this->due_date->isPast();
-    }
-
-    public function isDueSoon(int $days = 7): bool
-    {
-        return $this->due_date && $this->due_date->between(now(), now()->addDays($days));
-    }
 
     // Helper methods for discount information
     public function getDiscountSummary(): string
@@ -236,8 +216,6 @@ class StudentService extends BaseModel
             'final_amount' => $this->final_amount,
             'savings' => $this->getDiscountAmount(),
             'status' => $this->is_active ? 'Active' : 'Inactive',
-            'due_date' => $this->due_date?->format('Y-m-d'),
-            'overdue' => $this->isOverdue(),
             'notes' => $this->notes
         ];
     }
@@ -260,14 +238,6 @@ class StudentService extends BaseModel
         ]);
     }
 
-    public function updateDueDate(Carbon $newDueDate, string $reason = null): bool
-    {
-        return $this->update([
-            'due_date' => $newDueDate,
-            'notes' => $reason ? ($this->notes ? $this->notes . ' | Due date changed: ' . $reason : 'Due date changed: ' . $reason) : $this->notes,
-            'updated_by' => auth()->id()
-        ]);
-    }
 
     // Accessors for better formatting
     public function getFormattedAmountAttribute(): string
@@ -285,8 +255,4 @@ class StudentService extends BaseModel
         return '$' . number_format($this->getDiscountAmount(), 2);
     }
 
-    public function getDaysUntilDueAttribute(): ?int
-    {
-        return $this->due_date ? now()->diffInDays($this->due_date, false) : null;
-    }
 }

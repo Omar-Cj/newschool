@@ -287,7 +287,6 @@ class FeesGenerationService
                 'fine_amount' => 0, // No fine for bulk generation
                 'generation_batch_id' => $batchId,
                 'generation_method' => 'bulk',
-                'due_date' => $data['due_date'] ?? Carbon::parse($data['year'] . '-' . $data['month'] . '-01')->endOfMonth(),
                 'late_fee_applied' => 0,
                 'discount_applied' => $amount['discount']
             ]);

@@ -308,11 +308,6 @@
                                 <input type="hidden" name="year" id="year" value="{{ date('Y') }}">
                             </div>
 
-                            {{-- Due Date --}}
-                            <div class="col-md-6 mb-3">
-                                <label for="due_date" class="form-label">{{ ___('fees.due_date') }}</label>
-                                <input type="date" name="due_date" id="due_date" class="form-control" min="{{ date('Y-m-d', strtotime('+1 day')) }}">
-                            </div>
                         </div>
 
                         <div class="row mb-3">

@@ -503,7 +503,6 @@
                                                     <th scope="col">{{ ___('fees.service_type') ?? 'Service Type' }}</th>
                                                     <th scope="col">{{ ___('fees.category') ?? 'Category' }}</th>
                                                     <th scope="col">{{ ___('fees.amount') ?? 'Amount' }}</th>
-                                                    <th scope="col">{{ ___('fees.due_date') ?? 'Due Date' }}</th>
                                                     <th scope="col">{{ ___('fees.discount') ?? 'Discount' }}</th>
                                                     <th scope="col">{{ ___('common.status') ?? 'Status' }}</th>
                                                     <th scope="col">{{ ___('common.action') ?? 'Action' }}</th>
@@ -511,7 +510,7 @@
                                             </thead>
                                             <tbody id="servicesTableBody">
                                                 <tr id="no-services-row">
-                                                    <td colspan="7" class="text-center text-muted">
+                                                    <td colspan="6" class="text-center text-muted">
                                                         {{ ___('fees.no_services_assigned') ?? 'No services assigned yet. Click "Add Service" to add services manually. Mandatory services will be assigned automatically when the student is saved.' }}
                                                     </td>
                                                 </tr>
@@ -690,14 +689,9 @@
                     <span class="service-category">${defaultCategory}</span>
                 </td>
                 <td>
-                    <input type="number" name="services[${window.serviceRowCounter}][amount]" 
-                           class="form-control ot-input service-amount" 
+                    <input type="number" name="services[${window.serviceRowCounter}][amount]"
+                           class="form-control ot-input service-amount"
                            value="${defaultAmount}" step="0.01" min="0" required>
-                </td>
-                <td>
-                    <input type="date" name="services[${window.serviceRowCounter}][due_date]" 
-                           class="form-control ot-input" 
-                           value="">
                 </td>
                 <td>
                     <div class="d-flex align-items-center gap-2">
@@ -1011,7 +1005,6 @@
                                             </p>
                                             <div class="d-flex justify-content-between align-items-center">
                                                 <span class="badge badge-success">{{ setting('currency_symbol') }}${service.amount}</span>
-                                                ${service.due_date ? `<small class="text-muted">Due: ${service.due_date}</small>` : ''}
                                             </div>
                                         </div>
                                     </div>

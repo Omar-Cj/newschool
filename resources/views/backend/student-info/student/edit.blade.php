@@ -444,7 +444,6 @@
                                                     <th scope="col">{{ ___('fees.service_type') ?? 'Service Type' }}</th>
                                                     <th scope="col">{{ ___('fees.category') ?? 'Category' }}</th>
                                                     <th scope="col">{{ ___('fees.amount') ?? 'Amount' }}</th>
-                                                    <th scope="col">{{ ___('fees.due_date') ?? 'Due Date' }}</th>
                                                     <th scope="col">{{ ___('fees.discount') ?? 'Discount' }}</th>
                                                     <th scope="col">{{ ___('common.status') ?? 'Status' }}</th>
                                                     <th scope="col">{{ ___('common.action') ?? 'Action' }}</th>
@@ -481,11 +480,6 @@
                                                                    class="form-control ot-input service-amount" 
                                                                    value="{{ $service->amount }}" 
                                                                    step="0.01" min="0" required>
-                                                        </td>
-                                                        <td>
-                                                            <input type="date" name="services[{{ $key }}][due_date]" 
-                                                                   class="form-control ot-input" 
-                                                                   value="{{ $service->due_date ? \Carbon\Carbon::parse($service->due_date)->format('Y-m-d') : '' }}">
                                                         </td>
                                                         <td>
                                                             <div class="d-flex align-items-center gap-2">
@@ -694,11 +688,6 @@
                     <input type="number" name="services[${window.serviceRowCounter}][amount]" 
                            class="form-control ot-input service-amount" 
                            value="0" step="0.01" min="0" required>
-                </td>
-                <td>
-                    <input type="date" name="services[${window.serviceRowCounter}][due_date]" 
-                           class="form-control ot-input" 
-                           value="">
                 </td>
                 <td>
                     <div class="d-flex align-items-center gap-2">

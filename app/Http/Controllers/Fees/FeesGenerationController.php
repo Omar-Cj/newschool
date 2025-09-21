@@ -156,7 +156,6 @@ class FeesGenerationController extends Controller
                 'fees_groups.*' => ['exists:fees_groups,id'],
                 'selected_students' => ['nullable', 'array'],
                 'selected_students.*' => ['exists:students,id'],
-                'due_date' => 'nullable|date|after:today',
                 'notes' => 'nullable|string|max:500'
             ];
 
@@ -406,8 +405,6 @@ class FeesGenerationController extends Controller
             'fees_groups' => $request->input('fees_groups', []),
             'selected_students' => $request->input('selected_students', []),
             'notes' => $request->input('notes'),
-            'due_date' => $request->input('due_date') ? 
-                Carbon::parse($request->input('due_date'))->toDateString() : null,
             'created_by' => auth()->id(),
             'school_id' => auth()->user()->school_id ?? null
         ];
@@ -729,7 +726,6 @@ class FeesGenerationController extends Controller
                 'fg.created_at as generation_date',
                 'fg.status as generation_status',
                 'fc.amount',
-                'fc.due_date',
                 'fc.payment_method',
                 'fc.billing_period',
                 'fc.academic_year_id',
@@ -761,11 +757,8 @@ class FeesGenerationController extends Controller
                     $query->whereNotNull('fc.payment_method');
                     break;
                 case 'unpaid':
-                    $query->whereNull('fc.payment_method');
-                    break;
                 case 'overdue':
-                    $query->whereNull('fc.payment_method')
-                          ->where('fc.due_date', '<', now());
+                    $query->whereNull('fc.payment_method');
                     break;
             }
         }

@@ -183,7 +183,6 @@
                                     <th>{{ ___('fees.service_name') }}</th>
                                     <th>{{ ___('fees.category') }}</th>
                                     <th>{{ ___('fees.type') }}</th>
-                                    <th>{{ ___('fees.due_date') }}</th>
                                     <th>{{ ___('fees.amount') }} ({{ $currency }})</th>
                                     <th>{{ ___('fees.discount') }} ({{ $currency }})</th>
                                     <th>{{ ___('fees.final_amount') }} ({{ $currency }})</th>
@@ -193,7 +192,7 @@
                             </thead>
                             <tbody>
                                 @foreach ($fees['services'] ?? [] as $key => $service)
-                                    <tr class="service-row" data-service-type="{{ $service->feeType->is_mandatory_for_level ? 'mandatory' : 'optional' }}" data-overdue="{{ $service->due_date < now() ? '1' : '0' }}">
+                                    <tr class="service-row" data-service-type="{{ $service->feeType->is_mandatory_for_level ? 'mandatory' : 'optional' }}">
                                         <td>{{ $key + 1 }}</td>
                                         <td>
                                             <strong>{{ $service->feeType->name }}</strong>
@@ -205,12 +204,6 @@
                                             <span class="badge badge-info">{{ ucfirst($service->feeType->category) }}</span>
                                         </td>
                                         <td>{{ ___('fees.service_subscription') }}</td>
-                                        <td>
-                                            {{ $service->due_date ? $service->due_date->format('M d, Y') : 'N/A' }}
-                                            @if($service->due_date && $service->due_date < now())
-                                                <span class="text-danger ms-1">{{ ___('fees.overdue') }}</span>
-                                            @endif
-                                        </td>
                                         <td>{{ $currency }} {{ number_format($service->amount, 2) }}</td>
                                         <td>
                                             @if($service->discount_type)
@@ -285,7 +278,6 @@
                                     <th>{{ ___('common.Si') }}</th>
                                     <th>{{ ___('fees.group') }}</th>
                                     <th>{{ ___('fees.type') }}</th>
-                                    <th>{{ ___('fees.due_date') }}</th>
                                     <th>{{ ___('fees.amount') }} ({{ $currency }})</th>
                                     <th>{{ ___('fees.Discount') }} ({{ $currency }})</th>
                                     <th>{{ ___('tax.Tax') }} ({{ $currency }})</th>
@@ -302,7 +294,6 @@
                                         <td>{{ $key + 1 }}</td>
                                         <td>{{ @$item->feesMaster->group->name }}</td>
                                         <td>{{ @$item->feesMaster->type->name }}</td>
-                                        <td>{{ dateFormat(@$item->feesMaster->due_date) }}</td>
                                         <td>
                                             {{ number_format(@$item->feesMaster->amount ?? 0, 2) }}
                                             @if (date('Y-m-d') > @$item->feesMaster->date && (!@$item->feesCollect || !@$item->feesCollect->isPaid()))
@@ -336,11 +327,7 @@
                                         </td>
                                         <td>{{ @$item->feesMaster->percentage ?? 0 }}</td>
                                         <td>
-                                            @if (date('Y-m-d') > @$item->feesMaster->due_date)
-                                                {{ number_format(@$item->feesMaster->fine_amount ?? 0, 2) }}
-                                            @else
-                                                0
-                                            @endif
+                                            {{ number_format(@$item->feesMaster->fine_amount ?? 0, 2) }}
                                         </td>
                                     </tr>
                                 @endforeach
@@ -411,7 +398,6 @@
                                         <thead class="table-light">
                                             <tr>
                                                 <th>Service</th>
-                                                <th>Due Date</th>
                                                 <th>Amount ({{ $currency }})</th>
                                                 <th>Discount ({{ $currency }})</th>
                                                 <th>Status</th>
@@ -424,12 +410,6 @@
                                                     <td>
                                                         <strong>{{ $fee->feeType->name ?? 'Unknown Service' }}</strong>
                                                         <small class="d-block text-muted">{{ ucfirst($fee->feeType->category ?? 'N/A') }}</small>
-                                                    </td>
-                                                    <td>
-                                                        {{ $fee->due_date ? $fee->due_date->format('M d, Y') : 'N/A' }}
-                                                        @if($fee->due_date && $fee->due_date->isPast() && !$fee->payment_method)
-                                                            <span class="badge bg-danger ms-1">Overdue</span>
-                                                        @endif
                                                     </td>
                                                     <td>{{ $currency }} {{ number_format($fee->amount, 2) }}</td>
                                                     <td>

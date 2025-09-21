@@ -111,7 +111,6 @@ class StudentServiceManager
             'fee_type_id' => $feeType->id,
             'academic_year_id' => $academicYearId,
             'amount' => $options['amount'] ?? $feeType->amount,
-            'due_date' => $options['due_date'] ?? $feeType->calculateDueDate($termStart),
             'final_amount' => $options['amount'] ?? $feeType->amount,
             'subscription_date' => now(),
             'is_active' => $options['is_active'] ?? true,
@@ -467,7 +466,7 @@ class StudentServiceManager
             ->where('academic_year_id', $academicYearId)
             ->where('is_active', true)
             ->with(['feeType', 'academicYear'])
-            ->orderBy('due_date')
+            ->orderBy('subscription_date')
             ->get();
     }
 

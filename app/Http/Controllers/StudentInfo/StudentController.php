@@ -244,11 +244,6 @@ class StudentController extends Controller
                         return $fee->billing_period;
                     }
 
-                    // For legacy fees without billing period, infer from due date
-                    if ($fee->due_date) {
-                        return \App\Models\Fees\FeesCollect::inferBillingPeriodFromDueDate($fee->due_date);
-                    }
-
                     return 'unknown';
                 });
 
