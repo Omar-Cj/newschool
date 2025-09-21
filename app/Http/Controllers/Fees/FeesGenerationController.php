@@ -19,6 +19,7 @@ use App\Models\Academic\Classes as AcademicClass;
 use App\Models\Fees\FeesType;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Schema;
 use Carbon\Carbon;
 use Illuminate\Validation\Rule;
 
@@ -62,16 +63,25 @@ class FeesGenerationController extends Controller
     public function index()
     {
         $data['title'] = ___('fees.fee_generation');
+        $branchId = auth()->user()->branch_id ?? null;
 
         // Get enhanced service statistics
-        $stats = $this->serviceManager->getUsageStatistics();
+        $stats = $this->serviceManager->getUsageStatistics($branchId);
         $data['enhanced_stats'] = $stats;
 
         // Get total available services
-        $data['total_available_services'] = FeesType::active()->count();
+        $data['total_available_services'] = FeesType::active()
+            ->when($branchId && Schema::hasColumn('fees_types', 'branch_id'), function ($query) use ($branchId) {
+                $query->where('branch_id', $branchId);
+            })
+            ->count();
 
         // Total active classes for dashboard summary
-        $data['total_classes'] = AcademicClass::active()->count();
+        $data['total_classes'] = AcademicClass::active()
+            ->when($branchId && Schema::hasColumn('classes', 'branch_id'), function ($query) use ($branchId) {
+                $query->where('branch_id', $branchId);
+            })
+            ->count();
 
         // Get service-based generation history
         $data['generations'] = $this->repo->getPaginateAll();
@@ -421,7 +431,6 @@ class FeesGenerationController extends Controller
                 'academic_year_id' => 'nullable|integer',
                 'class_ids' => 'nullable|array',
                 'section_ids' => 'nullable|array',
-                'service_categories' => 'nullable|array',
                 'fee_type_ids' => 'nullable|array',
                 'include_one_time_fees' => 'nullable|boolean'
             ]);
@@ -456,7 +465,6 @@ class FeesGenerationController extends Controller
                 'academic_year_id' => 'nullable|integer',
                 'class_ids' => 'nullable|array',
                 'section_ids' => 'nullable|array',
-                'service_categories' => 'nullable|array',
                 'fee_type_ids' => 'nullable|array',
                 'include_one_time_fees' => 'nullable|boolean',
                 'use_prorated' => 'nullable|boolean',
@@ -499,7 +507,6 @@ class FeesGenerationController extends Controller
                 'academic_year_id' => 'nullable|integer',
                 'class_ids' => 'nullable|array',
                 'section_ids' => 'nullable|array',
-                'service_categories' => 'nullable|array',
                 'use_prorated' => 'nullable|boolean'
             ]);
 
@@ -631,10 +638,6 @@ class FeesGenerationController extends Controller
 
         if ($request->section_ids) {
             $filters['section_ids'] = $request->section_ids;
-        }
-
-        if ($request->service_categories) {
-            $filters['service_categories'] = $request->service_categories;
         }
 
         if ($request->fee_type_ids) {

@@ -311,47 +311,12 @@
                         </div>
 
                         <div class="row mb-3">
-                            {{-- Service Categories --}}
-                            <div class="col-md-6 mb-3" id="enhanced-service-categories">
-                                <label for="service_categories" class="form-label">{{ ___('fees.service_categories') }}</label>
-                                <div class="service-categories-container">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="mandatory-services" checked disabled>
-                                        <label class="form-check-label" for="mandatory-services">
-                                            <strong>{{ ___('fees.mandatory_services') }}</strong>
-                                            <small class="d-block text-muted">{{ ___('fees.automatically_assigned') }}</small>
-                                        </label>
-                                    </div>
-                                    <div id="optional-service-categories">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" value="academic" name="service_categories[]" id="academic-services">
-                                            <label class="form-check-label" for="academic-services">
-                                                {{ ___('fees.academic_services') }}
-                                            </label>
-                                        </div>
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" value="extracurricular" name="service_categories[]" id="extracurricular-services">
-                                            <label class="form-check-label" for="extracurricular-services">
-                                                {{ ___('fees.extracurricular_services') }}
-                                            </label>
-                                        </div>
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" value="transportation" name="service_categories[]" id="transportation-services">
-                                            <label class="form-check-label" for="transportation-services">
-                                                {{ ___('fees.transportation_services') }}
-                                            </label>
-                                        </div>
-                                    </div>
-                                </div>
-                                <small class="text-muted">{{ ___('fees.select_optional_services') }}</small>
+                            {{-- Notes --}}
+                            <div class="col-md-12 mb-3">
+                                <label for="notes" class="form-label">{{ ___('common.notes') }}</label>
+                                <textarea name="notes" id="notes" class="form-control" rows="2" placeholder="{{ ___('fees.generation_notes_placeholder') }}"></textarea>
                             </div>
-
-                                            {{-- Notes --}}
-                            <div class="col-md-6 mb-3">
-                                                <label for="notes" class="form-label">{{ ___('common.notes') }}</label>
-                                                <textarea name="notes" id="notes" class="form-control" rows="2" placeholder="{{ ___('fees.generation_notes_placeholder') }}"></textarea>
                         </div>
-                    </div>
 
                     {{-- Student Count Display --}}
                     <div class="row mb-3" id="student-count-display" style="display: none;">

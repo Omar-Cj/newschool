@@ -7,6 +7,7 @@ use Modules\Journals\Entities\Journal;
 use Modules\MultiBranch\Entities\Branch;
 use App\Traits\ReturnFormatTrait;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
 
 class JournalRepository implements JournalInterface
 {
@@ -139,7 +140,7 @@ class JournalRepository implements JournalInterface
         }
     }
 
-    public function getJournalsForDropdown($schoolId = null)
+    public function getJournalsForDropdown($schoolId = null, $branchId = null)
     {
         $query = $this->model->active();
 
@@ -147,6 +148,12 @@ class JournalRepository implements JournalInterface
             $query->forSchool($schoolId);
         } else if (Auth::user() && Auth::user()->school_id) {
             $query->forSchool(Auth::user()->school_id);
+        }
+
+        $effectiveBranchId = $branchId ?? (Auth::user()->branch_id ?? null);
+
+        if ($effectiveBranchId && Schema::hasColumn($this->model->getTable(), 'branch_id')) {
+            $query->byBranch($effectiveBranchId);
         }
 
         return $query->with('branch')->select('id', 'name', 'branch', 'branch_id')->get()->map(function ($journal) {

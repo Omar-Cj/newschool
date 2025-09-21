@@ -132,7 +132,10 @@ class JournalController extends Controller
      */
     public function getJournalsDropdown(Request $request)
     {
-        $journals = $this->repo->getJournalsForDropdown($request->school_id);
+        $journals = $this->repo->getJournalsForDropdown(
+            $request->school_id,
+            $request->branch_id
+        );
         return response()->json($journals);
     }
 

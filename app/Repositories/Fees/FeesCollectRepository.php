@@ -17,6 +17,7 @@ use App\Interfaces\Fees\FeesMasterInterface;
 use App\Interfaces\Fees\FeesCollectInterface;
 use App\Models\Accounts\AccountHead;
 use App\Models\StudentInfo\SessionClassStudent;
+use Illuminate\Support\Facades\Schema;
 
 class FeesCollectRepository implements FeesCollectInterface
 {
@@ -50,7 +51,14 @@ class FeesCollectRepository implements FeesCollectInterface
 
             // Get journal information for response
             if ($request->journal_id) {
-                $journal = \Modules\Journals\Entities\Journal::find($request->journal_id);
+                $journalQuery = \Modules\Journals\Entities\Journal::query()->where('id', $request->journal_id);
+
+                $branchId = Auth::user()->branch_id ?? null;
+                if ($branchId && Schema::hasColumn('journals', 'branch_id')) {
+                    $journalQuery->where('branch_id', $branchId);
+                }
+
+                $journal = $journalQuery->first();
             }
 
             // Handle new modal payment processing

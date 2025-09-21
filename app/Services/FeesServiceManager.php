@@ -3,9 +3,12 @@
 namespace App\Services;
 
 use App\Models\Fees\FeesGeneration;
+use App\Models\Fees\FeesCollect;
+use App\Models\StudentService;
 use App\Services\FeesGenerationService;
 use App\Services\EnhancedFeesGenerationService;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Schema;
 
 class FeesServiceManager
 {
@@ -204,29 +207,82 @@ class FeesServiceManager
     /**
      * Get service usage statistics
      */
-    public function getUsageStatistics(): array
+    public function getUsageStatistics(?int $branchId = null): array
     {
-        $activeServices = \DB::table('student_services')->where('is_active', true)->count();
-        $studentsWithServices = \DB::table('student_services')->distinct('student_id')->count();
-        
+        $branchId ??= auth()->user()->branch_id ?? null;
+
+        $hasStudentServiceBranch = Schema::hasColumn('student_services', 'branch_id');
+        $hasFeesCollectBranch = Schema::hasColumn('fees_collects', 'branch_id');
+        $hasFeesGenerationBranch = Schema::hasColumn('fees_generations', 'branch_id');
+
+        $studentServiceQuery = StudentService::query()
+            ->when($branchId, function ($query) use ($branchId, $hasStudentServiceBranch) {
+                if ($hasStudentServiceBranch) {
+                    $query->where('branch_id', $branchId);
+                } else {
+                    $query->whereHas('student', function ($studentQuery) use ($branchId) {
+                        $studentQuery->where('branch_id', $branchId);
+                    });
+                }
+            });
+
+        $activeServices = (clone $studentServiceQuery)
+            ->where('is_active', true)
+            ->count();
+
+        $studentsWithServices = (clone $studentServiceQuery)
+            ->distinct('student_id')
+            ->count('student_id');
+
+        $totalServices = (clone $studentServiceQuery)->count();
+
+        $feesGenerationQuery = FeesGeneration::query()
+            ->when($branchId, function ($query) use ($branchId, $hasFeesGenerationBranch) {
+                if ($hasFeesGenerationBranch) {
+                    $query->where('branch_id', $branchId);
+                } else {
+                    $query->whereHas('feesCollects.student', function ($studentQuery) use ($branchId) {
+                        $studentQuery->where('branch_id', $branchId);
+                    });
+                }
+            });
+
+        $totalGenerations = (clone $feesGenerationQuery)->count();
+
+        $feesCollectQuery = FeesCollect::query()
+            ->when($branchId, function ($query) use ($branchId, $hasFeesCollectBranch) {
+                if ($hasFeesCollectBranch) {
+                    $query->where('branch_id', $branchId);
+                } else {
+                    $query->whereHas('student', function ($studentQuery) use ($branchId) {
+                        $studentQuery->where('branch_id', $branchId);
+                    });
+                }
+            });
+
+        $legacyCollections = (clone $feesCollectQuery)
+            ->where(function ($query) {
+                $query->whereNull('generation_method')
+                    ->orWhere('generation_method', 'legacy');
+            })
+            ->count();
+
+        $enhancedCollections = (clone $feesCollectQuery)
+            ->whereIn('generation_method', ['service_based', 'automated'])
+            ->count();
+
         return [
             'active_system' => $this->isEnhancedSystemEnabled() ? 'Enhanced' : 'Legacy',
             'students_with_services' => $studentsWithServices,
             'total_active_services' => $activeServices,
             'legacy_system' => [
-                'total_generations' => \DB::table('fees_generations')->count(),
-                'total_collections' => \DB::table('fees_collects')
-                    ->whereNull('generation_method')
-                    ->orWhere('generation_method', 'legacy')
-                    ->count()
+                'total_generations' => $totalGenerations,
+                'total_collections' => $legacyCollections,
             ],
             'enhanced_system' => [
-                'total_services' => \Schema::hasTable('student_services') ? 
-                    \DB::table('student_services')->count() : 0,
-                'total_collections' => \DB::table('fees_collects')
-                    ->whereIn('generation_method', ['service_based', 'automated'])
-                    ->count()
-            ]
+                'total_services' => $totalServices,
+                'total_collections' => $enhancedCollections,
+            ],
         ];
     }
 }

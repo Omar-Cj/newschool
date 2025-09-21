@@ -26,6 +26,7 @@ class FeesGeneration extends BaseModel
         'completed_at',
         'created_by',
         'school_id',
+        'branch_id',
     ];
 
     protected $casts = [
@@ -38,6 +39,11 @@ class FeesGeneration extends BaseModel
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(\Modules\MultiBranch\Entities\Branch::class);
     }
 
     // Note: School relationship can be added if School model exists
@@ -69,6 +75,18 @@ class FeesGeneration extends BaseModel
     public function scopeInProgress($query)
     {
         return $query->whereIn('status', ['pending', 'processing']);
+    }
+
+    public function scopeByBranch($query, $branchId)
+    {
+        return $query->where('branch_id', $branchId);
+    }
+
+    public function scopeForActiveBranch($query)
+    {
+        return $query->whereHas('branch', function($q) {
+            $q->where('status', \App\Enums\Status::ACTIVE);
+        });
     }
 
     public function getProgressPercentageAttribute(): float
@@ -107,5 +125,33 @@ class FeesGeneration extends BaseModel
     public function canBeCancelled(): bool
     {
         return in_array($this->status, ['pending', 'processing']);
+    }
+
+    // Branch-related helper methods
+    public function getBranchName(): string
+    {
+        return $this->branch?->name ?? 'Unknown Branch';
+    }
+
+    public function isBranchActive(): bool
+    {
+        return $this->branch?->isActive() ?? false;
+    }
+
+    public function getBranchInfo(): array
+    {
+        return [
+            'id' => $this->branch_id,
+            'name' => $this->getBranchName(),
+            'is_active' => $this->isBranchActive(),
+            'email' => $this->branch?->email,
+            'phone' => $this->branch?->phone,
+            'address' => $this->branch?->address,
+        ];
+    }
+
+    public function validateBranchAccess(): bool
+    {
+        return $this->branch_id && $this->isBranchActive();
     }
 }

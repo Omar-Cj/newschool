@@ -74,6 +74,11 @@ class FeesCollect extends BaseModel
         return $this->belongsTo(\Modules\Journals\Entities\Journal::class);
     }
 
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(\Modules\MultiBranch\Entities\Branch::class);
+    }
+
     // Get associated student service if exists
     public function studentService(): ?StudentService
     {
@@ -199,6 +204,18 @@ class FeesCollect extends BaseModel
     {
         return $query->where('due_date', '<=', now()->addDays($days))
                      ->whereNull('payment_method');
+    }
+
+    public function scopeByBranch($query, $branchId)
+    {
+        return $query->where('branch_id', $branchId);
+    }
+
+    public function scopeForActiveBranch($query)
+    {
+        return $query->whereHas('branch', function($q) {
+            $q->where('status', \App\Enums\Status::ACTIVE);
+        });
     }
 
     // Status check methods
@@ -442,9 +459,32 @@ class FeesCollect extends BaseModel
 
     private function isDueSoon(int $days = 7): bool
     {
-        return $this->due_date && 
-               $this->due_date->between(now(), now()->addDays($days)) && 
+        return $this->due_date &&
+               $this->due_date->between(now(), now()->addDays($days)) &&
                !$this->isPaid();
+    }
+
+    // Branch-related helper methods
+    public function getBranchName(): string
+    {
+        return $this->branch?->name ?? 'Unknown Branch';
+    }
+
+    public function isBranchActive(): bool
+    {
+        return $this->branch?->isActive() ?? false;
+    }
+
+    public function getBranchInfo(): array
+    {
+        return [
+            'id' => $this->branch_id,
+            'name' => $this->getBranchName(),
+            'is_active' => $this->isBranchActive(),
+            'email' => $this->branch?->email,
+            'phone' => $this->branch?->phone,
+            'address' => $this->branch?->address,
+        ];
     }
 
     // Migration helper methods
@@ -474,6 +514,8 @@ class FeesCollect extends BaseModel
             'id' => $this->id,
             'student_id' => $this->student_id,
             'student_name' => $this->student->full_name ?? 'Unknown',
+            'branch_id' => $this->branch_id,
+            'branch_name' => $this->getBranchName(),
             'fee_name' => $this->getFeeName(),
             'fee_category' => $this->getFeeCategory(),
             'amount' => $this->amount,

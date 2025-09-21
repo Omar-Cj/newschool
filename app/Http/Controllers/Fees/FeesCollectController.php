@@ -13,6 +13,8 @@ use App\Repositories\Academic\SectionRepository;
 use App\Repositories\Fees\FeesMasterRepository;
 use App\Repositories\StudentInfo\StudentRepository;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\Rule;
 
 class FeesCollectController extends Controller
 {
@@ -78,7 +80,16 @@ class FeesCollectController extends Controller
             'student_id' => 'required|exists:students,id',
             'payment_method' => 'required|in:cash,zaad,edahab',
             'payment_amount' => 'required|numeric|min:0.01',
-            'journal_id' => 'required|exists:journals,id',
+            'journal_id' => [
+                'required',
+                Rule::exists('journals', 'id')->where(function ($query) {
+                    $branchId = auth()->user()->branch_id ?? null;
+
+                    if ($branchId && Schema::hasColumn('journals', 'branch_id')) {
+                        $query->where('branch_id', $branchId);
+                    }
+                })
+            ],
             'payment_date' => 'required|date',
             'discount_type' => 'nullable|in:fixed,percentage',
             'discount_amount' => 'nullable|numeric|min:0',
