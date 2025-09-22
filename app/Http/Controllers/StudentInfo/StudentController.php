@@ -226,7 +226,7 @@ class StudentController extends Controller
                 ->get();
 
             $fees['total_fees'] = $allGeneratedFees->sum('amount');
-            $fees['total_paid'] = $allGeneratedFees->whereNotNull('payment_method')->sum('amount');
+            $fees['total_paid'] = $allGeneratedFees->sum('total_paid');
             $fees['fees_due'] = $fees['total_fees'] - $fees['total_paid'];
             $fees['total_discounts'] = $allGeneratedFees->sum('discount_applied');
             $fees['fees_payments'] = $data->feesPayments;
@@ -487,7 +487,7 @@ class StudentController extends Controller
                         ->get();
 
                     $totalFees = $allGeneratedFees->sum('amount');
-                    $totalPaid = $allGeneratedFees->whereNotNull('payment_method')->sum('amount');
+                    $totalPaid = $allGeneratedFees->sum('total_paid');
                     $outstandingAmount = $totalFees - $totalPaid;
 
                     $row->outstanding_amount = max(0, $outstandingAmount); // Ensure non-negative

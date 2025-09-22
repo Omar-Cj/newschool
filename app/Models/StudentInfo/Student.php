@@ -359,8 +359,7 @@ class Student extends BaseModel
             $paidAmount = $this->feesPayments()
                 ->where('fee_type_id', $service->fee_type_id)
                 ->where('academic_year_id', $academicYearId)
-                ->whereNotNull('payment_method')
-                ->sum('amount');
+                ->sum('total_paid');
                 
             return $paidAmount < $service->final_amount;
         });

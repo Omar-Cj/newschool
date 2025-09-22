@@ -17,6 +17,7 @@ use App\Interfaces\Fees\FeesMasterInterface;
 use App\Interfaces\Fees\FeesCollectInterface;
 use App\Models\Accounts\AccountHead;
 use App\Models\StudentInfo\SessionClassStudent;
+use App\Services\PartialPaymentService;
 use Illuminate\Support\Facades\Schema;
 
 class FeesCollectRepository implements FeesCollectInterface
@@ -25,11 +26,13 @@ class FeesCollectRepository implements FeesCollectInterface
 
     private $model;
     private $feesMasterRepo;
+    private $partialPaymentService;
 
-    public function __construct(FeesCollect $model, FeesMasterInterface $feesMasterRepo)
+    public function __construct(FeesCollect $model, FeesMasterInterface $feesMasterRepo, PartialPaymentService $partialPaymentService)
     {
         $this->model          = $model;
         $this->feesMasterRepo = $feesMasterRepo;
+        $this->partialPaymentService = $partialPaymentService;
     }
 
     public function all()
@@ -76,52 +79,102 @@ class FeesCollectRepository implements FeesCollectInterface
 
                 $paymentMethodInt = $paymentMethodMap[$request->payment_method] ?? 1;
 
-                // Service-based processing: mark generated unpaid fees as paid (full payment only for now)
+                // Service-based processing: support both full and partial payments
                 if ($request->fees_source === 'service_based') {
-                    // Only support full outstanding payment to avoid partial allocation ambiguity
                     $academicYearId = session('academic_year_id') ?: \App\Models\Session::active()->value('id');
-                    $unpaid = \App\Models\Fees\FeesCollect::query()
+
+                    // Get unpaid fees for the student
+                    $unpaidFees = \App\Models\Fees\FeesCollect::query()
                         ->where('student_id', $request->student_id)
                         ->when($academicYearId, function($q) use ($academicYearId) {
                             $q->where('academic_year_id', $academicYearId);
                         })
-                        ->whereNull('payment_method')
+                        ->where(function($q) {
+                            $q->whereNull('payment_method')
+                              ->orWhere('payment_status', '!=', 'paid')
+                              ->orWhereColumn('total_paid', '<', DB::raw('(amount + COALESCE(fine_amount, 0) + COALESCE(late_fee_applied, 0) - COALESCE(discount_applied, 0))'));
+                        })
                         ->orderBy('due_date')
                         ->get();
 
-                    $outstandingTotal = 0;
-                    foreach ($unpaid as $row) {
-                        $outstandingTotal += $row->getNetAmount();
-                    }
-
-                    // Normalize floats
-                    $payAmount = (float) $request->payment_amount;
-                    $epsilon = 0.01;
-
-                    if (abs($payAmount - $outstandingTotal) > $epsilon) {
+                    if ($unpaidFees->isEmpty()) {
                         DB::rollBack();
-                        return $this->responseWithError('Payment amount must equal the outstanding total for service-based fees.', []);
+                        return $this->responseWithError('No outstanding fees found for this student.', []);
                     }
 
-                    foreach ($unpaid as $row) {
-                        $row->date = $request->payment_date ?? date('Y-m-d');
-                        $row->payment_method = $paymentMethodInt;
-                        $row->payment_gateway = $request->payment_method;
-                        $row->fees_collect_by = Auth::user()->id;
-                        $row->journal_id = $request->journal_id;
-                        $row->transaction_reference = $request->transaction_reference;
-                        $row->payment_notes = $request->payment_notes;
-                        $row->save();
+                    $payAmount = (float) $request->payment_amount;
+                    $totalOutstanding = $unpaidFees->sum(fn($fee) => $fee->getBalanceAmount());
 
+                    // Validate payment amount
+                    if ($payAmount <= 0) {
+                        DB::rollBack();
+                        return $this->responseWithError('Payment amount must be greater than zero.', []);
+                    }
+
+                    if ($payAmount > $totalOutstanding) {
+                        DB::rollBack();
+                        return $this->responseWithError('Payment amount cannot exceed total outstanding balance.', []);
+                    }
+
+                    // Process payments for each fee using partial payment service
+                    $remainingAmount = $payAmount;
+                    $processedPayments = [];
+                    $isPartialPayment = $payAmount < $totalOutstanding;
+
+                    foreach ($unpaidFees as $fee) {
+                        if ($remainingAmount <= 0) break;
+
+                        $feeBalance = $fee->getBalanceAmount();
+                        if ($feeBalance <= 0) continue;
+
+                        $paymentForThisFee = min($remainingAmount, $feeBalance);
+
+                        // Prepare payment data for the partial payment service
+                        $paymentData = [
+                            'amount' => $paymentForThisFee,
+                            'payment_method' => $request->payment_method,
+                            'payment_date' => $request->payment_date ?? now()->toDateString(),
+                            'transaction_reference' => $request->transaction_reference,
+                            'payment_notes' => $request->payment_notes,
+                            'journal_id' => $request->journal_id,
+                        ];
+
+                        // Process payment using partial payment service
+                        $result = $this->partialPaymentService->processPayment($paymentData, $fee->id);
+
+                        if (!$result['success']) {
+                            DB::rollBack();
+                            return $this->responseWithError($result['message'], []);
+                        }
+
+                        $processedPayments[] = [
+                            'fee_id' => $fee->id,
+                            'payment_id' => $result['data']['payment_id'],
+                            'amount_paid' => $paymentForThisFee,
+                            'fee_name' => $fee->getFeeName()
+                        ];
+
+                        $remainingAmount -= $paymentForThisFee;
+
+                        // Set first payment ID for receipt generation
                         if ($firstPaymentId === null) {
-                            $firstPaymentId = $row->id;
+                            $firstPaymentId = $result['data']['payment_id'];
                         }
                     }
 
                     DB::commit();
-                    return $this->responseWithSuccess(___('alert.created_successfully'), [
+
+                    $responseMessage = $isPartialPayment
+                        ? ___('fees.partial_payment_processed_successfully')
+                        : ___('alert.created_successfully');
+
+                    return $this->responseWithSuccess($responseMessage, [
                         'payment_id' => $firstPaymentId,
-                        'journal_name' => $journal ? $journal->display_name : null
+                        'journal_name' => $journal ? $journal->display_name : null,
+                        'is_partial_payment' => $isPartialPayment,
+                        'remaining_balance' => $totalOutstanding - $payAmount,
+                        'processed_payments' => $processedPayments,
+                        'total_amount_paid' => $payAmount
                     ]);
                 }
 
@@ -132,6 +185,53 @@ class FeesCollectRepository implements FeesCollectInterface
                         $discountAmount = ($request->payment_amount * $request->discount_amount) / 100;
                     } else {
                         $discountAmount = $request->discount_amount;
+                    }
+                }
+
+                // Check if this is a partial payment for a single fee
+                if (count($feesAssignChildrens) === 1) {
+                    $feeData = $feesAssignChildrens[0];
+                    $feeId = $feeData['id'];
+
+                    // Find existing fee record
+                    $existingFee = $this->model::where('fees_assign_children_id', $feeId)
+                        ->where('student_id', $request->student_id)
+                        ->where('session_id', setting('session'))
+                        ->first();
+
+                    if ($existingFee) {
+                        $feeAmount = $existingFee->getNetAmount();
+                        $paymentAmount = (float) $request->payment_amount;
+
+                        // If payment is less than fee amount, process as partial payment
+                        if ($paymentAmount < $feeAmount && !$existingFee->isPaid()) {
+                            $paymentData = [
+                                'amount' => $paymentAmount,
+                                'payment_method' => $request->payment_method,
+                                'payment_date' => $request->payment_date ?? $request->date ?? date('Y-m-d'),
+                                'transaction_reference' => $request->transaction_reference,
+                                'payment_notes' => $request->payment_notes,
+                                'journal_id' => $request->journal_id,
+                            ];
+
+                            $result = $this->partialPaymentService->processPayment($paymentData, $existingFee->id);
+
+                            if ($result['success']) {
+                                DB::commit();
+                                return $this->responseWithSuccess($result['message'], [
+                                    'payment_id' => $result['data']['payment_id'],
+                                    'transaction_number' => $result['data']['transaction_number'],
+                                    'amount_paid' => $result['data']['amount_paid'],
+                                    'remaining_balance' => $result['data']['remaining_balance'],
+                                    'payment_status' => $result['data']['payment_status'],
+                                    'journal_name' => $journal ? $journal->display_name : null,
+                                    'is_partial_payment' => true
+                                ]);
+                            } else {
+                                DB::rollBack();
+                                return $this->responseWithError($result['message'], []);
+                            }
+                        }
                     }
                 }
 
@@ -388,8 +488,43 @@ class FeesCollectRepository implements FeesCollectInterface
             })->values();
         }
 
+        // Enhance each fee with partial payment information
+        $data['fees_assign_children'] = $data['fees_assign_children']->map(function ($child) {
+            if ($child->feesCollect) {
+                $feeCollect = $child->feesCollect;
+
+                // Add partial payment data
+                $child->partial_payment_info = [
+                    'total_amount' => $feeCollect->getNetAmount(),
+                    'paid_amount' => $feeCollect->getPaidAmount(),
+                    'balance_amount' => $feeCollect->getBalanceAmount(),
+                    'payment_status' => $feeCollect->payment_status ?? 'unpaid',
+                    'payment_percentage' => $feeCollect->getPaymentPercentage(),
+                    'is_partially_paid' => $feeCollect->isPartiallyPaid(),
+                    'is_paid' => $feeCollect->isPaid(),
+                    'payment_history' => $feeCollect->paymentTransactions()->with('collector')->get()->map(function ($transaction) {
+                        return [
+                            'id' => $transaction->id,
+                            'date' => $transaction->payment_date->format('Y-m-d'),
+                            'amount' => $transaction->amount,
+                            'method' => $transaction->getPaymentMethodName(),
+                            'reference' => $transaction->transaction_reference,
+                            'collected_by' => $transaction->getCollectorName(),
+                            'notes' => $transaction->payment_notes,
+                        ];
+                    })
+                ];
+            }
+
+            return $child;
+        });
+
         $data['student_id']           = $request->student_id;
         $data['discount_amount']      = $request->discount_amount;
+
+        // Add summary information
+        $data['payment_summary'] = $this->partialPaymentService->getStudentPaymentSummary($request->student_id);
+
         return $data;
     }
 

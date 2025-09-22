@@ -26,7 +26,19 @@ class ReceiptController extends Controller
     public function generateIndividualReceipt($paymentId)
     {
         try {
-            // Get the main payment record
+            // First try to find as PaymentTransaction (partial payment)
+            $paymentTransaction = \App\Models\Fees\PaymentTransaction::with([
+                'student.sessionStudentDetails.class',
+                'student.sessionStudentDetails.section',
+                'feesCollect.feeType',
+                'collector'
+            ])->find($paymentId);
+
+            if ($paymentTransaction) {
+                return $this->generatePartialPaymentReceipt($paymentTransaction);
+            }
+
+            // Fall back to FeesCollect (legacy payment)
             $mainPayment = FeesCollect::with([
                 'student.sessionStudentDetails.class',
                 'student.sessionStudentDetails.section',
@@ -208,6 +220,19 @@ class ReceiptController extends Controller
      */
     public function showReceiptOptions($paymentId)
     {
+        // First try to find as PaymentTransaction (partial payment)
+        $paymentTransaction = \App\Models\Fees\PaymentTransaction::with([
+            'student.sessionStudentDetails.class',
+            'student.sessionStudentDetails.section',
+            'feesCollect.feeType',
+            'collector'
+        ])->find($paymentId);
+
+        if ($paymentTransaction) {
+            return $this->showPartialPaymentReceiptOptions($paymentTransaction);
+        }
+
+        // Fall back to FeesCollect (legacy payment)
         $payment = FeesCollect::with([
             'student.sessionStudentDetails.class',
             'student.sessionStudentDetails.section',
@@ -241,6 +266,119 @@ class ReceiptController extends Controller
         }
 
         return view('backend.fees.receipts.options-page', compact('payment'));
+    }
+
+    /**
+     * Show receipt options for partial payment (PaymentTransaction)
+     */
+    private function showPartialPaymentReceiptOptions($paymentTransaction)
+    {
+        // Get related payment transactions for the same student and date
+        $relatedTransactions = \App\Models\Fees\PaymentTransaction::with([
+            'feesCollect.feeType',
+            'feesCollect'
+        ])
+        ->where('student_id', $paymentTransaction->student_id)
+        ->where('payment_date', $paymentTransaction->payment_date)
+        ->where('collected_by', $paymentTransaction->collected_by)
+        ->get();
+
+        // Calculate totals
+        $totalAmount = $relatedTransactions->sum('amount');
+        $totalFine = 0; // PaymentTransactions don't typically have separate fine amounts
+
+        // Create a payment object compatible with existing template
+        $payment = (object) [
+            'id' => $paymentTransaction->id,
+            'student' => $paymentTransaction->student,
+            'date' => $paymentTransaction->payment_date,
+            'amount' => $paymentTransaction->amount,
+            'payment_method' => $paymentTransaction->payment_method,
+            'payment_gateway' => $paymentTransaction->payment_gateway,
+            'transaction_reference' => $paymentTransaction->transaction_reference,
+            'payment_notes' => $paymentTransaction->payment_notes,
+            'collectBy' => $paymentTransaction->collector,
+            'total_amount' => $totalAmount,
+            'total_fine' => $totalFine,
+            'grand_total' => $totalAmount + $totalFine,
+            'receipt_number' => $this->generatePartialPaymentReceiptNumber($paymentTransaction),
+            'payment_method_label' => $paymentTransaction->getPaymentMethodName(),
+            'is_partial_payment' => true,
+            'related_transactions' => $relatedTransactions
+        ];
+
+        if (request()->ajax()) {
+            $html = view('backend.fees.receipts.options-modal', compact('payment'))->render();
+
+            return response()->json([
+                'success' => true,
+                'html' => $html,
+                'meta' => [
+                    'receipt_number' => $payment->receipt_number,
+                    'grand_total' => $payment->grand_total,
+                    'total_amount' => $payment->total_amount,
+                    'total_fine' => $payment->total_fine,
+                    'currency' => setting('currency_symbol'),
+                    'is_partial_payment' => true,
+                ],
+            ]);
+        }
+
+        return view('backend.fees.receipts.options-page', compact('payment'));
+    }
+
+    /**
+     * Generate receipt number for partial payment
+     */
+    private function generatePartialPaymentReceiptNumber($paymentTransaction)
+    {
+        return 'RCT-PP-' . date('Y') . '-' . str_pad($paymentTransaction->id, 6, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Generate individual receipt for partial payment (PaymentTransaction)
+     */
+    private function generatePartialPaymentReceipt($paymentTransaction)
+    {
+        try {
+            // Get related payment transactions for the same session
+            $relatedTransactions = \App\Models\Fees\PaymentTransaction::with([
+                'feesCollect.feeType',
+                'feesCollect'
+            ])
+            ->where('student_id', $paymentTransaction->student_id)
+            ->where('payment_date', $paymentTransaction->payment_date)
+            ->where('collected_by', $paymentTransaction->collected_by)
+            ->get();
+
+            $data = [
+                'title' => ___('fees.payment_receipt'),
+                'payment' => $paymentTransaction,
+                'all_payments' => $relatedTransactions,
+                'school_info' => $this->getSchoolInfo(),
+                'receipt_number' => $this->generatePartialPaymentReceiptNumber($paymentTransaction),
+                'qr_code' => $this->generateQRCode($paymentTransaction),
+                'total_amount' => $relatedTransactions->sum('amount'),
+                'total_fine' => 0, // PaymentTransactions typically don't have separate fines
+                'is_partial_payment' => true
+            ];
+
+            // Check if this is a print preview request
+            if (request()->has('print') && request()->get('print') == '1') {
+                // Return HTML view for browser printing
+                return view('backend.fees.receipts.partial-payment-individual', compact('data'));
+            }
+
+            // Generate PDF
+            $pdf = PDF::loadView('backend.fees.receipts.partial-payment-individual', compact('data'));
+            $pdf->setPaper('A4', 'portrait');
+
+            $fileName = 'receipt_partial_' . $paymentTransaction->student->admission_no . '_' . date('Y-m-d', strtotime($paymentTransaction->payment_date)) . '.pdf';
+
+            return $pdf->download($fileName);
+        } catch (\Exception $e) {
+            return back()->with('danger', ___('fees.receipt_generation_failed') . ': ' . $e->getMessage());
+        }
     }
 
     /**

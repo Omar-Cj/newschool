@@ -76,14 +76,25 @@ class FeeAPIController extends Controller
                                     })
                                     ->when(request()->filled('status') && Str::lower(request('status')) == 'paid', function ($q) {
                                         $q->whereHas('feesCollect', function($subQuery) {
-                                            $subQuery->whereNotNull('payment_method');
+                                            // Use enhanced payment tracking: payment_method OR payment_status = 'paid' OR total_paid >= amount
+                                            $subQuery->where(function($paymentQuery) {
+                                                $paymentQuery->whereNotNull('payment_method')
+                                                           ->orWhere('payment_status', 'paid')
+                                                           ->orWhereColumn('total_paid', '>=', 'amount');
+                                            });
                                         });
                                     })
                                     ->when(request()->filled('status') && Str::lower(request('status')) == 'unpaid', function ($q) {
                                         $q->where(function($subQuery) {
                                             $subQuery->whereDoesntHave('feesCollect')
                                                      ->orWhereHas('feesCollect', function($feeQuery) {
-                                                         $feeQuery->whereNull('payment_method');
+                                                         // Fee exists but is not paid (opposite of paid logic)
+                                                         $feeQuery->whereNull('payment_method')
+                                                                  ->where(function($paymentQuery) {
+                                                                      $paymentQuery->where('payment_status', '!=', 'paid')
+                                                                                   ->orWhereNull('payment_status');
+                                                                  })
+                                                                  ->whereColumn('total_paid', '<', 'amount');
                                                      });
                                         });
                                     })

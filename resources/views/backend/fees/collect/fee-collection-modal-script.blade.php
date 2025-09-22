@@ -42,6 +42,7 @@ $(document).ready(function() {
     // Real-time calculation
     $('#payment_amount, #discount_amount').on('input', function() {
         calculateNetAmount();
+        updatePartialPaymentIndicator();
     });
 
     // Pay full amount button
@@ -100,6 +101,36 @@ $(document).ready(function() {
         $('#display_payment_amount').text('{{ Setting("currency_symbol") }}' + paymentAmount.toFixed(2));
         $('#display_discount_amount').text('{{ Setting("currency_symbol") }}' + discountAmount.toFixed(2));
         $('#display_net_amount').text('{{ Setting("currency_symbol") }}' + Math.max(0, netAmount).toFixed(2));
+    }
+
+    function updatePartialPaymentIndicator() {
+        const paymentAmount = parseFloat($('#payment_amount').val()) || 0;
+        const remainingBalance = payableAmount - paymentAmount;
+
+        // Remove existing indicators
+        $('.partial-payment-indicator').remove();
+
+        if (paymentAmount > 0 && remainingBalance > 0) {
+            // This is a partial payment
+            const indicator = $(`
+                <div class="partial-payment-indicator alert alert-info mt-2">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>{{ ___("fees.partial_payment") }}:</strong>
+                    {{ ___("fees.remaining_balance_will_be") }} {{ Setting("currency_symbol") }}${remainingBalance.toFixed(2)}
+                </div>
+            `);
+            $('#payment_amount').closest('.mb-3').after(indicator);
+        } else if (paymentAmount >= payableAmount && payableAmount > 0) {
+            // This is a full payment
+            const indicator = $(`
+                <div class="partial-payment-indicator alert alert-success mt-2">
+                    <i class="fas fa-check-circle me-2"></i>
+                    <strong>{{ ___("fees.full_payment") }}:</strong>
+                    {{ ___("fees.fee_will_be_fully_paid") }}
+                </div>
+            `);
+            $('#payment_amount').closest('.mb-3').after(indicator);
+        }
     }
 
     function validateForm() {
@@ -187,7 +218,15 @@ $(document).ready(function() {
                     return;
                 }
 
-                showSuccessMessage(response.message);
+                // Enhanced success message for partial payments
+                let successMessage = response.message;
+                if (response.is_partial_payment) {
+                    successMessage += `<br><small class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        {{ ___("fees.remaining_balance") }}: {{ Setting("currency_symbol") }}${response.remaining_balance || 0}
+                    </small>`;
+                }
+                showSuccessMessage(successMessage);
 
                 const paymentId = response.payment_id;
                 const paymentDetails = response.payment_details || {};
@@ -199,8 +238,12 @@ $(document).ready(function() {
                 // Close the collection modal to reveal the options modal
                 $('#modalCustomizeWidth').modal('hide');
 
-                if (paymentId) {
-                    // Attempt to open print window immediately
+                // Check if receipt options are included in the response (for partial payments)
+                if (response.receipt_options && response.receipt_options.html) {
+                    // Show receipt options modal directly from AJAX response
+                    showReceiptOptionsModal(response.receipt_options.html, response.receipt_options.meta);
+                } else if (paymentId) {
+                    // Fallback to existing receipt options flow
                     if (window.ReceiptActions) {
                         window.ReceiptActions.printReceipt(paymentId);
 
@@ -300,6 +343,7 @@ $(document).ready(function() {
         // Update summary display and calculations (use display fees, not submission list)
         updateFeesSummary(displayFees);
         calculateNetAmount();
+        updatePartialPaymentIndicator();
     };
 
     function updateFeesSummary(fees) {
@@ -339,9 +383,38 @@ $(document).ready(function() {
                     const itemsEl = groupEl.find(`#${groupId}`);
                     groups[period].forEach(function(fee){
                         const safeAmount = parseFloat(fee.amount || 0).toFixed(2);
+                        let paymentStatusHtml = '';
+
+                        // Add partial payment status if available
+                        if (fee.partial_payment_info) {
+                            const info = fee.partial_payment_info;
+                            const paidAmount = parseFloat(info.paid_amount || 0);
+                            const balanceAmount = parseFloat(info.balance_amount || 0);
+
+                            if (info.payment_status === 'partial') {
+                                paymentStatusHtml = `
+                                    <div class="fee-payment-status text-warning small">
+                                        <i class="fas fa-clock me-1"></i>
+                                        {{ ___("fees.partial") }}: {{ Setting('currency_symbol') }}${paidAmount.toFixed(2)} {{ ___("fees.paid") }}
+                                        <br>{{ ___("fees.balance") }}: {{ Setting('currency_symbol') }}${balanceAmount.toFixed(2)}
+                                    </div>
+                                `;
+                            } else if (info.payment_status === 'paid') {
+                                paymentStatusHtml = `
+                                    <div class="fee-payment-status text-success small">
+                                        <i class="fas fa-check-circle me-1"></i>
+                                        {{ ___("fees.fully_paid") }}
+                                    </div>
+                                `;
+                            }
+                        }
+
                         itemsEl.append(`
                             <div class="fee-item">
-                                <div class="fee-item-name">${fee.name}</div>
+                                <div class="fee-item-name">
+                                    ${fee.name}
+                                    ${paymentStatusHtml}
+                                </div>
                                 <div class="fee-item-amount">{{ Setting('currency_symbol') }}${safeAmount}</div>
                             </div>
                         `);
@@ -351,9 +424,38 @@ $(document).ready(function() {
                 // Flat list fallback
                 fees.forEach(function(fee) {
                     const safeAmount = parseFloat(fee.amount || 0).toFixed(2);
+                    let paymentStatusHtml = '';
+
+                    // Add partial payment status if available
+                    if (fee.partial_payment_info) {
+                        const info = fee.partial_payment_info;
+                        const paidAmount = parseFloat(info.paid_amount || 0);
+                        const balanceAmount = parseFloat(info.balance_amount || 0);
+
+                        if (info.payment_status === 'partial') {
+                            paymentStatusHtml = `
+                                <div class="fee-payment-status text-warning small">
+                                    <i class="fas fa-clock me-1"></i>
+                                    {{ ___("fees.partial") }}: {{ Setting('currency_symbol') }}${paidAmount.toFixed(2)} {{ ___("fees.paid") }}
+                                    <br>{{ ___("fees.balance") }}: {{ Setting('currency_symbol') }}${balanceAmount.toFixed(2)}
+                                </div>
+                            `;
+                        } else if (info.payment_status === 'paid') {
+                            paymentStatusHtml = `
+                                <div class="fee-payment-status text-success small">
+                                    <i class="fas fa-check-circle me-1"></i>
+                                    {{ ___("fees.fully_paid") }}
+                                </div>
+                            `;
+                        }
+                    }
+
                     summaryContainer.append(`
                         <div class="fee-item">
-                            <div class="fee-item-name">${fee.name}</div>
+                            <div class="fee-item-name">
+                                ${fee.name}
+                                ${paymentStatusHtml}
+                            </div>
                             <div class="fee-item-amount">{{ Setting('currency_symbol') }}${safeAmount}</div>
                         </div>
                     `);
@@ -375,6 +477,62 @@ $(document).ready(function() {
         const m = parseInt(parts[1]);
         const d = new Date(y, m - 1, 1);
         return isNaN(d.getTime()) ? period : d.toLocaleString(undefined, { month: 'short', year: 'numeric' });
+    }
+
+    // Function to show receipt options modal from AJAX response
+    function showReceiptOptionsModal(htmlContent, metaData) {
+        // Remove any existing receipt options modal
+        $('#receiptOptionsModal').remove();
+
+        // Create modal container
+        const modalContainer = $('<div>').html(htmlContent);
+        $('body').append(modalContainer);
+
+        // Initialize the modal
+        const receiptModal = new bootstrap.Modal(document.getElementById('receiptOptionsModal'), {
+            backdrop: 'static',
+            keyboard: true
+        });
+
+        // Show the modal
+        receiptModal.show();
+
+        // Handle modal events
+        $('#receiptOptionsModal').on('hidden.bs.modal', function () {
+            // Clean up modal element
+            $(this).remove();
+            // Refresh the page to reflect updated balances
+            window.location.reload();
+        });
+
+        // Handle print receipt functionality
+        window.printReceipt = function(paymentId) {
+            const printUrl = `{{ route('fees.receipt.individual', '__PAYMENT_ID__') }}`.replace('__PAYMENT_ID__', paymentId) + '?print=1';
+            window.open(printUrl, '_blank', 'width=800,height=600,scrollbars=yes');
+        };
+
+        // Handle email receipt functionality
+        window.emailReceipt = function(paymentId) {
+            // Placeholder for email functionality
+            alert('{{ ___("fees.email_feature_coming_soon") ?? "Email feature coming soon" }}');
+        };
+
+        // Handle collect another payment functionality
+        window.collectAnotherPayment = function() {
+            receiptModal.hide();
+            // Reopen the fee collection modal
+            setTimeout(() => {
+                $('#modalCustomizeWidth').modal('show');
+            }, 300);
+        };
+
+        // Handle group receipt generation
+        window.generateGroupReceipt = function() {
+            // This would be implemented if needed for partial payments
+            alert('{{ ___("fees.group_receipt_not_available") ?? "Group receipts not available for partial payments" }}');
+        };
+
+        console.log('Receipt options modal displayed successfully', metaData);
     }
 });
 </script>

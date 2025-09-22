@@ -8,6 +8,7 @@ use App\Models\StudentService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class FeesCollect extends BaseModel
 {
@@ -25,6 +26,7 @@ class FeesCollect extends BaseModel
         'discount_amount' => 'decimal:2',
         'billing_year' => 'integer',
         'billing_month' => 'integer',
+        'total_paid' => 'decimal:2',
     ];
 
     // Relationships
@@ -77,6 +79,11 @@ class FeesCollect extends BaseModel
     public function branch(): BelongsTo
     {
         return $this->belongsTo(\Modules\MultiBranch\Entities\Branch::class);
+    }
+
+    public function paymentTransactions(): HasMany
+    {
+        return $this->hasMany(PaymentTransaction::class);
     }
 
     // Get associated student service if exists
@@ -246,7 +253,18 @@ class FeesCollect extends BaseModel
 
     public function isPaid(): bool
     {
-        return $this->payment_method !== null;
+        // Check both old and new payment tracking methods
+        return $this->payment_method !== null || $this->payment_status === 'paid' || $this->total_paid >= $this->amount;
+    }
+
+    public function isPartiallyPaid(): bool
+    {
+        return $this->payment_status === 'partial' || ($this->total_paid > 0 && $this->total_paid < $this->amount);
+    }
+
+    public function isUnpaid(): bool
+    {
+        return $this->payment_status === 'unpaid' || ($this->total_paid == 0 && $this->payment_method === null);
     }
     
     public function isGenerated(): bool
@@ -302,6 +320,25 @@ class FeesCollect extends BaseModel
     public function getNetAmount(): float
     {
         return $this->getTotalAmount() - $this->discount_applied;
+    }
+
+    public function getBalanceAmount(): float
+    {
+        return max(0, $this->getNetAmount() - $this->total_paid);
+    }
+
+    public function getPaidAmount(): float
+    {
+        return $this->total_paid;
+    }
+
+    public function getPaymentPercentage(): float
+    {
+        $netAmount = $this->getNetAmount();
+        if ($netAmount > 0) {
+            return ($this->total_paid / $netAmount) * 100;
+        }
+        return 0;
     }
 
     public function getDiscountPercentage(): float
@@ -485,6 +522,31 @@ class FeesCollect extends BaseModel
             'phone' => $this->branch?->phone,
             'address' => $this->branch?->address,
         ];
+    }
+
+    // Payment status management
+    public function updatePaymentStatus(): void
+    {
+        $netAmount = $this->getNetAmount();
+
+        if ($this->total_paid <= 0) {
+            $this->payment_status = 'unpaid';
+        } elseif ($this->total_paid >= $netAmount) {
+            $this->payment_status = 'paid';
+            // Set legacy payment_method for backward compatibility if not set
+            if ($this->payment_method === null) {
+                $this->payment_method = 1; // Default to cash
+            }
+        } else {
+            $this->payment_status = 'partial';
+        }
+    }
+
+    public function recalculateTotalPaid(): void
+    {
+        $this->total_paid = $this->paymentTransactions()->sum('amount');
+        $this->updatePaymentStatus();
+        $this->save();
     }
 
     // Migration helper methods

@@ -757,11 +757,22 @@ class FeesGenerationController extends Controller
         if (!empty($filters['payment_status'])) {
             switch ($filters['payment_status']) {
                 case 'paid':
-                    $query->whereNotNull('fc.payment_method');
+                    // Use enhanced payment tracking: payment_method OR payment_status = 'paid' OR total_paid >= amount
+                    $query->where(function($paymentQuery) {
+                        $paymentQuery->whereNotNull('fc.payment_method')
+                                   ->orWhere('fc.payment_status', 'paid')
+                                   ->orWhereColumn('fc.total_paid', '>=', 'fc.amount');
+                    });
                     break;
                 case 'unpaid':
                 case 'overdue':
-                    $query->whereNull('fc.payment_method');
+                    // Fee exists but is not paid (opposite of paid logic)
+                    $query->whereNull('fc.payment_method')
+                          ->where(function($paymentQuery) {
+                              $paymentQuery->where('fc.payment_status', '!=', 'paid')
+                                           ->orWhereNull('fc.payment_status');
+                          })
+                          ->whereColumn('fc.total_paid', '<', 'fc.amount');
                     break;
             }
         }

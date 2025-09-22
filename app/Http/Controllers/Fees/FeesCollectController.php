@@ -14,6 +14,7 @@ use App\Repositories\Fees\FeesMasterRepository;
 use App\Repositories\StudentInfo\StudentRepository;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class FeesCollectController extends Controller
@@ -76,7 +77,7 @@ class FeesCollectController extends Controller
         ]);
 
         // Validate request for new modal functionality
-        $validatedData = $request->validate([
+        $validationRules = [
             'student_id' => 'required|exists:students,id',
             'payment_method' => 'required|in:cash,zaad,edahab',
             'payment_amount' => 'required|numeric|min:0.01',
@@ -95,21 +96,35 @@ class FeesCollectController extends Controller
             'discount_amount' => 'nullable|numeric|min:0',
             'transaction_reference' => 'required_if:payment_method,zaad,edahab',
             'payment_notes' => 'nullable|string|max:500',
-            'fees_assign_childrens' => 'required'
-        ]);
+            'fees_source' => 'nullable|in:legacy,service_based',
+        ];
+
+        // Conditional validation based on fees_source
+        $feesSource = $request->input('fees_source', 'legacy');
+        if ($feesSource === 'legacy') {
+            $validationRules['fees_assign_childrens'] = 'required';
+        } else {
+            $validationRules['fees_assign_childrens'] = 'nullable';
+            // For service-based partial payments, add specific validation
+            $validationRules['fees_collect_ids'] = 'nullable|array';
+            $validationRules['fees_collect_ids.*'] = 'exists:fees_collects,id';
+        }
+
+        $validatedData = $request->validate($validationRules);
 
         try {
             $result = $this->repo->store($request);
 
             if($result['status']){
-                // If it's an AJAX request, return JSON with payment details
+                // If it's an AJAX request, return JSON with payment details and receipt options
                 if ($request->ajax()) {
                     $student = $this->studentRepo->show($request->student_id);
+                    $paymentId = $result['data']['payment_id'] ?? null;
 
                     $response = [
                         'success' => true,
                         'message' => $result['message'],
-                        'payment_id' => $result['data']['payment_id'] ?? null,
+                        'payment_id' => $paymentId,
                         'payment_details' => [
                             'student_name' => $student->first_name . ' ' . $student->last_name,
                             'admission_no' => $student->admission_no,
@@ -121,6 +136,40 @@ class FeesCollectController extends Controller
                             'journal_name' => $result['data']['journal_name'] ?? 'N/A'
                         ]
                     ];
+
+                    // Add receipt options if payment ID is available
+                    if ($paymentId) {
+                        try {
+                            $receiptController = app(\App\Http\Controllers\Fees\ReceiptController::class);
+                            $receiptRequest = request()->duplicate();
+                            $receiptRequest->headers->set('X-Requested-With', 'XMLHttpRequest');
+
+                            // Temporarily set the request for the receipt controller
+                            $originalRequest = request();
+                            app()->instance('request', $receiptRequest);
+
+                            $receiptResponse = $receiptController->showReceiptOptions($paymentId);
+
+                            // Restore original request
+                            app()->instance('request', $originalRequest);
+
+                            if ($receiptResponse instanceof \Illuminate\Http\JsonResponse) {
+                                $receiptData = $receiptResponse->getData(true);
+                                if (isset($receiptData['success']) && $receiptData['success']) {
+                                    $response['receipt_options'] = [
+                                        'html' => $receiptData['html'],
+                                        'meta' => $receiptData['meta']
+                                    ];
+                                }
+                            }
+                        } catch (\Exception $e) {
+                            \Log::warning('Could not generate receipt options for partial payment', [
+                                'payment_id' => $paymentId,
+                                'error' => $e->getMessage()
+                            ]);
+                            // Don't fail the entire response if receipt options fail
+                        }
+                    }
 
                     \Log::info('Fee collection AJAX response', $response);
 
@@ -260,20 +309,25 @@ class FeesCollectController extends Controller
                     ->when($academicYearId, function($q) use ($academicYearId) {
                         $q->where('academic_year_id', $academicYearId);
                     })
-                    ->whereNull('payment_method')
+                    ->where(function($q) {
+                        // Enhanced payment detection: include fees that are unpaid or partially paid
+                        $q->whereNull('payment_method')
+                          ->orWhere('payment_status', '!=', 'paid')
+                          ->orWhereColumn('total_paid', '<', DB::raw('(amount + COALESCE(fine_amount, 0) + COALESCE(late_fee_applied, 0) - COALESCE(discount_applied, 0))'));
+                    })
                     ->get();
 
                 foreach ($generated as $row) {
-                    $net = $row->getNetAmount();
-                    if ($net <= 0) continue;
+                    $balance = $row->getBalanceAmount(); // Use remaining balance instead of original amount
+                    if ($balance <= 0) continue; // Skip fully paid fees
                     $fees[] = [
                         'fees_collect_id' => $row->id,
                         'name' => $row->getFeeName(),
-                        'amount' => number_format($net, 2),
+                        'amount' => number_format($balance, 2),
                         'billing_period' => $row->billing_period,
                         'due_date' => optional($row->due_date)->format('Y-m-d'),
                     ];
-                    $totalAmount += $net;
+                    $totalAmount += $balance;
                 }
 
                 return response()->json([

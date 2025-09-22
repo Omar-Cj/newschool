@@ -159,11 +159,19 @@ class StudentFeesService
             ->where('branch_id', $branchId)
             ->whereHas('feesPayments', function($q) use ($academicYearId) {
                 $q->where('academic_year_id', $academicYearId)
-                  ->whereNull('payment_method');
+                  ->where(function($subQ) {
+                      $subQ->whereNull('payment_method')
+                           ->orWhere('payment_status', '!=', 'paid')
+                           ->orWhereColumn('total_paid', '<', 'amount');
+                  });
             })
             ->with(['feesPayments' => function($q) use ($academicYearId) {
                 $q->where('academic_year_id', $academicYearId)
-                  ->whereNull('payment_method');
+                  ->where(function($subQ) {
+                      $subQ->whereNull('payment_method')
+                           ->orWhere('payment_status', '!=', 'paid')
+                           ->orWhereColumn('total_paid', '<', 'amount');
+                  });
             }])
             ->get();
     }
@@ -323,18 +331,82 @@ class StudentFeesService
             ->byAcademicYear($academicYearId)
             ->get();
 
+        $totalAmount = $fees->sum(fn($fee) => $fee->getNetAmount());
+        $totalPaidAmount = $fees->sum('total_paid');
+        $outstandingAmount = $fees->sum(fn($fee) => $fee->getBalanceAmount());
+
         return [
             'branch_id' => $branchId,
             'academic_year_id' => $academicYearId,
             'total_fees' => $fees->count(),
-            'paid_count' => $fees->where('payment_method', '!=', null)->count(),
-            'unpaid_count' => $fees->where('payment_method', null)->count(),
-            'total_amount' => $fees->sum('amount'),
-            'paid_amount' => $fees->where('payment_method', '!=', null)->sum('amount'),
-            'outstanding_amount' => $fees->where('payment_method', null)->sum('amount'),
+            'paid_count' => $fees->where('payment_status', 'paid')->count(),
+            'partially_paid_count' => $fees->where('payment_status', 'partial')->count(),
+            'unpaid_count' => $fees->where('payment_status', 'unpaid')->count(),
+            'total_amount' => $totalAmount,
+            'paid_amount' => $totalPaidAmount,
+            'outstanding_amount' => $outstandingAmount,
             'overdue_count' => $fees->filter(fn($fee) => $fee->isOverdue())->count(),
-            'collection_rate' => $fees->count() > 0 ?
-                ($fees->where('payment_method', '!=', null)->count() / $fees->count()) * 100 : 0,
+            'collection_rate' => $totalAmount > 0 ? ($totalPaidAmount / $totalAmount) * 100 : 0,
+            'partial_payment_summary' => [
+                'students_with_partial_payments' => $fees->where('payment_status', 'partial')
+                    ->groupBy('student_id')->count(),
+                'average_payment_percentage' => $fees->where('payment_status', 'partial')
+                    ->avg(fn($fee) => $fee->getPaymentPercentage()),
+            ],
+        ];
+    }
+
+    /**
+     * Get individual student fee summary with partial payment information
+     */
+    public function getStudentFeesSummary(int $studentId, int $academicYearId = null): array
+    {
+        $academicYearId = $academicYearId ?? session('academic_year_id');
+
+        $fees = FeesCollect::where('student_id', $studentId)
+            ->where('academic_year_id', $academicYearId)
+            ->with(['feeType', 'paymentTransactions'])
+            ->get();
+
+        $totalAmount = $fees->sum(fn($fee) => $fee->getNetAmount());
+        $totalPaidAmount = $fees->sum('total_paid');
+        $outstandingAmount = $fees->sum(fn($fee) => $fee->getBalanceAmount());
+
+        return [
+            'student_id' => $studentId,
+            'academic_year_id' => $academicYearId,
+            'total_fees' => $fees->count(),
+            'paid_count' => $fees->where('payment_status', 'paid')->count(),
+            'partially_paid_count' => $fees->where('payment_status', 'partial')->count(),
+            'unpaid_count' => $fees->where('payment_status', 'unpaid')->count(),
+            'total_amount' => $totalAmount,
+            'paid_amount' => $totalPaidAmount,
+            'outstanding_amount' => $outstandingAmount,
+            'overdue_count' => $fees->filter(fn($fee) => $fee->isOverdue())->count(),
+            'payment_percentage' => $totalAmount > 0 ? ($totalPaidAmount / $totalAmount) * 100 : 0,
+            'fees_breakdown' => $fees->map(function($fee) {
+                return [
+                    'id' => $fee->id,
+                    'fee_name' => $fee->getFeeName(),
+                    'fee_category' => $fee->getFeeCategory(),
+                    'total_amount' => $fee->getNetAmount(),
+                    'paid_amount' => $fee->getPaidAmount(),
+                    'balance_amount' => $fee->getBalanceAmount(),
+                    'payment_status' => $fee->payment_status,
+                    'payment_percentage' => $fee->getPaymentPercentage(),
+                    'is_overdue' => $fee->isOverdue(),
+                    'due_date' => $fee->due_date?->format('Y-m-d'),
+                    'recent_payments' => $fee->paymentTransactions()
+                        ->latest('payment_date')
+                        ->limit(3)
+                        ->get()
+                        ->map(fn($payment) => [
+                            'date' => $payment->payment_date->format('Y-m-d'),
+                            'amount' => $payment->amount,
+                            'method' => $payment->getPaymentMethodName(),
+                        ])
+                ];
+            }),
         ];
     }
 
