@@ -42,12 +42,15 @@ $(document).ready(function() {
 
     // Form submission
     $('#feeCollectionForm').submit(function(e) {
+        console.log('Form submission triggered');
         e.preventDefault();
 
         if (!validateForm()) {
+            console.log('Form validation failed');
             return false;
         }
 
+        console.log('Form validation passed, calling processPayment');
         processPayment();
     });
 
@@ -123,6 +126,7 @@ $(document).ready(function() {
     }
 
     function validateForm() {
+        console.log('validateForm called');
         let isValid = true;
 
         // Clear previous errors
@@ -130,23 +134,32 @@ $(document).ready(function() {
 
         // Validate payment amount
         const paymentAmount = parseFloat($('#payment_amount').val());
+        console.log('Payment amount:', paymentAmount);
+        console.log('Payable amount:', payableAmount);
         if (!paymentAmount || paymentAmount <= 0) {
+            console.log('Payment amount validation failed');
             showFieldError('#payment_amount', '{{ ___("fees.payment_amount_required") }}');
             isValid = false;
         } else if (paymentAmount > payableAmount) {
+            console.log('Payment amount exceeds total');
             showFieldError('#payment_amount', '{{ ___("fees.payment_amount_exceeds_total") }}');
             isValid = false;
         }
 
-        // Validate payment method
-        if (!$('#payment_method').val()) {
+        // Validate payment method (dropdown)
+        const selectedPaymentMethod = $('#payment_method').val();
+        console.log('Selected payment method:', selectedPaymentMethod);
+        if (!selectedPaymentMethod) {
+            console.log('Payment method validation failed');
             showFieldError('#payment_method', '{{ ___("fees.payment_method_required") }}');
             isValid = false;
         }
 
-
         // Validate journal selection
-        if (!$('#journal_id').val()) {
+        const selectedJournal = $('#journal_id').val();
+        console.log('Selected journal:', selectedJournal);
+        if (!selectedJournal) {
+            console.log('Journal validation failed');
             showFieldError('#journal_id', '{{ ___("fees.journal_required") }}');
             isValid = false;
         }
@@ -161,6 +174,7 @@ $(document).ready(function() {
             }
         }
 
+        console.log('Validation result:', isValid);
         return isValid;
     }
 
@@ -172,14 +186,19 @@ $(document).ready(function() {
     }
 
     function processPayment() {
+        console.log('processPayment function called');
         const submitBtn = $('#process_payment_btn');
         const originalText = submitBtn.html();
+
+        console.log('Submit button found:', submitBtn.length > 0);
+        console.log('Form element found:', $('#feeCollectionForm').length > 0);
 
         // Show loading state
         submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i>{{ ___("fees.processing") }}');
 
         // Prepare form data
         const formData = new FormData($('#feeCollectionForm')[0]);
+        console.log('Form data prepared, starting AJAX request');
 
         // Add selected fees data
         formData.append('fees_assign_childrens', JSON.stringify(selectedFees));

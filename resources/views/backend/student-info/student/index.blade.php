@@ -283,11 +283,17 @@
                 admission_no: admissionNo || '--'
             };
 
+            // Debug: Check if modal exists
+            console.log('Modal element exists:', $('#modalCustomizeWidth').length > 0);
+            console.log('Form element exists:', $('#feeCollectionForm').length > 0);
+
             // Fetch student's unpaid fees via AJAX
             fetchStudentFees(studentId).then(feesData => {
+                console.log('Fees data received:', feesData);
                 if (feesData && feesData.success) {
                     window.populateFeeCollectionModal(studentId, feesData.data, studentInfo);
                 } else {
+                    console.error('Failed to load fees:', feesData);
                     showErrorMessage('Unable to load student fees. Please try again.');
                 }
             }).catch(error => {

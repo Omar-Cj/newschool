@@ -275,4 +275,86 @@
     }
     #selected-fees-summary .fee-period-caret { transition: transform 0.2s ease; color: #6c757d; }
     #selected-fees-summary .fee-period-heading.collapsed .fee-period-caret { transform: rotate(-90deg); }
+
+    /* Enhanced dropdown styling to match system UI/UX */
+    .form-control.ot-input {
+        height: 48px;
+        padding: 12px 16px;
+        font-size: 14px;
+        font-weight: 400;
+        line-height: 1.5;
+        border-radius: 5px;
+        transition: all 0.3s ease;
+    }
+
+    .form-control.ot-input:focus {
+        border-color: var(--primary-color, #007bff);
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        outline: none;
+    }
+
+    .form-control.ot-input option {
+        padding: 8px 12px;
+        font-size: 14px;
+        font-weight: 400;
+    }
+
+    /* Ensure consistent styling with other form elements */
+    .form-label {
+        font-weight: 500;
+        font-size: 14px;
+        line-height: 1.5;
+        margin-bottom: 8px;
+        color: var(--ot-text-title, #212529);
+    }
+
+    .form-text {
+        font-size: 12px;
+        color: var(--ot-text-subtitle, #6c757d);
+        margin-top: 4px;
+    }
+
+    /* Enhanced dropdown styling inspired by filtering dropdowns */
+    select.form-control.ot-input {
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23495057' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m1 6 7 7 7-7'/%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: right 12px center;
+        background-size: 16px 12px;
+        padding-right: 40px;
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        cursor: pointer;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        transition: all 0.15s ease-in-out;
+    }
+
+    select.form-control.ot-input:hover {
+        border-color: #adb5bd;
+        box-shadow: 0 0 0 0.1rem rgba(0, 123, 255, 0.1);
+    }
+
+    select.form-control.ot-input:focus {
+        border-color: #80bdff;
+        outline: 0;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%2380bdff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m1 6 7 7 7-7'/%3e%3c/svg%3e");
+    }
+
+    select.form-control.ot-input option {
+        padding: 8px 12px;
+        font-size: 14px;
+        font-weight: 400;
+        color: #495057;
+    }
+
+    /* Disabled state */
+    select.form-control.ot-input:disabled {
+        background-color: #f8f9fa;
+        border-color: #e9ecef;
+        color: #6c757d;
+        cursor: not-allowed;
+        opacity: 0.65;
+    }
 </style>
