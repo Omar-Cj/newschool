@@ -193,12 +193,18 @@ class FeesCollect extends BaseModel
 
     public function scopePaid($query)
     {
-        return $query->whereNotNull('payment_method');
+        return $query->where(function($q) {
+            $q->whereNotNull('payment_method')
+              ->orWhereColumn('total_paid', '>=', 'amount');
+        });
     }
 
     public function scopeUnpaid($query)
     {
-        return $query->whereNull('payment_method');
+        return $query->where(function($q) {
+            $q->whereNull('payment_method')
+              ->whereColumn('total_paid', '<', 'amount');
+        });
     }
 
     public function scopeOverdue($query)

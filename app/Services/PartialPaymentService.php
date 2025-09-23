@@ -102,15 +102,6 @@ class PartialPaymentService
             ];
         }
 
-        // Validate payment method specific requirements
-        if (in_array($paymentData['payment_method'], ['zaad', 'edahab'])) {
-            if (empty($paymentData['transaction_reference'])) {
-                return [
-                    'valid' => false,
-                    'message' => 'Transaction reference is required for ' . $paymentData['payment_method'] . ' payments.'
-                ];
-            }
-        }
 
         return ['valid' => true];
     }

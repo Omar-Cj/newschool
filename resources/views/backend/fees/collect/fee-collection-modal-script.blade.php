@@ -11,17 +11,6 @@ $(document).ready(function() {
         loadJournals();
     });
 
-    // Payment method change handler
-    $('input[name="payment_method"]').change(function() {
-        const method = $(this).val();
-        if (method === 'zaad' || method === 'edahab') {
-            $('#transaction_reference_field').show();
-            $('#transaction_reference').prop('required', true);
-        } else {
-            $('#transaction_reference_field').hide();
-            $('#transaction_reference').prop('required', false).val('');
-        }
-    });
 
     // Discount type change handler
     $('#discount_type').change(function() {
@@ -150,17 +139,11 @@ $(document).ready(function() {
         }
 
         // Validate payment method
-        if (!$('input[name="payment_method"]:checked').val()) {
-            showFieldError('input[name="payment_method"]', '{{ ___("fees.payment_method_required") }}');
+        if (!$('#payment_method').val()) {
+            showFieldError('#payment_method', '{{ ___("fees.payment_method_required") }}');
             isValid = false;
         }
 
-        // Validate transaction reference for digital payments
-        const paymentMethod = $('input[name="payment_method"]:checked').val();
-        if ((paymentMethod === 'zaad' || paymentMethod === 'edahab') && !$('#transaction_reference').val().trim()) {
-            showFieldError('#transaction_reference', '{{ ___("fees.transaction_reference_required") }}');
-            isValid = false;
-        }
 
         // Validate journal selection
         if (!$('#journal_id').val()) {
@@ -235,12 +218,20 @@ $(document).ready(function() {
                 totalAmount = 0;
                 payableAmount = 0;
 
-                // Close the collection modal to reveal the options modal
+                // Close the collection modal to reveal the receipt
                 $('#modalCustomizeWidth').modal('hide');
 
-                // Check if receipt options are included in the response (for partial payments)
-                if (response.receipt_options && response.receipt_options.html) {
-                    // Show receipt options modal directly from AJAX response
+                // Check if direct print URL is available (new improved flow)
+                if (response.direct_print_url) {
+                    // Open receipt directly in new window for immediate printing
+                    window.open(response.direct_print_url, '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes');
+
+                    // Refresh the page after a short delay to reflect updated balances
+                    setTimeout(function() {
+                        window.location.reload();
+                    }, 1000);
+                } else if (response.receipt_options && response.receipt_options.html) {
+                    // Fallback: Show receipt options modal (for backward compatibility)
                     showReceiptOptionsModal(response.receipt_options.html, response.receipt_options.meta);
                 } else if (paymentId) {
                     // Fallback to existing receipt options flow

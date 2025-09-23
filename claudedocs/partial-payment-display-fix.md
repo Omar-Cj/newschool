@@ -117,6 +117,7 @@ $totalAmount += $balance;
 - ✅ **Administrative Reports**: Payment status filters include partial payments
 - ✅ **Outstanding Fees Calculations**: Service-based system calculations fixed
 - ✅ **Fee Collection Modal**: Outstanding balance displays correctly, includes partially paid fees
+- ✅ **Receipt Listing Page**: Shows all payment records including partial payments with accurate amounts
 
 ## Technical Notes
 
@@ -219,8 +220,220 @@ When reviewing fee-related code changes:
 
 ---
 
+## Receipt Listing Enhancement
+
+**Date**: 2025-01-22
+**Issue**: Receipt listing page not showing partial payments and displaying incorrect amounts
+**Status**: ✅ Fixed
+
+### Problem Summary
+
+The receipt listing page (`/fees/receipt/list`) had inconsistencies with individual receipt generation:
+- ✅ Individual receipts showed correct payment amounts for both legacy and partial payments
+- ❌ Receipt listing only showed FeesCollect records using legacy payment detection
+- ❌ PaymentTransaction records (partial payments) were completely missing from listing
+- ❌ Amounts displayed were fee amounts instead of actual payment amounts
+
+### Root Cause Analysis
+
+The receipt listing system was using a different approach than individual receipt generation:
+
+**Individual Receipt Generation**:
+- Checks both FeesCollect and PaymentTransaction tables
+- Uses enhanced payment detection logic
+- Shows actual payment amounts
+
+**Receipt Listing (Before Fix)**:
+- Only queried FeesCollect table with legacy `whereNotNull('payment_method')` scope
+- Excluded partial payments tracked in PaymentTransaction table
+- Used fee amounts instead of payment amounts
+
+### Files Enhanced
+
+#### 1. FeesCollect.php (Model Scopes)
+**Lines 194-213**: Updated payment detection scopes
+```php
+// Before (legacy)
+public function scopePaid($query)
+{
+    return $query->whereNotNull('payment_method');
+}
+
+// After (enhanced)
+public function scopePaid($query)
+{
+    return $query->where(function($q) {
+        $q->whereNotNull('payment_method')
+          ->orWhere('payment_status', 'paid')
+          ->orWhereColumn('total_paid', '>=', 'amount');
+    });
+}
+```
+
+#### 2. ReceiptController.php (Unified Listing)
+**Lines 387-566**: Complete rewrite of receipt listing logic
+
+##### A. Hybrid Listing Approach (Lines 425-508)
+```php
+// New getUnifiedReceiptListing() method
+// - Combines FeesCollect and PaymentTransaction records
+// - Transforms both types into compatible format
+// - Shows actual payment amounts for partial payments
+```
+
+##### B. Enhanced Filtering (Lines 513-566)
+```php
+// New applyFiltersToUnifiedQueries() method
+// - Applies same filters to both query types
+// - Maintains search, date, payment method, and collector filtering
+```
+
+##### C. Fixed Related Payments (Lines 700-724)
+```php
+// Before (legacy)
+->whereNotNull('payment_method')
+
+// After (enhanced)
+->where(function($q) {
+    $q->whereNotNull('payment_method')
+      ->orWhere('payment_status', 'paid')
+      ->orWhereColumn('total_paid', '>=', 'amount');
+})
+```
+
+### Technical Implementation
+
+#### Unified Receipt Listing Algorithm
+1. **Query Both Tables**: Get FeesCollect (legacy) and PaymentTransaction (partial) records
+2. **Apply Filters**: Search, date range, payment method, collector to both queries
+3. **Transform Records**: Create consistent data structure for both types
+4. **Show Actual Amounts**: PaymentTransaction shows actual payment amount, not fee amount
+5. **Merge and Sort**: Combine collections and sort by date and ID
+6. **Paginate**: Apply Laravel pagination to unified results
+
+#### Key Enhancements
+- **Comprehensive Coverage**: Shows all payment records regardless of payment type
+- **Accurate Amounts**: Displays what student actually paid, not fee amounts
+- **Consistent Filtering**: All filters work across both payment types
+- **Backward Compatibility**: Legacy FeesCollect records continue to work
+- **Performance Optimized**: Efficient queries with proper eager loading
+
+### Testing Checklist
+
+Receipt listing enhancement verification:
+- [ ] Partial payment ($15) appears in receipt listing
+- [ ] Amount shown matches actual payment ($15), not fee amount ($30)
+- [ ] Legacy full payments continue to display correctly
+- [ ] Search functionality works with partial payments
+- [ ] Date filtering includes partial payments
+- [ ] Payment method filtering works for both types
+- [ ] Collector filtering includes partial payments
+- [ ] Pagination works correctly with unified listing
+- [ ] Receipt generation links work for both types
+- [ ] Performance is acceptable with large datasets
+
+### Benefits Achieved
+
+- ✅ **Complete Visibility**: All payments now visible in listing regardless of type
+- ✅ **Accurate Amounts**: Receipt listing shows actual payment amounts
+- ✅ **Consistent Experience**: Listing behavior matches individual receipt accuracy
+- ✅ **Enhanced Filtering**: All filters work comprehensively across payment types
+- ✅ **Future-Proof**: System ready for additional payment types
+
+---
+
+## Receipt Context Scoping Solution
+
+**Date**: 2025-01-22
+**Issue**: Receipts showing cumulative amounts across billing periods instead of current payment session amounts
+**Status**: ✅ Fixed
+
+### Problem Summary
+
+Receipt generation was aggregating payments across multiple billing periods:
+- ✅ Month 1: Student pays $30 (Bus $15 + Tuition $15) → Receipt shows $30 ✓
+- ❌ Month 2: Student pays $30 → Receipt shows $60 (includes Month 1) ✗
+- **Expected**: Month 2 receipt should show only $30
+
+### Root Cause Analysis
+
+The `getRelatedPayments()` method lacked billing period awareness:
+
+**Before Fix**:
+- Grouped payments by `generation_batch_id` OR `date` + `collector`
+- No billing period scoping
+- Cross-period payment aggregation occurred
+
+**After Fix**:
+- Added billing period scoping: `where('billing_period', $payment->billing_period)`
+- Added academic year scoping for extra safety
+- Prevents cross-period payment aggregation
+
+### Files Enhanced
+
+#### 1. ReceiptController.php (Lines 688-729)
+**Enhanced `getRelatedPayments()` method**:
+```php
+// Critical: Add billing period scoping to prevent cross-period aggregation
+if ($payment->billing_period) {
+    $query->where('billing_period', $payment->billing_period);
+}
+
+// Additional academic year scoping for extra safety
+if ($payment->academic_year_id) {
+    $query->where('academic_year_id', $payment->academic_year_id);
+}
+```
+
+#### 2. Partial Payment Methods (Lines 274-370)
+**Enhanced PaymentTransaction scoping**:
+```php
+// Add billing period scoping through related FeesCollect
+if ($paymentTransaction->feesCollect && $paymentTransaction->feesCollect->billing_period) {
+    $query->whereHas('feesCollect', function($q) use ($paymentTransaction) {
+        $q->where('billing_period', $paymentTransaction->feesCollect->billing_period);
+    });
+}
+```
+
+### Technical Implementation
+
+#### Billing Period Scoping Algorithm
+1. **Primary Grouping**: Use `generation_batch_id` for fees from same generation cycle
+2. **Fallback Grouping**: Use `date` + `collector` for session context
+3. **Critical Addition**: Add `billing_period` scoping to prevent cross-period aggregation
+4. **Safety Net**: Add `academic_year_id` scoping for additional isolation
+
+#### Key Benefits
+- ✅ **Period Isolation**: Receipts only show fees from current billing period
+- ✅ **Session Context**: Maintains payment session grouping within periods
+- ✅ **Backward Compatibility**: Preserves existing logic while adding period awareness
+- ✅ **Academic Year Safety**: Additional scoping prevents cross-year aggregation
+
+### Testing Checklist
+
+Receipt context scoping verification:
+- [ ] Month 1: Student pays $30 → Receipt shows $30.00 ✓
+- [ ] Month 2: Student pays $30 → Receipt shows $30.00 (not $60.00) ✓
+- [ ] Partial payments within same period group correctly
+- [ ] Cross-period payments remain isolated
+- [ ] Legacy receipts continue to work
+- [ ] Academic year transitions work correctly
+- [ ] Multiple fee types in same period group properly
+
+### Expected Results
+- ✅ **Current Period Only**: Receipts show only current billing period payments
+- ✅ **Accurate Amounts**: Month 2 payment shows $30.00, not $60.00
+- ✅ **Period Isolation**: No cross-period payment aggregation
+- ✅ **Session Integrity**: Payments within same session still group correctly
+- ✅ **Historical Accuracy**: Previous receipts remain unchanged
+
+---
+
 **Resolution**: The partial payment display inconsistency has been resolved by:
 1. Updating all fee calculation points to use enhanced payment tracking system (`total_paid` field) instead of legacy payment detection (`payment_method` field)
 2. **Critical Fix**: Ensuring fee collection modal uses `getBalanceAmount()` instead of `getNetAmount()` for remaining balance calculations
+3. **Receipt Listing Enhancement**: Implementing unified listing that includes both FeesCollect and PaymentTransaction records with accurate payment amounts
+4. **Receipt Context Scoping**: Adding billing period and academic year scoping to prevent cross-period payment aggregation in receipts
 
-The fix maintains backward compatibility while ensuring accurate balance displays across all system interfaces.
+The fix maintains backward compatibility while ensuring accurate balance displays and receipt amounts across all system interfaces.

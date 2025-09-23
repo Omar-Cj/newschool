@@ -302,6 +302,11 @@
         <div class="payment-summary">
             <div class="amount-paid">{{ $data['school_info']['currency'] }} {{ number_format($data['total_amount'] + $data['total_fine'], 2) }}</div>
             <div>{{ ___('fees.amount_paid') }}</div>
+            @if(($data['payment']->related_payment_count ?? 1) > 1)
+                <div style="font-size: 12px; color: #6c757d; margin-top: 5px;">
+                    {{ ___('fees.session_payment_note') ?? 'This receipt covers all payments made in this session' }}
+                </div>
+            @endif
             <div class="payment-method">
                 {{ ___('fees.payment_method') }}: {{ ___(\Config::get('site.payment_methods')[$data['payment']->payment_method] ?? 'Cash') }}
             </div>

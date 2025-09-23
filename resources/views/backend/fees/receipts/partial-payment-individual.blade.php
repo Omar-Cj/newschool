@@ -59,16 +59,27 @@
             display: inline-block;
         }
 
-        .partial-payment-badge {
+        .payment-status-badge {
             font-size: 12px;
             font-weight: 600;
-            color: #ff6b35;
-            background: #fff5f2;
-            border: 1px solid #ff6b35;
             padding: 4px 8px;
             border-radius: 4px;
             margin-top: 5px;
             display: inline-block;
+            border: 1px solid transparent;
+            text-transform: uppercase;
+        }
+
+        .payment-status-badge.partial {
+            color: #ff6b35;
+            background: #fff5f2;
+            border-color: #ff6b35;
+        }
+
+        .payment-status-badge.full {
+            color: #28a745;
+            background: #e6f4ea;
+            border-color: #28a745;
         }
 
         .receipt-info {
@@ -223,6 +234,36 @@
             border-bottom: none;
         }
 
+        .outstanding-summary {
+            background: #fff5f5;
+            border: 1px solid #f8d7da;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+
+        .outstanding-summary h4 {
+            color: #c82333;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .outstanding-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid #f5c6cb;
+        }
+
+        .outstanding-item.total {
+            font-weight: 600;
+            color: #c82333;
+        }
+
+        .outstanding-item:last-child {
+            border-bottom: none;
+        }
+
         .footer {
             margin-top: 40px;
             padding-top: 20px;
@@ -273,10 +314,16 @@
                 background: #f8f9fa !important;
             }
 
-            .partial-payment-badge {
+            .payment-status-badge.partial {
                 color: #ff6b35 !important;
                 background: #fff5f2 !important;
                 border: 1px solid #ff6b35 !important;
+            }
+
+            .payment-status-badge.full {
+                color: #28a745 !important;
+                background: #e6f4ea !important;
+                border: 1px solid #28a745 !important;
             }
 
             .receipt-info {
@@ -318,6 +365,11 @@
                 border-top: 1px solid #dee2e6 !important;
             }
 
+            .outstanding-summary {
+                background: #fff5f5 !important;
+                border: 1px solid #f5c6cb !important;
+            }
+
             /* Hide any elements that shouldn't print */
             .no-print {
                 display: none !important;
@@ -349,9 +401,20 @@
                 </div>
             @endif
 
+            @php
+                $isPartialPayment = $data['is_partial_payment'] ?? false;
+                $receiptTitle = $isPartialPayment
+                    ? (___('fees.partial_payment_receipt') ?? 'Partial Payment Receipt')
+                    : (___('fees.full_payment_receipt') ?? (___('fees.payment_receipt') ?? 'Payment Receipt'));
+                $statusLabel = $isPartialPayment
+                    ? (___('fees.partial_payment') ?? 'Partial Payment')
+                    : (___('fees.full_payment') ?? 'Full Payment');
+                $statusBadgeClass = $isPartialPayment ? 'partial' : 'full';
+            @endphp
+
             <div class="school-name">{{ $data['school_info']['name'] }}</div>
-            <div class="receipt-title">{{ ___('fees.partial_payment_receipt') ?? 'Partial Payment Receipt' }}</div>
-            <div class="partial-payment-badge">{{ ___('fees.partial_payment') ?? 'PARTIAL PAYMENT' }}</div>
+            <div class="receipt-title">{{ $receiptTitle }}</div>
+            <div class="payment-status-badge {{ $statusBadgeClass }}">{{ $statusLabel }}</div>
         </div>
 
         {{-- Receipt Information --}}
@@ -452,7 +515,25 @@
                     <span>{{ $feeType }} ({{ $payments->count() }} {{ $payments->count() > 1 ? 'payments' : 'payment' }})</span>
                     <span>{{ $data['school_info']['currency'] }} {{ number_format($payments->sum('amount'), 2) }}</span>
                 </div>
+        @endforeach
+        </div>
+        @endif
+
+        @if(($data['is_partial_payment'] ?? false) && !empty($data['outstanding_items']))
+        <div class="outstanding-summary">
+            <h4>{{ ___('fees.outstanding_balance') ?? 'Outstanding Balance' }}</h4>
+            @foreach($data['outstanding_items'] as $item)
+                <div class="outstanding-item">
+                    <span>{{ $item['name'] }}</span>
+                    <span>{{ $data['school_info']['currency'] }} {{ number_format($item['balance'], 2) }}</span>
+                </div>
             @endforeach
+            @if(($data['outstanding_total'] ?? 0) > 0)
+                <div class="outstanding-item total">
+                    <span>{{ ___('fees.total_outstanding') ?? 'Total Outstanding' }}</span>
+                    <span>{{ $data['school_info']['currency'] }} {{ number_format($data['outstanding_total'], 2) }}</span>
+                </div>
+            @endif
         </div>
         @endif
 
@@ -461,7 +542,11 @@
             <div>{{ ___('common.thank_you') }}</div>
             <div class="generated-info">
                 {{ ___('fees.generated_on') }}: {{ date('d M Y, h:i A') }}
-                <br>{{ ___('fees.partial_payment_note') ?? 'This receipt reflects a partial payment. Additional payments may be required.' }}
+                @php
+                    $partialNote = ___('fees.partial_payment_note') ?? 'This receipt reflects a partial payment. Additional payments may be required.';
+                    $fullNote = ___('fees.full_payment_note') ?? 'This receipt confirms that all outstanding balances for this billing period have been cleared.';
+                @endphp
+                <br>{{ ($data['is_partial_payment'] ?? false) ? $partialNote : $fullNote }}
             </div>
         </div>
     </div>

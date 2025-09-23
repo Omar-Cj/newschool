@@ -94,7 +94,6 @@ class FeesCollectController extends Controller
             'payment_date' => 'required|date',
             'discount_type' => 'nullable|in:fixed,percentage',
             'discount_amount' => 'nullable|numeric|min:0',
-            'transaction_reference' => 'required_if:payment_method,zaad,edahab',
             'payment_notes' => 'nullable|string|max:500',
             'fees_source' => 'nullable|in:legacy,service_based',
         ];
@@ -131,43 +130,26 @@ class FeesCollectController extends Controller
                             'student_id' => $student->id,
                             'payment_date' => $request->payment_date,
                             'payment_method' => $request->payment_method,
-                            'transaction_reference' => $request->transaction_reference,
                             'amount' => number_format($request->payment_amount, 2),
                             'journal_name' => $result['data']['journal_name'] ?? 'N/A'
                         ]
                     ];
 
-                    // Add receipt options if payment ID is available
+                    // Add direct print URL instead of modal for improved UX
                     if ($paymentId) {
                         try {
-                            $receiptController = app(\App\Http\Controllers\Fees\ReceiptController::class);
-                            $receiptRequest = request()->duplicate();
-                            $receiptRequest->headers->set('X-Requested-With', 'XMLHttpRequest');
-
-                            // Temporarily set the request for the receipt controller
-                            $originalRequest = request();
-                            app()->instance('request', $receiptRequest);
-
-                            $receiptResponse = $receiptController->showReceiptOptions($paymentId);
-
-                            // Restore original request
-                            app()->instance('request', $originalRequest);
-
-                            if ($receiptResponse instanceof \Illuminate\Http\JsonResponse) {
-                                $receiptData = $receiptResponse->getData(true);
-                                if (isset($receiptData['success']) && $receiptData['success']) {
-                                    $response['receipt_options'] = [
-                                        'html' => $receiptData['html'],
-                                        'meta' => $receiptData['meta']
-                                    ];
-                                }
-                            }
+                            // Generate direct print URL for immediate receipt access
+                            $response['direct_print_url'] = route('fees.receipt.individual', [
+                                'paymentId' => $paymentId,
+                                'print' => 1,
+                            ]);
+                            $response['print_instructions'] = 'Receipt will open in new window for printing';
                         } catch (\Exception $e) {
-                            \Log::warning('Could not generate receipt options for partial payment', [
+                            \Log::warning('Could not generate direct print URL', [
                                 'payment_id' => $paymentId,
                                 'error' => $e->getMessage()
                             ]);
-                            // Don't fail the entire response if receipt options fail
+                            // Fallback to payment_id for backward compatibility
                         }
                     }
 
