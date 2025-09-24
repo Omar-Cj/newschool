@@ -346,7 +346,10 @@ class EnhancedFeesGenerationService
 
         $query = Student::query()
             ->where('status', \App\Enums\Status::ACTIVE)
-            ->with(['session_class_student']);
+            ->with(['session_class_student', 'studentCategory']);
+
+        // CRITICAL: Apply fee eligibility filter to exclude scholarship students
+        $query->feeEligible();
 
         // Apply grade filters - THIS WAS MISSING!
         if (isset($criteria['grades']) && !empty($criteria['grades'])) {
@@ -390,18 +393,33 @@ class EnhancedFeesGenerationService
 
         $result = $query->get();
 
-        // Debug logging for final result
+        // Get count of excluded students for logging
+        $totalActiveStudents = Student::where('status', \App\Enums\Status::ACTIVE)->count();
+        $excludedCount = $totalActiveStudents - $result->count();
+
+        // Debug logging for final result with fee exemption tracking
         \Log::debug('Enhanced Service - Eligible Students Result', [
-            'student_count' => $result->count(),
+            'total_active_students' => $totalActiveStudents,
+            'fee_eligible_students' => $result->count(),
+            'fee_exempt_students_excluded' => $excludedCount,
             'unique_grades' => $result->pluck('grade')->unique()->sort()->values()->toArray(),
             'sample_students' => $result->take(5)->map(function($student) {
                 return [
                     'id' => $student->id,
                     'name' => $student->first_name . ' ' . $student->last_name,
-                    'grade' => $student->grade
+                    'grade' => $student->grade,
+                    'category' => $student->studentCategory?->name
                 ];
             })->toArray()
         ]);
+
+        // Log warning if many students are excluded
+        if ($excludedCount > 0) {
+            \Log::info('Fee-exempt students excluded from generation', [
+                'excluded_count' => $excludedCount,
+                'criteria' => $criteria
+            ]);
+        }
 
         return $result;
     }

@@ -106,6 +106,34 @@ class StudentService extends BaseModel
         });
     }
 
+    /**
+     * Scope to get only services for fee-eligible students (excludes scholarship students)
+     */
+    public function scopeFeeEligible($query)
+    {
+        return $query->whereHas('student', function($q) {
+            $q->feeEligible();
+        });
+    }
+
+    /**
+     * Scope to get services for fee-exempt students (scholarship students only)
+     */
+    public function scopeFeeExempt($query)
+    {
+        return $query->whereHas('student', function($q) {
+            $q->feeExempt();
+        });
+    }
+
+    /**
+     * Scope to exclude services for fee-exempt students from operations
+     */
+    public function scopeExcludeFeeExempt($query)
+    {
+        return $query->feeEligible();
+    }
+
     // Discount calculation methods
     public function calculateFinalAmount(): float
     {
@@ -253,6 +281,83 @@ class StudentService extends BaseModel
     public function getFormattedDiscountAmountAttribute(): string
     {
         return '$' . number_format($this->getDiscountAmount(), 2);
+    }
+
+    // Fee Eligibility Validation Methods
+
+    /**
+     * Check if this service can be operated on (not for fee-exempt students)
+     */
+    public function isOperationAllowed(): bool
+    {
+        return $this->student ? $this->student->isEligibleForFees() : false;
+    }
+
+    /**
+     * Validate service operation with detailed feedback
+     */
+    public function validateOperation(string $operation = 'general'): array
+    {
+        $validation = [
+            'allowed' => false,
+            'reason' => null,
+            'service_info' => [
+                'id' => $this->id,
+                'fee_type' => $this->feeType?->name,
+                'student_name' => $this->student?->full_name
+            ]
+        ];
+
+        if (!$this->student) {
+            $validation['reason'] = 'Service has no associated student.';
+            return $validation;
+        }
+
+        if (!$this->student->isEligibleForFees()) {
+            $validation['reason'] = sprintf(
+                'Service "%s" for student "%s" cannot be %s - student is in a fee-exempt category (%s).',
+                $this->feeType?->name ?? 'Unknown Service',
+                $this->student->full_name,
+                $operation,
+                $this->student->studentCategory?->name ?? 'Unknown Category'
+            );
+            return $validation;
+        }
+
+        $validation['allowed'] = true;
+        return $validation;
+    }
+
+    /**
+     * Boot method to add model events for fee eligibility validation
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        // Prevent creating services for fee-exempt students
+        static::creating(function ($studentService) {
+            if ($studentService->student && !$studentService->student->isEligibleForFees()) {
+                throw new \Exception(sprintf(
+                    'Cannot create service subscription for student "%s" - student is in fee-exempt category "%s".',
+                    $studentService->student->full_name,
+                    $studentService->student->studentCategory?->name ?? 'Unknown Category'
+                ));
+            }
+        });
+
+        // Log operations on existing services
+        static::updating(function ($studentService) {
+            if ($studentService->student && !$studentService->student->isEligibleForFees()) {
+                \Log::warning('Attempting to update service for fee-exempt student', [
+                    'service_id' => $studentService->id,
+                    'student_id' => $studentService->student_id,
+                    'student_name' => $studentService->student->full_name,
+                    'fee_type' => $studentService->feeType?->name,
+                    'category' => $studentService->student->studentCategory?->name
+                ]);
+            }
+        });
     }
 
 }

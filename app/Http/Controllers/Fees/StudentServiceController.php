@@ -436,6 +436,23 @@ class StudentServiceController extends Controller
             $student = Student::findOrFail($request->input('student_id'));
             $feeType = FeesType::findOrFail($request->input('fee_type_id'));
 
+            // CRITICAL: Check if student is eligible for fee operations
+            $eligibilityCheck = $student->validateFeeOperation('service subscription');
+            if (!$eligibilityCheck['allowed']) {
+                Log::warning('Service subscription blocked for fee-exempt student', [
+                    'student_id' => $student->id,
+                    'student_name' => $student->full_name,
+                    'fee_type_id' => $feeType->id,
+                    'fee_type_name' => $feeType->name,
+                    'reason' => $eligibilityCheck['reason']
+                ]);
+
+                return $this->error($eligibilityCheck['reason'], 403, [
+                    'student_info' => $eligibilityCheck['student_info'],
+                    'attempted_service' => $feeType->name
+                ]);
+            }
+
             $options = [
                 'academic_year_id' => $request->input('academic_year_id'),
                 'amount' => $request->input('amount'),
@@ -630,13 +647,49 @@ class StudentServiceController extends Controller
 
         try {
             $students = Student::whereIn('id', $request->input('student_ids'))->get();
+
+            // CRITICAL: Filter out fee-exempt students
+            $eligibleStudents = $students->filter(function ($student) {
+                return $student->isEligibleForFees();
+            });
+
+            $excludedStudents = $students->diff($eligibleStudents);
+
+            // Log excluded students
+            if ($excludedStudents->isNotEmpty()) {
+                Log::warning('Some students excluded from bulk subscription - fee-exempt categories', [
+                    'total_requested' => $students->count(),
+                    'eligible_count' => $eligibleStudents->count(),
+                    'excluded_count' => $excludedStudents->count(),
+                    'excluded_students' => $excludedStudents->map(function ($student) {
+                        return [
+                            'id' => $student->id,
+                            'name' => $student->full_name,
+                            'category' => $student->studentCategory?->name
+                        ];
+                    })->toArray()
+                ]);
+            }
+
+            if ($eligibleStudents->isEmpty()) {
+                return $this->error('No eligible students found. All selected students are in fee-exempt categories.', 403, [
+                    'excluded_students' => $excludedStudents->map(function ($student) {
+                        return [
+                            'id' => $student->id,
+                            'name' => $student->full_name,
+                            'category' => $student->studentCategory?->name
+                        ];
+                    })->toArray()
+                ]);
+            }
+
             $options = [
                 'academic_year_id' => $request->input('academic_year_id'),
                 'notes' => $request->input('notes', 'Bulk subscription')
             ];
 
             $results = $this->serviceManager->bulkSubscribeStudents(
-                $students,
+                $eligibleStudents,
                 $request->input('fee_type_ids'),
                 $options
             );

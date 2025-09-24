@@ -428,4 +428,108 @@ class Student extends BaseModel
             })->toArray()
         ];
     }
+
+    // Fee Eligibility Methods for Scholarship Student Management
+
+    /**
+     * Check if this student is eligible for fee generation and collection
+     */
+    public function isEligibleForFees(): bool
+    {
+        return app(\App\Services\FeeEligibilityService::class)->isStudentEligibleForFees($this);
+    }
+
+    /**
+     * Check if this student's category is fee-exempt (e.g., scholarship student)
+     */
+    public function isInFeeExemptCategory(): bool
+    {
+        if (!$this->student_category_id) {
+            return false; // Default to not exempt if no category
+        }
+
+        return app(\App\Services\FeeEligibilityService::class)->isStudentCategoryFeeExempt($this->student_category_id);
+    }
+
+    /**
+     * Get fee exemption status with category information
+     */
+    public function getFeeExemptionStatus(): array
+    {
+        $isExempt = $this->isInFeeExemptCategory();
+
+        return [
+            'is_fee_exempt' => $isExempt,
+            'category_id' => $this->student_category_id,
+            'category_name' => $this->studentCategory?->name,
+            'exemption_reason' => $isExempt ? 'Student category is marked as fee-exempt' : null
+        ];
+    }
+
+    /**
+     * Scope to get only fee-eligible students
+     */
+    public function scopeFeeEligible($query)
+    {
+        return $query->whereHas('studentCategory', function ($q) {
+            $q->where('is_fee_exempt', false);
+        })->orWhereNull('student_category_id'); // Include students with no category for backward compatibility
+    }
+
+    /**
+     * Scope to get only fee-exempt students
+     */
+    public function scopeFeeExempt($query)
+    {
+        return $query->whereHas('studentCategory', function ($q) {
+            $q->where('is_fee_exempt', true);
+        });
+    }
+
+    /**
+     * Check if student should have services (opposite of fee exemption)
+     */
+    public function shouldHaveServices(): bool
+    {
+        return $this->isEligibleForFees();
+    }
+
+    /**
+     * Validate if fee operations are allowed for this student
+     */
+    public function validateFeeOperation(string $operation = 'general'): array
+    {
+        $validation = [
+            'allowed' => false,
+            'reason' => null,
+            'student_info' => [
+                'id' => $this->id,
+                'name' => $this->full_name,
+                'category' => $this->studentCategory?->name
+            ]
+        ];
+
+        if (!$this->isEligibleForFees()) {
+            $validation['reason'] = sprintf(
+                'Student "%s" is in a fee-exempt category (%s). %s operations are not allowed for this student.',
+                $this->full_name,
+                $this->studentCategory?->name ?? 'Unknown Category',
+                ucfirst($operation)
+            );
+            return $validation;
+        }
+
+        if ($this->status !== \App\Enums\Status::ACTIVE) {
+            $validation['reason'] = sprintf(
+                'Student "%s" is not active (status: %s). %s operations require active students.',
+                $this->full_name,
+                $this->status,
+                ucfirst($operation)
+            );
+            return $validation;
+        }
+
+        $validation['allowed'] = true;
+        return $validation;
+    }
 }

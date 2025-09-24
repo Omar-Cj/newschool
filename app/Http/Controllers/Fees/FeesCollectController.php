@@ -111,6 +111,34 @@ class FeesCollectController extends Controller
 
         $validatedData = $request->validate($validationRules);
 
+        // CRITICAL: Validate fee eligibility for the student before processing payment
+        $student = \App\Models\StudentInfo\Student::find($validatedData['student_id']);
+        if (!$student) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Student not found.'
+            ], 404);
+        }
+
+        $eligibilityCheck = $student->validateFeeOperation('fee collection');
+        if (!$eligibilityCheck['allowed']) {
+            \Log::warning('Fee collection blocked for fee-exempt student', [
+                'student_id' => $student->id,
+                'student_name' => $student->full_name,
+                'payment_amount' => $validatedData['payment_amount'],
+                'fees_source' => $feesSource,
+                'reason' => $eligibilityCheck['reason'],
+                'attempted_by' => auth()->id()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => $eligibilityCheck['reason'],
+                'error_type' => 'fee_exempt_student',
+                'student_info' => $eligibilityCheck['student_info']
+            ], 403);
+        }
+
         try {
             $result = $this->repo->store($request);
 
