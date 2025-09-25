@@ -442,6 +442,63 @@ class StudentController extends Controller
     }
 
     /**
+     * Get AJAX data for DataTables server-side processing
+     */
+    public function ajaxData(Request $request)
+    {
+        try {
+            $result = $this->repo->getAjaxData($request);
+            return response()->json($result);
+        } catch (\Exception $e) {
+            \Log::error('Error in ajaxData: ' . $e->getMessage(), [
+                'request' => $request->all(),
+                'error' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'draw' => intval($request->input('draw')),
+                'recordsTotal' => 0,
+                'recordsFiltered' => 0,
+                'data' => [],
+                'error' => 'An error occurred while loading data.'
+            ], 500);
+        }
+    }
+
+    /**
+     * Get sections for a specific class via AJAX
+     */
+    public function ajaxSections($classId)
+    {
+        try {
+            $sections = $this->classSetupRepo->getSections($classId);
+
+            $sectionsData = $sections->map(function($section) {
+                return [
+                    'id' => $section->section->id,
+                    'name' => $section->section->name
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'data' => $sectionsData
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error in ajaxSections: ' . $e->getMessage(), [
+                'class_id' => $classId,
+                'error' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to load sections',
+                'data' => []
+            ], 500);
+        }
+    }
+
+    /**
      * Calculate outstanding amounts for students for fee display
      * Leverages the existing service-based fee system
      *

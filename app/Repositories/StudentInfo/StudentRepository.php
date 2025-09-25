@@ -673,6 +673,261 @@ class StudentRepository implements StudentInterface
     }
 
     /**
+     * Get AJAX data for DataTables server-side processing
+     */
+    public function getAjaxData($request)
+    {
+        // DataTables parameters
+        $draw = intval($request->input('draw'));
+        $start = intval($request->input('start'));
+        $length = intval($request->input('length'));
+        $searchValue = $request->input('search.value');
+        $orderColumn = $request->input('order.0.column');
+        $orderDir = $request->input('order.0.dir', 'asc');
+
+        // Custom filter parameters
+        $classFilter = $request->input('class_id');
+        $sectionFilter = $request->input('section_id');
+        $keywordFilter = $request->input('keyword');
+
+        // Base query
+        $query = SessionClassStudent::query()
+            ->where('session_id', setting('session'))
+            ->with([
+                'student.upload',
+                'student.user',
+                'student.gender',
+                'student.parent',
+                'class',
+                'section',
+                'student.feesPayments' => function($query) {
+                    $academicYearId = session('academic_year_id') ?? \App\Models\Session::active()->value('id');
+                    $query->where('academic_year_id', $academicYearId);
+                },
+                'student.studentServices.feeType'
+            ]);
+
+        // Apply filters
+        if (!empty($classFilter)) {
+            $query->where('classes_id', $classFilter);
+        }
+
+        if (!empty($sectionFilter)) {
+            $query->where('section_id', $sectionFilter);
+        }
+
+        if (!empty($keywordFilter)) {
+            $query->whereHas('student', function($q) use ($keywordFilter) {
+                $q->where('first_name', 'LIKE', "%{$keywordFilter}%")
+                  ->orWhere('last_name', 'LIKE', "%{$keywordFilter}%")
+                  ->orWhere('dob', 'LIKE', "%{$keywordFilter}%");
+            });
+        }
+
+        // Apply DataTables global search
+        if (!empty($searchValue)) {
+            $query->whereHas('student', function($q) use ($searchValue) {
+                $q->where('first_name', 'LIKE', "%{$searchValue}%")
+                  ->orWhere('last_name', 'LIKE', "%{$searchValue}%")
+                  ->orWhere('mobile', 'LIKE', "%{$searchValue}%")
+                  ->orWhere('email', 'LIKE', "%{$searchValue}%");
+            });
+        }
+
+        // Count records before pagination
+        $totalRecords = SessionClassStudent::where('session_id', setting('session'))->count();
+        $filteredRecords = $query->count();
+
+        // Apply ordering
+        $columns = ['id', 'student.first_name', 'student.grade', 'class.name', 'student.parent.guardian_name', 'student.dob', 'student.gender.name', 'student.mobile', 'outstanding_amount', 'student.status'];
+        if (isset($columns[$orderColumn])) {
+            $orderField = $columns[$orderColumn];
+            if (strpos($orderField, '.') !== false) {
+                // Handle relationship ordering
+                $parts = explode('.', $orderField);
+                if (count($parts) == 2) {
+                    $query->orderByRaw("(SELECT {$parts[1]} FROM " . $this->getTableName($parts[0]) . " WHERE " . $this->getForeignKey($parts[0]) . " = session_class_students.student_id LIMIT 1) {$orderDir}");
+                }
+            } else {
+                $query->orderBy($orderField, $orderDir);
+            }
+        } else {
+            $query->latest();
+        }
+
+        // Apply pagination
+        $students = $query->offset($start)->limit($length)->get();
+
+        // Calculate outstanding amounts
+        $this->calculateOutstandingAmountsForAjax($students);
+
+        // Format data for DataTables
+        $data = [];
+        $key = $start + 1;
+
+        foreach ($students as $row) {
+            $student = $row->student;
+
+            if (!$student) continue;
+
+            // Generate avatar HTML
+            $avatarHtml = '';
+            if ($student->upload) {
+                $avatarHtml = '<img src="' . asset($student->upload->path) . '" alt="' . $student->first_name . ' ' . $student->last_name . '" style="width: 32px; height: 32px; object-fit: cover; border-radius: 50%;">';
+            } else {
+                $avatarHtml = generateStudentAvatar($student->first_name, $student->last_name, '32px');
+            }
+
+            // Generate student name with avatar
+            $studentNameHtml = '<a href="' . route('student.show', $student->id) . '">
+                <div class="user-card">
+                    <div class="user-avatar">' . $avatarHtml . '</div>
+                    <div class="user-info">' . $student->first_name . ' ' . $student->last_name . '</div>
+                </div>
+            </a>';
+
+            // Generate outstanding amount HTML
+            $outstandingHtml = '';
+            if (isset($row->outstanding_amount) && $row->outstanding_amount > 0) {
+                $outstandingHtml = '<span class="text-danger fw-bold">' . setting('currency_symbol') . ' ' . number_format($row->outstanding_amount, 2) . '</span>';
+            } else {
+                $outstandingHtml = '<span class="text-success small">' . ___('fees.no_dues') . '</span>';
+            }
+
+            // Generate status HTML
+            $statusHtml = '';
+            if ($student->status == \App\Enums\Status::ACTIVE) {
+                $statusHtml = '<span class="badge-basic-success-text">' . ___('common.active') . '</span>';
+            } else {
+                $statusHtml = '<span class="badge-basic-danger-text">' . ___('common.inactive') . '</span>';
+            }
+
+            // Generate actions HTML
+            $actionsHtml = '';
+            if (hasPermission('student_update') || hasPermission('student_delete')) {
+                $actionsHtml = '<div class="dropdown dropdown-action">
+                    <button type="button" class="btn-dropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fa-solid fa-ellipsis"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">';
+
+                if (hasPermission('student_update')) {
+                    $actionsHtml .= '<li><a class="dropdown-item" href="' . route('student.edit', $row->id) . '"><span class="icon mr-8"><i class="fa-solid fa-pen-to-square"></i></span>' . ___('common.edit') . '</a></li>';
+                }
+
+                if (isset($row->outstanding_amount) && $row->outstanding_amount > 0 && hasPermission('fees_collect_update')) {
+                    $actionsHtml .= '<li><a class="dropdown-item" href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#modalCustomizeWidth" onclick="openFeeCollectionModal(' . $student->id . ', \'' . $student->first_name . ' ' . $student->last_name . '\')"><span class="icon mr-8"><i class="fa-solid fa-credit-card text-success"></i></span>' . ___('common.pay') . '</a></li>';
+                }
+
+                if (hasPermission('student_delete')) {
+                    $actionsHtml .= '<li><a class="dropdown-item" href="javascript:void(0);" onclick="delete_row(\'student/delete\', ' . $row->student_id . ')"><span class="icon mr-8"><i class="fa-solid fa-trash-can"></i></span><span>' . ___('common.delete') . '</span></a></li>';
+                }
+
+                $actionsHtml .= '</ul></div>';
+            }
+
+            $data[] = [
+                $key++,
+                $studentNameHtml,
+                $student->grade ?? 'Not Set',
+                ($row->class->name ?? '') . ' (' . ($row->section->name ?? '') . ')',
+                $student->parent->guardian_name ?? '',
+                dateFormat($student->dob),
+                $student->gender->name ?? '',
+                $student->mobile ?? '',
+                $outstandingHtml,
+                $statusHtml,
+                $actionsHtml
+            ];
+        }
+
+        return [
+            'draw' => $draw,
+            'recordsTotal' => $totalRecords,
+            'recordsFiltered' => $filteredRecords,
+            'data' => $data
+        ];
+    }
+
+    /**
+     * Calculate outstanding amounts for AJAX data
+     */
+    private function calculateOutstandingAmountsForAjax($students)
+    {
+        $academicYearId = session('academic_year_id');
+
+        if (!$academicYearId) {
+            $academicYearId = \App\Models\Session::active()->value('id');
+        }
+
+        if (!$academicYearId) {
+            return;
+        }
+
+        foreach ($students as $row) {
+            $student = $row->student;
+
+            if (!$student) {
+                $row->outstanding_amount = 0;
+                continue;
+            }
+
+            try {
+                if ($student->hasActiveServices($academicYearId)) {
+                    $allGeneratedFees = $student->feesPayments()
+                        ->where('academic_year_id', $academicYearId)
+                        ->get();
+
+                    $totalFees = $allGeneratedFees->sum('amount');
+                    $totalPaid = $allGeneratedFees->sum('total_paid');
+                    $outstandingAmount = $totalFees - $totalPaid;
+
+                    $row->outstanding_amount = max(0, $outstandingAmount);
+                } else {
+                    $row->outstanding_amount = 0;
+                }
+            } catch (\Exception $e) {
+                \Log::warning('Error calculating outstanding amount for student in AJAX', [
+                    'student_id' => $student->id,
+                    'error' => $e->getMessage()
+                ]);
+                $row->outstanding_amount = 0;
+            }
+        }
+    }
+
+    /**
+     * Helper methods for ordering relationships
+     */
+    private function getTableName($relation)
+    {
+        switch ($relation) {
+            case 'student':
+                return 'students';
+            case 'class':
+                return 'classes';
+            case 'section':
+                return 'sections';
+            default:
+                return $relation . 's';
+        }
+    }
+
+    private function getForeignKey($relation)
+    {
+        switch ($relation) {
+            case 'student':
+                return 'id';
+            case 'class':
+                return 'classes_id';
+            case 'section':
+                return 'section_id';
+            default:
+                return $relation . '_id';
+        }
+    }
+
+    /**
      * Get grade-based statistics for dashboard
      */
     public function getGradeStatistics(): array

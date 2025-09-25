@@ -30,6 +30,9 @@ Route::middleware(saasMiddleware())->group(function () {
                     Route::delete('/delete/{id}',   'delete')->name('student.delete')->middleware('PermissionCheck:student_delete', 'DemoCheck');
                     Route::get('/get-children/{parentId}', 'getChildren')->name('student.getChildren');
 
+                    // AJAX endpoints for DataTables and dynamic loading
+                    Route::get('/ajax-data',        'ajaxData')->name('student.ajaxData')->middleware('PermissionCheck:student_read');
+                    Route::get('/ajax-sections/{classId}', 'ajaxSections')->name('student.ajaxSections')->middleware('PermissionCheck:student_read');
 
                     Route::get('/add-new-document',          'addNewDocument');
                     Route::get('/get-students',              'getStudents');
