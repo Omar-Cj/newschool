@@ -11,6 +11,11 @@ $(document).ready(function() {
         loadJournals();
     });
 
+    // Initialize Select2 dropdowns when modal is shown
+    $('#modalCustomizeWidth').on('shown.bs.modal', function() {
+        initializeSelect2Dropdowns();
+    });
+
 
     // Discount type change handler
     $('#discount_type').change(function() {
@@ -66,10 +71,49 @@ $(document).ready(function() {
                 response.forEach(function(journal) {
                     journalSelect.append(`<option value="${journal.id}">${journal.text}</option>`);
                 });
+
+                // Re-initialize Select2 for journal dropdown after AJAX load
+                if (journalSelect.hasClass('select2-hidden-accessible')) {
+                    journalSelect.select2('destroy');
+                }
+                journalSelect.select2({
+                    placeholder: "{{ ___('fees.select_journal') }}",
+                    allowClear: false,
+                    width: '100%',
+                    dropdownParent: $('#feeCollectionModalWidth')
+                });
             },
             error: function() {
                 showErrorMessage('{{ ___("fees.failed_to_load_journals") }}');
             }
+        });
+    }
+
+    function initializeSelect2Dropdowns() {
+        const modalParent = $('#feeCollectionModalWidth');
+
+        // Initialize Payment Method dropdown
+        $('#payment_method').select2({
+            placeholder: "{{ ___('fees.select_payment_method') }}",
+            allowClear: false,
+            width: '100%',
+            dropdownParent: modalParent
+        });
+
+        // Initialize Journal dropdown (will be re-initialized after AJAX load)
+        $('#journal_id').select2({
+            placeholder: "{{ ___('fees.select_journal') }}",
+            allowClear: false,
+            width: '100%',
+            dropdownParent: modalParent
+        });
+
+        // Initialize Discount Type dropdown
+        $('#discount_type').select2({
+            placeholder: "{{ ___('fees.No Discount') }}",
+            allowClear: true,
+            width: '100%',
+            dropdownParent: modalParent
         });
     }
 

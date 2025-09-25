@@ -58,7 +58,7 @@
             <!-- Payment Configuration -->
             <div class="row">
                 <!-- Payment Amount -->
-                <div class="col-12 mb-3">
+                <div class="col-md-6 mb-3">
                     <label for="payment_amount" class="form-label">
                         {{ ___('fees.Payment Amount') }} ({{ Setting('currency_symbol') }})
                         <span class="fillable">*</span>
@@ -74,12 +74,12 @@
                 </div>
 
                 <!-- Payment Method -->
-                <div class="col-12 mb-3">
+                <div class="col-md-6 mb-3">
                     <label for="payment_method" class="form-label">
                         {{ ___('fees.payment_method') }}
                         <span class="fillable">*</span>
                     </label>
-                    <select class="form-control ot-input" name="payment_method" id="payment_method" required>
+                    <select class="form-control select2" name="payment_method" id="payment_method" required>
                         <option value="" disabled selected>{{ ___('fees.select_payment_method') }}</option>
                         <option value="cash">{{ ___('fees.cash') }}</option>
                         <option value="zaad">{{ ___('fees.zaad') }}</option>
@@ -98,11 +98,11 @@
                 </div>
 
                 <!-- Journal Selection -->
-                <div class="col-12 mb-3">
+                <div class="col-md-6 mb-3">
                     <label for="journal_id" class="form-label">
                         {{ ___('fees.Journal') }} <span class="fillable">*</span>
                     </label>
-                    <select class="form-control ot-input" name="journal_id" id="journal_id" required>
+                    <select class="form-control select2" name="journal_id" id="journal_id" required>
                         <option value="">{{ ___('fees.select_journal') }}</option>
                         <!-- Will be populated by JavaScript -->
                     </select>
@@ -111,7 +111,7 @@
                 <!-- Discount -->
                 <div class="col-md-6 mb-3">
                     <label for="discount_type" class="form-label">{{ ___('fees.Discount Type') }}</label>
-                    <select class="form-control ot-input" name="discount_type" id="discount_type">
+                    <select class="form-control select2" name="discount_type" id="discount_type">
                         <option value="">{{ ___('fees.No Discount') }}</option>
                         <option value="fixed">{{ ___('fees.Fixed Amount') }}</option>
                         <option value="percentage">{{ ___('fees.Percentage') }}</option>
@@ -125,7 +125,7 @@
                 </div>
 
                 <!-- Payment Date -->
-                <div class="col-12 mb-3">
+                <div class="col-md-6 mb-3">
                     <label for="payment_date" class="form-label">
                         {{ ___('fees.Payment Date') }} <span class="fillable">*</span>
                     </label>
