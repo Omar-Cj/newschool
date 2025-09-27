@@ -351,3 +351,6 @@ Route::middleware(saasMiddleware())->group(function () {
         });
     });
 });
+
+// Include parent deposits routes
+require __DIR__ . '/parent_deposits.php';

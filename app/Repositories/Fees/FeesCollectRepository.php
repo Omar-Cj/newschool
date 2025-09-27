@@ -18,6 +18,7 @@ use App\Interfaces\Fees\FeesCollectInterface;
 use App\Models\Accounts\AccountHead;
 use App\Models\StudentInfo\SessionClassStudent;
 use App\Services\PartialPaymentService;
+use App\Services\EnhancedFeeCollectionService;
 use Illuminate\Support\Facades\Schema;
 
 class FeesCollectRepository implements FeesCollectInterface
@@ -27,12 +28,18 @@ class FeesCollectRepository implements FeesCollectInterface
     private $model;
     private $feesMasterRepo;
     private $partialPaymentService;
+    private $enhancedFeeService;
 
-    public function __construct(FeesCollect $model, FeesMasterInterface $feesMasterRepo, PartialPaymentService $partialPaymentService)
-    {
+    public function __construct(
+        FeesCollect $model,
+        FeesMasterInterface $feesMasterRepo,
+        PartialPaymentService $partialPaymentService,
+        EnhancedFeeCollectionService $enhancedFeeService
+    ) {
         $this->model          = $model;
         $this->feesMasterRepo = $feesMasterRepo;
         $this->partialPaymentService = $partialPaymentService;
+        $this->enhancedFeeService = $enhancedFeeService;
     }
 
     public function all()
@@ -79,7 +86,7 @@ class FeesCollectRepository implements FeesCollectInterface
 
                 $paymentMethodInt = $paymentMethodMap[$request->payment_method] ?? 1;
 
-                // Service-based processing: support both full and partial payments
+                // Enhanced service-based processing with automatic deposit utilization
                 if ($request->fees_source === 'service_based') {
                     $academicYearId = session('academic_year_id') ?: \App\Models\Session::active()->value('id');
 
@@ -116,9 +123,11 @@ class FeesCollectRepository implements FeesCollectInterface
                         return $this->responseWithError('Payment amount cannot exceed total outstanding balance.', []);
                     }
 
-                    // Process payments for each fee using partial payment service
+                    // Use enhanced fee collection service for deposit optimization
                     $remainingAmount = $payAmount;
                     $processedPayments = [];
+                    $totalDepositUsed = 0;
+                    $totalCashPayment = 0;
                     $isPartialPayment = $payAmount < $totalOutstanding;
 
                     foreach ($unpaidFees as $fee) {
@@ -129,37 +138,109 @@ class FeesCollectRepository implements FeesCollectInterface
 
                         $paymentForThisFee = min($remainingAmount, $feeBalance);
 
-                        // Prepare payment data for the partial payment service
+                        // Prepare payment data for enhanced service
                         $paymentData = [
                             'amount' => $paymentForThisFee,
-                            'payment_method' => $request->payment_method,
+                            'payment_method' => $paymentMethodInt,
                             'payment_date' => $request->payment_date ?? now()->toDateString(),
                             'transaction_reference' => $request->transaction_reference,
                             'payment_notes' => $request->payment_notes,
-                            'journal_id' => $request->journal_id,
                         ];
 
-                        // Process payment using partial payment service
-                        $result = $this->partialPaymentService->processPayment($paymentData, $fee->id);
+                        try {
+                            // Use enhanced fee collection service with automatic deposit utilization
+                            $result = $this->enhancedFeeService->collectFeeWithDeposit($fee, $paymentData);
 
-                        if (!$result['success']) {
-                            DB::rollBack();
-                            return $this->responseWithError($result['message'], []);
+                            if ($result['success']) {
+                                $processedPayments[] = [
+                                    'fee_id' => $fee->id,
+                                    'payment_transactions' => $result['transactions'],
+                                    'amount_paid' => $paymentForThisFee,
+                                    'deposit_used' => $result['deposit_used'],
+                                    'cash_payment' => $result['cash_payment'],
+                                    'fee_name' => $fee->getFeeName()
+                                ];
+
+                                $totalDepositUsed += $result['deposit_used'];
+                                $totalCashPayment += $result['cash_payment'];
+
+                                // Set first payment ID for receipt generation
+                                if ($firstPaymentId === null && !empty($result['transactions'])) {
+                                    $firstPaymentId = $result['transactions'][0]->id;
+                                }
+                            } else {
+                                // Fallback to regular partial payment service if enhanced fails
+                                $fallbackData = [
+                                    'amount' => $paymentForThisFee,
+                                    'payment_method' => $request->payment_method,
+                                    'payment_date' => $request->payment_date ?? now()->toDateString(),
+                                    'transaction_reference' => $request->transaction_reference,
+                                    'payment_notes' => $request->payment_notes,
+                                    'journal_id' => $request->journal_id,
+                                ];
+
+                                $fallbackResult = $this->partialPaymentService->processPayment($fallbackData, $fee->id);
+
+                                if (!$fallbackResult['success']) {
+                                    DB::rollBack();
+                                    return $this->responseWithError($fallbackResult['message'], []);
+                                }
+
+                                $processedPayments[] = [
+                                    'fee_id' => $fee->id,
+                                    'payment_id' => $fallbackResult['data']['payment_id'],
+                                    'amount_paid' => $paymentForThisFee,
+                                    'deposit_used' => 0,
+                                    'cash_payment' => $paymentForThisFee,
+                                    'fee_name' => $fee->getFeeName()
+                                ];
+
+                                $totalCashPayment += $paymentForThisFee;
+
+                                if ($firstPaymentId === null) {
+                                    $firstPaymentId = $fallbackResult['data']['payment_id'];
+                                }
+                            }
+                        } catch (\Exception $e) {
+                            \Log::warning('Enhanced fee collection failed, using fallback', [
+                                'fee_id' => $fee->id,
+                                'error' => $e->getMessage()
+                            ]);
+
+                            // Fallback to standard processing
+                            $fallbackData = [
+                                'amount' => $paymentForThisFee,
+                                'payment_method' => $request->payment_method,
+                                'payment_date' => $request->payment_date ?? now()->toDateString(),
+                                'transaction_reference' => $request->transaction_reference,
+                                'payment_notes' => $request->payment_notes,
+                                'journal_id' => $request->journal_id,
+                            ];
+
+                            $fallbackResult = $this->partialPaymentService->processPayment($fallbackData, $fee->id);
+
+                            if (!$fallbackResult['success']) {
+                                DB::rollBack();
+                                return $this->responseWithError($fallbackResult['message'], []);
+                            }
+
+                            $processedPayments[] = [
+                                'fee_id' => $fee->id,
+                                'payment_id' => $fallbackResult['data']['payment_id'],
+                                'amount_paid' => $paymentForThisFee,
+                                'deposit_used' => 0,
+                                'cash_payment' => $paymentForThisFee,
+                                'fee_name' => $fee->getFeeName()
+                            ];
+
+                            $totalCashPayment += $paymentForThisFee;
+
+                            if ($firstPaymentId === null) {
+                                $firstPaymentId = $fallbackResult['data']['payment_id'];
+                            }
                         }
-
-                        $processedPayments[] = [
-                            'fee_id' => $fee->id,
-                            'payment_id' => $result['data']['payment_id'],
-                            'amount_paid' => $paymentForThisFee,
-                            'fee_name' => $fee->getFeeName()
-                        ];
 
                         $remainingAmount -= $paymentForThisFee;
-
-                        // Set first payment ID for receipt generation
-                        if ($firstPaymentId === null) {
-                            $firstPaymentId = $result['data']['payment_id'];
-                        }
                     }
 
                     DB::commit();
@@ -174,7 +255,10 @@ class FeesCollectRepository implements FeesCollectInterface
                         'is_partial_payment' => $isPartialPayment,
                         'remaining_balance' => $totalOutstanding - $payAmount,
                         'processed_payments' => $processedPayments,
-                        'total_amount_paid' => $payAmount
+                        'total_amount_paid' => $payAmount,
+                        'total_deposit_used' => $totalDepositUsed,
+                        'total_cash_payment' => $totalCashPayment,
+                        'deposit_optimization' => $totalDepositUsed > 0 ? "Used \${$totalDepositUsed} from deposits, saved cash payment!" : null
                     ]);
                 }
 
@@ -203,9 +287,42 @@ class FeesCollectRepository implements FeesCollectInterface
                         $feeAmount = $existingFee->getNetAmount();
                         $paymentAmount = (float) $request->payment_amount;
 
-                        // If payment is less than fee amount, process as partial payment
-                        if ($paymentAmount < $feeAmount && !$existingFee->isPaid()) {
+                        // If payment is less than fee amount or full payment, use enhanced service with deposit optimization
+                        if (($paymentAmount <= $feeAmount) && !$existingFee->isPaid()) {
                             $paymentData = [
+                                'amount' => $paymentAmount,
+                                'payment_method' => $paymentMethodInt,
+                                'payment_date' => $request->payment_date ?? $request->date ?? date('Y-m-d'),
+                                'transaction_reference' => $request->transaction_reference,
+                                'payment_notes' => $request->payment_notes,
+                            ];
+
+                            try {
+                                // Try enhanced fee collection service first for deposit optimization
+                                $result = $this->enhancedFeeService->collectFeeWithDeposit($existingFee, $paymentData);
+
+                                if ($result['success']) {
+                                    DB::commit();
+                                    return $this->responseWithSuccess(___('alert.created_successfully'), [
+                                        'payment_id' => !empty($result['transactions']) ? $result['transactions'][0]->id : null,
+                                        'total_amount_paid' => $result['total_amount'],
+                                        'deposit_used' => $result['deposit_used'],
+                                        'cash_payment' => $result['cash_payment'],
+                                        'remaining_deposit' => $result['remaining_deposit'],
+                                        'journal_name' => $journal ? $journal->display_name : null,
+                                        'is_partial_payment' => $paymentAmount < $feeAmount,
+                                        'deposit_optimization' => $result['deposit_used'] > 0 ? "Used \${$result['deposit_used']} from deposits!" : null
+                                    ]);
+                                }
+                            } catch (\Exception $e) {
+                                \Log::warning('Enhanced fee collection failed for single payment, using fallback', [
+                                    'fee_id' => $existingFee->id,
+                                    'error' => $e->getMessage()
+                                ]);
+                            }
+
+                            // Fallback to partial payment service
+                            $fallbackData = [
                                 'amount' => $paymentAmount,
                                 'payment_method' => $request->payment_method,
                                 'payment_date' => $request->payment_date ?? $request->date ?? date('Y-m-d'),
@@ -214,7 +331,7 @@ class FeesCollectRepository implements FeesCollectInterface
                                 'journal_id' => $request->journal_id,
                             ];
 
-                            $result = $this->partialPaymentService->processPayment($paymentData, $existingFee->id);
+                            $result = $this->partialPaymentService->processPayment($fallbackData, $existingFee->id);
 
                             if ($result['success']) {
                                 DB::commit();
@@ -225,7 +342,7 @@ class FeesCollectRepository implements FeesCollectInterface
                                     'remaining_balance' => $result['data']['remaining_balance'],
                                     'payment_status' => $result['data']['payment_status'],
                                     'journal_name' => $journal ? $journal->display_name : null,
-                                    'is_partial_payment' => true
+                                    'is_partial_payment' => $paymentAmount < $feeAmount
                                 ]);
                             } else {
                                 DB::rollBack();

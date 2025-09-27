@@ -86,7 +86,7 @@
                                                     <td>{{ ___('users_roles.'.$permission->attribute) }}</td>
                                                     <td>
                                                         <div class="permission-list-td">
-                                                            @foreach ($permission->keywords as $key => $keyword)
+                                                            @foreach ($permission->keywords ?? [] as $key => $keyword)
                                                                 <div class="input-check-radio">
                                                                     <div class="form-check d-flex align-items-center">
                                                                         @if ($keyword != '')

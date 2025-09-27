@@ -1097,3 +1097,38 @@ function generateStudentAvatar($firstName, $lastName, $size = '40px')
         htmlspecialchars($initials)
     );
 }
+
+/**
+ * Get the current active academic year ID
+ */
+if (!function_exists('activeAcademicYear')) {
+    function activeAcademicYear()
+    {
+        try {
+            return \Cache::remember('active_academic_year', 60, function () {
+                return setting('session') ?? 1; // Default to session ID 1 if not set
+            });
+        } catch (\Exception $e) {
+            return 1; // Fallback to ID 1
+        }
+    }
+}
+
+/**
+ * Get the current active branch ID
+ */
+if (!function_exists('activeBranch')) {
+    function activeBranch()
+    {
+        try {
+            return \Cache::remember('active_branch', 60, function () {
+                if (\Auth::check() && \Auth::user()->branch_id) {
+                    return \Auth::user()->branch_id;
+                }
+                return 1; // Default branch ID
+            });
+        } catch (\Exception $e) {
+            return 1; // Fallback to ID 1
+        }
+    }
+}
