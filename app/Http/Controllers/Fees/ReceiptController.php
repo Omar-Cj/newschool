@@ -45,11 +45,11 @@ class ReceiptController extends Controller
 
             // Check if this is a print preview request
             if (request()->has('print') && request()->get('print') == '1') {
-                return view('backend.fees.receipts.individual-transaction', compact('data'));
+                return view('backend.fees.receipts.enhanced-individual-transaction', compact('data'));
             }
 
             // Generate PDF
-            $pdf = PDF::loadView('backend.fees.receipts.individual-transaction', compact('data'));
+            $pdf = PDF::loadView('backend.fees.receipts.enhanced-individual-transaction', compact('data'));
             $pdf->setPaper('A4', 'portrait');
 
             $fileName = 'receipt_' . $receiptData->student->admission_no . '_' . date('Y-m-d', strtotime($receiptData->payment_date)) . '.pdf';
