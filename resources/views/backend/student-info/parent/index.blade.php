@@ -268,6 +268,11 @@
 
         // Initialize deposit form functionality
         function initializeDepositForm() {
+            // Initialize Select2 dropdowns first
+            if (typeof window.initializeDepositSelect2 === 'function') {
+                window.initializeDepositSelect2();
+            }
+
             // Student selection change handler
             $('#student_id').on('change', function() {
                 var studentId = $(this).val();

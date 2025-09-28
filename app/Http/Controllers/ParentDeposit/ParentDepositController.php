@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Exception;
 
 class ParentDepositController extends Controller
@@ -208,9 +209,17 @@ class ParentDepositController extends Controller
         }
 
         try {
-            // Load journals based on the system's journal module
-            $journals = \Modules\Journals\Entities\Journal::where('status', 'active')
-                ->orderBy('name')
+            // Load journals based on the system's journal module, filtered by branch
+            $branchId = $request->get('branch_id', activeBranch());
+            
+            $query = \Modules\Journals\Entities\Journal::where('status', 'active');
+            
+            // Filter by branch if branch_id column exists
+            if (Schema::hasColumn('journals', 'branch_id')) {
+                $query->where('branch_id', $branchId);
+            }
+            
+            $journals = $query->orderBy('name')
                 ->get(['id', 'name', 'description']);
 
             $journalData = $journals->map(function ($journal) {
