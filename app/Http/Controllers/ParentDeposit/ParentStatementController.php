@@ -159,9 +159,9 @@ class ParentStatementController extends Controller
 
             switch ($request->format) {
                 case 'pdf':
-                    return $this->statementService->exportStatementToPDF($parent, $request->validated());
+                    return $this->statementService->exportStatementToPDF($parent, $validator->validated());
                 case 'excel':
-                    return $this->exportToExcel($parent, $request->validated());
+                    return $this->exportToExcel($parent, $validator->validated());
                 default:
                     return back()->with('error', 'Invalid export format');
             }

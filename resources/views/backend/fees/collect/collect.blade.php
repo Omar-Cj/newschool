@@ -86,6 +86,16 @@
                     </div>
                 </div>
 
+                <!-- Deposit Information Indicator -->
+                @if(isset($data['deposit_info']) && $data['deposit_info']['has_deposit'])
+                    <div class="mb-3">
+                        <small class="text-primary">
+                            <i class="fa-solid fa-piggy-bank me-1"></i>
+                            <strong>Deposit: {{ $data['deposit_info']['formatted_deposit'] }} available</strong>
+                        </small>
+                    </div>
+                @endif
+
                 <div class="card-header d-flex justify-content-between align-items-center mb-3">
                     <div>
                         <h4 class="mb-0">{{___('fees.fees_details')}}</h4>

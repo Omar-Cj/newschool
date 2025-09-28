@@ -394,6 +394,19 @@ $(document).ready(function() {
         $('#feeCollectionModalLabel').text(`{{ ___('fees.Fee Collection') }} - ${currentStudentName}`);
         $('#summary-student-name').text(currentStudentName);
 
+        // Handle deposit information
+        if (feesData.deposit_info) {
+            const depositInfo = feesData.deposit_info;
+            if (depositInfo.has_deposit && depositInfo.available_deposit > 0) {
+                $('#deposit-amount').text(depositInfo.formatted_deposit);
+                $('#deposit-indicator').show();
+            } else {
+                $('#deposit-indicator').hide();
+            }
+        } else {
+            $('#deposit-indicator').hide();
+        }
+
         // Update summary display and calculations (use display fees, not submission list)
         updateFeesSummary(displayFees);
         calculateNetAmount();

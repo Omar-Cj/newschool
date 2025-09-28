@@ -85,19 +85,6 @@
                 </div>
             </div>
 
-            <!-- Transaction Reference (Hidden by default) -->
-            <div class="col-md-6" id="transaction_reference_group" style="display: none;">
-                <div class="form-group mb-3">
-                    <label for="transaction_reference" class="form-label">
-                        Transaction Reference
-                    </label>
-                    <input type="text" class="form-control" name="transaction_reference"
-                           id="transaction_reference" placeholder="Transaction ID/Reference">
-                    <small class="form-text text-muted">
-                        Required for mobile payments (Zaad/Edahab)
-                    </small>
-                </div>
-            </div>
 
             <!-- Journal (Optional) -->
             <div class="col-md-6">
@@ -142,6 +129,10 @@
                 <li><strong>Zaad:</strong> Mobile money transfer via Zaad service</li>
                 <li><strong>Edahab:</strong> Mobile money transfer via Edahab service</li>
             </ul>
+            <small class="text-muted mt-2 d-block">
+                <i class="fa-solid fa-info me-1"></i>
+                No transaction reference required for any payment method.
+            </small>
         </div>
     </div>
 
@@ -170,9 +161,34 @@
         loadJournals();
     });
 
-    // Load available journals
+    // Load available journals from system
     function loadJournals() {
-        // This would load journals via AJAX if needed
-        // For now, keeping it simple
+        $.ajax({
+            url: '{{ route("parent-deposits.get-journals") }}',
+            type: 'GET',
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            success: function(response) {
+                if (response.success) {
+                    var journalSelect = $('#journal_id');
+                    journalSelect.empty();
+                    journalSelect.append('<option value="">Select Journal</option>');
+
+                    $.each(response.data, function(index, journal) {
+                        var optionText = journal.name;
+                        if (journal.description) {
+                            optionText += ' - ' + journal.description;
+                        }
+                        journalSelect.append('<option value="' + journal.id + '">' + optionText + '</option>');
+                    });
+                }
+            },
+            error: function(xhr, status, error) {
+                console.log('Error loading journals:', error);
+                // Show user-friendly message
+                $('#journal_id').append('<option value="">Error loading journals</option>');
+            }
+        });
     }
 </script>

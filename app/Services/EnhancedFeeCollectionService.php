@@ -28,7 +28,7 @@ class EnhancedFeeCollectionService
     {
         return DB::transaction(function () use ($feeCollect, $paymentData) {
             $student = $feeCollect->student;
-            $parent = $student->parentGuardian;
+            $parent = $student->parent;
 
             if (!$parent) {
                 throw new Exception('Parent/Guardian not found for student');
@@ -92,7 +92,6 @@ class EnhancedFeeCollectionService
                 'payment_method' => $depositUsed > 0 ? 6 : $paymentData['payment_method'], // 6 for mixed payment
                 'payment_status' => 'paid',
                 'total_paid' => $feeCollect->total_paid + $totalAmount,
-                'payment_date' => $paymentData['payment_date'] ?? now(),
             ]);
 
             // Recalculate payment status
@@ -122,7 +121,7 @@ class EnhancedFeeCollectionService
      */
     public function checkAvailableDeposit(Student $student): float
     {
-        $parent = $student->parentGuardian;
+        $parent = $student->parent;
         if (!$parent) {
             return 0;
         }
@@ -140,7 +139,7 @@ class EnhancedFeeCollectionService
     public function autoAllocateDeposit(FeesCollect $feeCollect): float
     {
         $student = $feeCollect->student;
-        $parent = $student->parentGuardian;
+        $parent = $student->parent;
 
         if (!$parent) {
             return 0;
@@ -165,7 +164,7 @@ class EnhancedFeeCollectionService
     {
         return DB::transaction(function () use ($feeCollect, $paymentData) {
             $student = $feeCollect->student;
-            $parent = $student->parentGuardian;
+            $parent = $student->parent;
 
             $paymentAmount = (float) $paymentData['amount'];
             $feeBalance = $feeCollect->getBalanceAmount();
@@ -271,7 +270,11 @@ class EnhancedFeeCollectionService
         // Update parent balance
         $balance = $parent->balances()
             ->where('academic_year_id', activeAcademicYear())
-            ->where('student_id', $student?->id)
+            ->when($student, function($query) use ($student) {
+                return $query->where('student_id', $student->id);
+            }, function($query) {
+                return $query->whereNull('student_id');
+            })
             ->first();
 
         if ($balance && $balance->deductWithdrawal($amount)) {
@@ -313,7 +316,7 @@ class EnhancedFeeCollectionService
      */
     public function getPaymentOptions(Student $student): array
     {
-        $parent = $student->parentGuardian;
+        $parent = $student->parent;
         $availableDeposit = $parent ? $this->checkAvailableDeposit($student) : 0;
 
         return [

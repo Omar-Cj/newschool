@@ -29,6 +29,14 @@
                                 <span id="summary-student-name">{{ ___('common.student') }}</span>
                             </div>
                         </div>
+                        <div class="card-body pb-2">
+                            <div id="deposit-indicator" class="mb-2" style="display: none;">
+                                <small class="text-primary">
+                                    <i class="fa-solid fa-piggy-bank me-1"></i>
+                                    <strong>Deposit: <span id="deposit-amount">$0.00</span> available</strong>
+                                </small>
+                            </div>
+                        </div>
                         <div class="card-body">
                             <div class="outstanding-overview mb-3">
                                 <small class="text-muted d-block">{{ ___('fees.Total Outstanding') }}</small>

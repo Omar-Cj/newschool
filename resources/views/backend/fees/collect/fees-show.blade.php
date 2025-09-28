@@ -41,6 +41,18 @@
 
                 </div>
 
+                    <!-- Deposit Information Indicator -->
+                    @if(isset($data['deposit_info']) && $data['deposit_info']['has_deposit'])
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <small class="text-primary">
+                                    <i class="fa-solid fa-piggy-bank me-1"></i>
+                                    <strong>Deposit: {{ $data['deposit_info']['formatted_deposit'] }} available</strong>
+                                </small>
+                            </div>
+                        </div>
+                    @endif
+
                     @if($data['is_siblings_discount'])
                         <div class="row mb-3">
                             <div class="col-md-12">

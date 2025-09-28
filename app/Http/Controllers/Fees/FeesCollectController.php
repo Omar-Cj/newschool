@@ -62,6 +62,22 @@ class FeesCollectController extends Controller
         $data['title']          = ___('fees.fees_collect');
         $data['student']        = $this->studentRepo->show($id);
         $data['fees_assigned']  = $this->repo->feesAssigned($id);
+
+        // Add deposit information for student
+        $student = $this->studentRepo->show($id);
+        $enhancedFeeService = app(\App\Services\EnhancedFeeCollectionService::class);
+        $depositAmount = $enhancedFeeService->checkAvailableDeposit($student);
+
+        $formattedDeposit = '$' . number_format($depositAmount, 2);
+        $data['deposit_info'] = [
+            'available_deposit' => $depositAmount,
+            'formatted_deposit' => $formattedDeposit,
+            'has_deposit' => $depositAmount > 0,
+            'deposit_message' => $depositAmount > 0
+                ? "This student has {$formattedDeposit} in deposit balance that will be used automatically to minimize cash payment."
+                : "No deposit balance available for this student."
+        ];
+
         return view('backend.fees.collect.collect', compact('data'));
     }
 
@@ -307,6 +323,21 @@ class FeesCollectController extends Controller
             }
         }
 
+        // Add deposit information for student
+        $student = $this->studentRepo->show($request->student_id);
+        $enhancedFeeService = app(\App\Services\EnhancedFeeCollectionService::class);
+        $depositAmount = $enhancedFeeService->checkAvailableDeposit($student);
+
+        $formattedDeposit = '$' . number_format($depositAmount, 2);
+        $data['deposit_info'] = [
+            'available_deposit' => $depositAmount,
+            'formatted_deposit' => $formattedDeposit,
+            'has_deposit' => $depositAmount > 0,
+            'deposit_message' => $depositAmount > 0
+                ? "This student has {$formattedDeposit} in deposit balance that will be used automatically to minimize cash payment."
+                : "No deposit balance available for this student."
+        ];
+
         // Return JSON for AJAX requests (Service-based only)
         if ($request->ajax()) {
             try {
@@ -346,7 +377,8 @@ class FeesCollectController extends Controller
                         'source' => 'service_based',
                         'fees' => $fees,
                         'totalAmount' => $totalAmount,
-                        'payableAmount' => $totalAmount
+                        'payableAmount' => $totalAmount,
+                        'deposit_info' => $data['deposit_info']
                     ]
                 ]);
 

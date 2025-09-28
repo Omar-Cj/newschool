@@ -19,6 +19,7 @@ Route::middleware(saasMiddleware())->group(function () {
                     Route::get('/{deposit}', 'show')->name('parent-deposits.show')->middleware('permission:parent_deposit_view');
                     Route::get('/balance/get', 'getBalance')->name('parent-deposits.get-balance')->middleware('permission:parent_deposit_view');
                     Route::get('/children/get', 'getChildren')->name('parent-deposits.get-children')->middleware('permission:parent_deposit_view');
+                    Route::get('/journals/get', 'getJournals')->name('parent-deposits.get-journals')->middleware('permission:parent_deposit_view');
                     Route::post('/payment/process', 'processLocalPayment')->name('parent-deposits.process-payment')->middleware('permission:parent_deposit_create');
                     Route::post('/balance/transfer', 'transferBalance')->name('parent-deposits.transfer-balance')->middleware('permission:parent_deposit_create');
                     Route::delete('/{deposit}', 'destroy')->name('parent-deposits.destroy')->middleware('permission:parent_deposit_delete');

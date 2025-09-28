@@ -89,7 +89,6 @@ class ParentDepositController extends Controller
             'amount' => 'required|numeric|min:0.01',
             'payment_method' => 'required|in:1,3,4', // Cash, Zaad, Edahab
             'deposit_reason' => 'nullable|string|max:500',
-            'transaction_reference' => 'nullable|string|max:100',
             'journal_id' => 'nullable|exists:journals,id',
         ]);
 
@@ -115,7 +114,8 @@ class ParentDepositController extends Controller
                 }
             }
 
-            $deposit = $this->depositService->createDeposit($parent, $request->validated());
+            $sanitizedData = $this->sanitizeNullableFields($validator->validated());
+            $deposit = $this->depositService->createDeposit($parent, $sanitizedData);
 
             return response()->json([
                 'success' => true,
@@ -191,6 +191,45 @@ class ParentDepositController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error retrieving balance: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get available journals for deposit allocation
+     */
+    public function getJournals(Request $request): JsonResponse
+    {
+        if (!hasPermission('parent_deposit_view')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Access Denied'
+            ], 403);
+        }
+
+        try {
+            // Load journals based on the system's journal module
+            $journals = \Modules\Journals\Entities\Journal::where('status', 'active')
+                ->orderBy('name')
+                ->get(['id', 'name', 'description']);
+
+            $journalData = $journals->map(function ($journal) {
+                return [
+                    'id' => $journal->id,
+                    'name' => $journal->name,
+                    'description' => $journal->description ?? '',
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'data' => $journalData
+            ]);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error retrieving journals: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -449,5 +488,24 @@ class ParentDepositController extends Controller
         $data['request'] = $request;
 
         return view('backend.parent-deposits.index', compact('data'));
+    }
+
+    /**
+     * Sanitize nullable fields by converting empty strings to null
+     */
+    private function sanitizeNullableFields(array $data): array
+    {
+        $nullableFields = ['student_id', 'journal_id', 'deposit_reason'];
+
+        foreach ($nullableFields as $field) {
+            if (isset($data[$field]) && $data[$field] === '') {
+                $data[$field] = null;
+            }
+        }
+
+        // Ensure transaction_reference is always null since we don't use it
+        $data['transaction_reference'] = null;
+
+        return $data;
     }
 }
