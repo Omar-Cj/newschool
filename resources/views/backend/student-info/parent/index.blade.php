@@ -300,6 +300,11 @@
 
         // Initialize statement form functionality
         function initializeStatementForm() {
+            // Initialize Select2 dropdowns first
+            if (typeof window.initializeStatementSelect2 === 'function') {
+                window.initializeStatementSelect2();
+            }
+
             // Date range handlers
             $('#start_date, #end_date').on('change', function() {
                 validateDateRange();

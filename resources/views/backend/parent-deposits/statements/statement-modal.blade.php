@@ -1,23 +1,45 @@
-<div class="modal-header">
+<div class="modal-header modal-header-image">
     <h5 class="modal-title" id="statementModalLabel">
-        <i class="fa-solid fa-file-lines text-info me-2"></i>
         Statement for {{ $parent->user->name }}
     </h5>
-    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    <button type="button" class="m-0 btn-close d-flex justify-content-center align-items-center"
+            data-bs-dismiss="modal" aria-label="Close">
+        <i class="fa fa-times text-white" aria-hidden="true"></i>
+    </button>
 </div>
 
 <div class="modal-body">
     <!-- Parent Information -->
-    <div class="card border-info mb-3">
-        <div class="card-body py-2">
-            <div class="row align-items-center">
+    <div class="card bg-light mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h6 class="mb-0">Parent Information</h6>
+            <div class="parent-info d-flex align-items-center">
+                <i class="fas fa-user-tie me-2"></i>
+                <span>{{ $parent->user->name }}</span>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row">
                 <div class="col-md-8">
-                    <strong>Parent:</strong> {{ $parent->user->name }}<br>
-                    <small class="text-muted">{{ $parent->user->email }} • {{ $parent->user->phone }}</small>
+                    <div class="parent-details">
+                        <div class="parent-detail-item">
+                            <strong>Name:</strong> {{ $parent->user->name }}
+                        </div>
+                        <div class="parent-detail-item">
+                            <strong>Email:</strong> {{ $parent->user->email }}
+                        </div>
+                        @if($parent->user->phone)
+                        <div class="parent-detail-item">
+                            <strong>Phone:</strong> {{ $parent->user->phone }}
+                        </div>
+                        @endif
+                    </div>
                 </div>
                 <div class="col-md-4 text-end">
-                    <strong>Total Balance:</strong>
-                    <span class="text-success">{{ $parent->getFormattedAvailableBalance() }}</span>
+                    <div class="balance-display">
+                        <small class="text-muted d-block">Total Balance</small>
+                        <div class="h5 mb-0 fw-bold text-success">{{ $parent->getFormattedAvailableBalance() }}</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -30,7 +52,7 @@
             <div class="col-md-6">
                 <div class="form-group mb-3">
                     <label for="student_id" class="form-label">Student</label>
-                    <select class="form-select" name="student_id" id="student_id">
+                    <select class="form-control select2" name="student_id" id="student_id">
                         <option value="">All Students</option>
                         @foreach($parent->children as $child)
                             <option value="{{ $child->id }}">
@@ -45,7 +67,7 @@
             <div class="col-md-6">
                 <div class="form-group mb-3">
                     <label for="transaction_type" class="form-label">Transaction Type</label>
-                    <select class="form-select" name="transaction_type" id="transaction_type">
+                    <select class="form-control select2" name="transaction_type" id="transaction_type">
                         <option value="">All Types</option>
                         <option value="deposit">Deposits</option>
                         <option value="withdrawal">Withdrawals</option>
@@ -59,7 +81,7 @@
             <div class="col-md-6">
                 <div class="form-group mb-3">
                     <label for="start_date" class="form-label">Start Date</label>
-                    <input type="date" class="form-control" name="start_date" id="start_date"
+                    <input type="date" class="form-control ot-input" name="start_date" id="start_date"
                            value="{{ now()->subMonth()->format('Y-m-d') }}">
                 </div>
             </div>
@@ -67,7 +89,7 @@
             <div class="col-md-6">
                 <div class="form-group mb-3">
                     <label for="end_date" class="form-label">End Date</label>
-                    <input type="date" class="form-control" name="end_date" id="end_date"
+                    <input type="date" class="form-control ot-input" name="end_date" id="end_date"
                            value="{{ now()->format('Y-m-d') }}">
                 </div>
             </div>
@@ -76,7 +98,7 @@
             <div class="col-12">
                 <div class="form-group mb-3">
                     <label class="form-label">Quick Date Ranges</label>
-                    <div class="btn-group-sm d-flex flex-wrap gap-2">
+                    <div class="quick-date-ranges d-flex flex-wrap gap-2">
                         <button type="button" class="btn btn-outline-primary quick-date-range" data-range="today">Today</button>
                         <button type="button" class="btn btn-outline-primary quick-date-range" data-range="week">This Week</button>
                         <button type="button" class="btn btn-outline-primary quick-date-range active" data-range="month">This Month</button>
@@ -92,13 +114,13 @@
             <div class="col-12">
                 <div class="d-grid gap-2 d-md-flex justify-content-md-center">
                     <button type="submit" class="btn btn-primary" id="viewStatement">
-                        <i class="fa-solid fa-eye me-2"></i>View Statement
+                        View Statement
                     </button>
                     <button type="button" class="btn btn-success" id="exportPDF">
-                        <i class="fa-solid fa-file-pdf me-2"></i>Export PDF
+                        Export PDF
                     </button>
                     <button type="button" class="btn btn-info" id="exportExcel">
-                        <i class="fa-solid fa-file-excel me-2"></i>Export Excel
+                        Export Excel
                     </button>
                 </div>
             </div>
@@ -108,7 +130,7 @@
     <!-- Balance Summary -->
     @if($parent->children->count() > 0)
     <div class="mt-4">
-        <h6><i class="fa-solid fa-wallet me-2"></i>Account Balances</h6>
+        <h6>Account Balances</h6>
         <div class="row">
             <!-- General Account -->
             <div class="col-md-6 mb-2">
@@ -153,7 +175,7 @@
 
     <!-- Information Alert -->
     <div class="alert alert-info mt-3">
-        <h6><i class="fa-solid fa-info-circle me-2"></i>Statement Information</h6>
+        <h6>Statement Information</h6>
         <ul class="mb-0">
             <li><strong>View Statement:</strong> Opens detailed statement in new window</li>
             <li><strong>Export PDF:</strong> Downloads printable PDF statement</li>
@@ -166,9 +188,22 @@
     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
 </div>
 
+@include('backend.parent-deposits.statements.statement-modal-style')
+
 <script>
     $(document).ready(function() {
-        // Quick date range functionality is handled in the main script
+        // Initialize Select2 dropdowns
+        initializeStatementSelect2();
+
+        // Quick date range functionality
+        $('.quick-date-range').on('click', function() {
+            var range = $(this).data('range');
+            setQuickDateRange(range);
+            
+            // Update active button
+            $('.quick-date-range').removeClass('active');
+            $(this).addClass('active');
+        });
 
         // Export PDF functionality
         $('#exportPDF').on('click', function() {
@@ -247,4 +282,75 @@
             }
         });
     });
+
+    // Global function to initialize Select2 dropdowns (called from parent page)
+    window.initializeStatementSelect2 = function() {
+        try {
+            const modalParent = $('#parentActionModal');
+            const parentElement = modalParent.length > 0 ? modalParent : $('body');
+
+            // Initialize Student dropdown
+            $('#student_id').select2({
+                placeholder: "All Students",
+                allowClear: true,
+                width: '100%',
+                dropdownParent: parentElement
+            });
+
+            // Initialize Transaction Type dropdown
+            $('#transaction_type').select2({
+                placeholder: "All Types",
+                allowClear: true,
+                width: '100%',
+                dropdownParent: parentElement
+            });
+        } catch (error) {
+            console.error('Error initializing Select2 dropdowns:', error);
+            // Fallback: initialize without dropdownParent
+            $('#student_id, #transaction_type').select2({
+                width: '100%'
+            });
+        }
+    };
+
+    // Set quick date range
+    function setQuickDateRange(range) {
+        var today = new Date();
+        var startDate, endDate;
+
+        switch(range) {
+            case 'today':
+                startDate = endDate = today;
+                break;
+            case 'week':
+                startDate = new Date(today.setDate(today.getDate() - today.getDay()));
+                endDate = new Date(today.setDate(today.getDate() - today.getDay() + 6));
+                break;
+            case 'month':
+                startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+                endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+                break;
+            case 'quarter':
+                var quarter = Math.floor(today.getMonth() / 3);
+                startDate = new Date(today.getFullYear(), quarter * 3, 1);
+                endDate = new Date(today.getFullYear(), quarter * 3 + 3, 0);
+                break;
+            case 'year':
+                startDate = new Date(today.getFullYear(), 0, 1);
+                endDate = new Date(today.getFullYear(), 11, 31);
+                break;
+            default:
+                return;
+        }
+
+        $('#start_date').val(formatDate(startDate));
+        $('#end_date').val(formatDate(endDate));
+    }
+
+    // Format date for input
+    function formatDate(date) {
+        return date.getFullYear() + '-' + 
+               String(date.getMonth() + 1).padStart(2, '0') + '-' + 
+               String(date.getDate()).padStart(2, '0');
+    }
 </script>
