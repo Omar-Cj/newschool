@@ -26,13 +26,13 @@
                 </div>
                 <div class="col-sm-6 text-end">
                     <div class="btn-group" role="group">
-                        <button class="btn btn-outline-success" onclick="exportPDF()">
+                        <button class="btn btn-lg ot-btn-success" onclick="exportPDF()">
                             <i class="fa-solid fa-file-pdf me-2"></i>Export PDF
                         </button>
-                        <button class="btn btn-outline-info" onclick="exportExcel()">
+                        <button class="btn btn-lg ot-btn-info" onclick="exportExcel()">
                             <i class="fa-solid fa-file-excel me-2"></i>Export Excel
                         </button>
-                        <button class="btn btn-outline-primary" onclick="window.print()">
+                        <button class="btn btn-lg ot-btn-primary" onclick="window.print()">
                             <i class="fa-solid fa-print me-2"></i>Print
                         </button>
                     </div>
@@ -44,14 +44,14 @@
         <div class="row">
             {{-- Parent Information --}}
             <div class="col-12 mb-4">
-                <div class="card statement-header-card">
+                <div class="ot-card">
                     <div class="card-header">
                         <div class="d-flex justify-content-between align-items-center">
                             <h5 class="mb-0">
                                 <i class="fa-solid fa-user-tie me-2 text-primary"></i>
                                 Parent Information
                             </h5>
-                            <div class="statement-period">
+                            <div>
                                 <span class="badge bg-primary">
                                     {{ $data['statement']['period']['start_date']->format('M d, Y') }} - {{ $data['statement']['period']['end_date']->format('M d, Y') }}
                                 </span>
@@ -61,49 +61,49 @@
                     <div class="card-body">
                         <div class="row">
                             <div class="col-md-8">
-                                <div class="parent-details-grid">
-                                    <div class="parent-detail-item">
-                                        <div class="detail-icon">
-                                            <i class="fa-solid fa-user text-primary"></i>
-                                        </div>
-                                        <div class="detail-content">
-                                            <div class="detail-label">Name</div>
-                                            <div class="detail-value">{{ $data['statement']['parent']->user->name }}</div>
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <div class="d-flex align-items-center">
+                                            <i class="fa-solid fa-user text-primary me-3" style="font-size: 18px;"></i>
+                                            <div>
+                                                <small class="text-muted d-block">Name</small>
+                                                <strong>{{ $data['statement']['parent']->user->name }}</strong>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div class="parent-detail-item">
-                                        <div class="detail-icon">
-                                            <i class="fa-solid fa-envelope text-info"></i>
-                                        </div>
-                                        <div class="detail-content">
-                                            <div class="detail-label">Email</div>
-                                            <div class="detail-value">{{ $data['statement']['parent']->user->email }}</div>
+                                    <div class="col-md-4">
+                                        <div class="d-flex align-items-center">
+                                            <i class="fa-solid fa-envelope text-info me-3" style="font-size: 18px;"></i>
+                                            <div>
+                                                <small class="text-muted d-block">Email</small>
+                                                <strong>{{ $data['statement']['parent']->user->email }}</strong>
+                                            </div>
                                         </div>
                                     </div>
                                     @if($data['statement']['parent']->user->phone)
-                                    <div class="parent-detail-item">
-                                        <div class="detail-icon">
-                                            <i class="fa-solid fa-phone text-success"></i>
-                                        </div>
-                                        <div class="detail-content">
-                                            <div class="detail-label">Phone</div>
-                                            <div class="detail-value">{{ $data['statement']['parent']->user->phone }}</div>
+                                    <div class="col-md-4">
+                                        <div class="d-flex align-items-center">
+                                            <i class="fa-solid fa-phone text-success me-3" style="font-size: 18px;"></i>
+                                            <div>
+                                                <small class="text-muted d-block">Phone</small>
+                                                <strong>{{ $data['statement']['parent']->user->phone }}</strong>
+                                            </div>
                                         </div>
                                     </div>
                                     @endif
                                 </div>
                             </div>
                             <div class="col-md-4">
-                                <div class="statement-meta">
-                                    <div class="meta-item">
+                                <div class="text-center">
+                                    <div class="mb-3">
                                         <i class="fa-solid fa-calendar-days text-warning me-2"></i>
-                                        <span class="meta-label">Duration:</span>
-                                        <span class="meta-value">{{ $data['statement']['period']['duration_days'] }} days</span>
+                                        <small class="text-muted d-block">Duration</small>
+                                        <strong>{{ $data['statement']['period']['duration_days'] }} days</strong>
                                     </div>
-                                    <div class="meta-item">
+                                    <div>
                                         <i class="fa-solid fa-clock text-secondary me-2"></i>
-                                        <span class="meta-label">Generated:</span>
-                                        <span class="meta-value">{{ $data['statement']['generated_at']->format('M d, Y H:i') }}</span>
+                                        <small class="text-muted d-block">Generated</small>
+                                        <strong>{{ $data['statement']['generated_at']->format('M d, Y H:i') }}</strong>
                                     </div>
                                 </div>
                             </div>
@@ -114,7 +114,7 @@
 
             {{-- Balance Summary --}}
             <div class="col-md-8 mb-4">
-                <div class="card balance-summary-card">
+                <div class="ot-card">
                     <div class="card-header">
                         <h5 class="mb-0">
                             <i class="fa-solid fa-chart-pie me-2 text-primary"></i>
@@ -124,46 +124,46 @@
                     <div class="card-body">
                         <div class="row g-3">
                             <div class="col-sm-6 col-lg-3">
-                                <div class="balance-card balance-available">
-                                    <div class="balance-icon">
-                                        <i class="fa-solid fa-wallet"></i>
+                                <div class="ot_crm_summeryBox2 d-flex align-items-center mb-24">
+                                    <div class="icon style2">
+                                        <i class="fa-solid fa-wallet text-success" style="font-size: 24px;"></i>
                                     </div>
-                                    <div class="balance-content">
-                                        <div class="balance-label">Available Balance</div>
-                                        <div class="balance-amount">${{ number_format($data['statement']['balance_summary']['total_available'], 2) }}</div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-sm-6 col-lg-3">
-                                <div class="balance-card balance-reserved">
-                                    <div class="balance-icon">
-                                        <i class="fa-solid fa-lock"></i>
-                                    </div>
-                                    <div class="balance-content">
-                                        <div class="balance-label">Reserved Balance</div>
-                                        <div class="balance-amount">${{ number_format($data['statement']['balance_summary']['total_reserved'], 2) }}</div>
+                                    <div class="summeryContent">
+                                        <h4>${{ number_format($data['statement']['balance_summary']['total_available'], 2) }}</h4>
+                                        <h1>Available Balance</h1>
                                     </div>
                                 </div>
                             </div>
                             <div class="col-sm-6 col-lg-3">
-                                <div class="balance-card balance-deposits">
-                                    <div class="balance-icon">
-                                        <i class="fa-solid fa-arrow-down"></i>
+                                <div class="ot_crm_summeryBox2 d-flex align-items-center mb-24">
+                                    <div class="icon style3">
+                                        <i class="fa-solid fa-lock text-warning" style="font-size: 24px;"></i>
                                     </div>
-                                    <div class="balance-content">
-                                        <div class="balance-label">Total Deposits</div>
-                                        <div class="balance-amount">${{ number_format($data['statement']['balance_summary']['total_deposits'], 2) }}</div>
+                                    <div class="summeryContent">
+                                        <h4>${{ number_format($data['statement']['balance_summary']['total_reserved'], 2) }}</h4>
+                                        <h1>Reserved Balance</h1>
                                     </div>
                                 </div>
                             </div>
                             <div class="col-sm-6 col-lg-3">
-                                <div class="balance-card balance-withdrawals">
-                                    <div class="balance-icon">
-                                        <i class="fa-solid fa-arrow-up"></i>
+                                <div class="ot_crm_summeryBox2 d-flex align-items-center mb-24">
+                                    <div class="icon">
+                                        <i class="fa-solid fa-arrow-down text-info" style="font-size: 24px;"></i>
                                     </div>
-                                    <div class="balance-content">
-                                        <div class="balance-label">Total Withdrawals</div>
-                                        <div class="balance-amount">${{ number_format($data['statement']['balance_summary']['total_withdrawals'], 2) }}</div>
+                                    <div class="summeryContent">
+                                        <h4>${{ number_format($data['statement']['balance_summary']['total_deposits'], 2) }}</h4>
+                                        <h1>Total Deposits</h1>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-sm-6 col-lg-3">
+                                <div class="ot_crm_summeryBox2 d-flex align-items-center mb-24">
+                                    <div class="icon style4">
+                                        <i class="fa-solid fa-arrow-up text-danger" style="font-size: 24px;"></i>
+                                    </div>
+                                    <div class="summeryContent">
+                                        <h4>${{ number_format($data['statement']['balance_summary']['total_withdrawals'], 2) }}</h4>
+                                        <h1>Total Withdrawals</h1>
                                     </div>
                                 </div>
                             </div>
@@ -174,7 +174,7 @@
 
             {{-- Period Statistics --}}
             <div class="col-md-4 mb-4">
-                <div class="card period-stats-card">
+                <div class="ot-card">
                     <div class="card-header">
                         <h5 class="mb-0">
                             <i class="fa-solid fa-chart-line me-2"></i>
@@ -182,7 +182,7 @@
                         </h5>
                     </div>
                     <div class="card-body">
-                        <table class="table stats-table">
+                        <table class="table table-bordered role-table">
                             <tr>
                                 <td>
                                     <i class="fa-solid fa-list text-primary me-2"></i>
@@ -246,21 +246,21 @@
 
             {{-- Transaction History --}}
             <div class="col-12">
-                <div class="card transaction-history-card">
+                <div class="ot-card">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">
                             <i class="fa-solid fa-history me-2"></i>
                             Transaction History
                         </h5>
-                        <span class="badge bg-primary transaction-badge">
+                        <span class="badge bg-primary">
                             <i class="fa-solid fa-list me-1"></i>
                             {{ $data['statement']['transactions']->count() }} transactions
                         </span>
                     </div>
-                    <div class="card-body p-0">
+                    <div class="card-body">
                         @if($data['statement']['transactions']->count() > 0)
                             <div class="table-responsive">
-                                <table class="table transaction-table">
+                                <table class="table table-bordered role-table">
                                     <thead>
                                         <tr>
                                             <th>
@@ -297,28 +297,28 @@
                                         @foreach($data['statement']['transactions'] as $transaction)
                                             <tr>
                                                 <td>
-                                                    <div class="transaction-date">
-                                                        <div class="date-main">{{ $transaction->transaction_date->format('M d, Y') }}</div>
-                                                        <div class="date-time text-muted">{{ $transaction->transaction_date->format('H:i') }}</div>
+                                                    <div>
+                                                        <div><strong>{{ $transaction->transaction_date->format('M d, Y') }}</strong></div>
+                                                        <div class="text-muted small">{{ $transaction->transaction_date->format('H:i') }}</div>
                                                     </div>
                                                 </td>
                                                 <td>
                                                     <code class="reference-code">{{ $transaction->reference_number }}</code>
                                                 </td>
                                                 <td>
-                                                    <span class="badge transaction-badge bg-{{ $transaction->type_color }}">
+                                                    <span class="badge bg-{{ $transaction->type_color }}">
                                                         <i class="fa {{ $transaction->type_icon }} me-1"></i>
                                                         {{ $transaction->getTransactionTypeLabel() }}
                                                     </span>
                                                 </td>
                                                 <td>
-                                                    <div class="transaction-description">
+                                                    <div style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                                                         {{ $transaction->description }}
                                                     </div>
                                                 </td>
                                                 <td>
                                                     <div class="student-name">
-                                                        {{ $transaction->getStudentName() }}
+                                                        <strong>{{ $transaction->getStudentName() }}</strong>
                                                     </div>
                                                 </td>
                                                 <td class="text-end">
@@ -327,7 +327,7 @@
                                                     </span>
                                                 </td>
                                                 <td class="text-end">
-                                                    <span class="balance-after">{{ $transaction->getFormattedBalanceAfter() }}</span>
+                                                    <strong>{{ $transaction->getFormattedBalanceAfter() }}</strong>
                                                 </td>
                                             </tr>
                                         @endforeach
