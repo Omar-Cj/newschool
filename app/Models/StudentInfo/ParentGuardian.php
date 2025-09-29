@@ -158,4 +158,138 @@ class ParentGuardian extends BaseModel
 
         return $balances;
     }
+
+    // Sibling fee collection methods
+    public function childrenWithOutstandingFees(): HasMany
+    {
+        return $this->children()
+            ->whereHas('feesCollects', function($query) {
+                $query->where('academic_year_id', activeAcademicYear())
+                      ->whereColumn('total_paid', '<', 'amount');
+            });
+    }
+
+    public function getTotalFamilyOutstandingFees(): float
+    {
+        return $this->children()
+            ->with(['feesCollects' => function($query) {
+                $query->where('academic_year_id', activeAcademicYear())
+                      ->whereColumn('total_paid', '<', 'amount');
+            }])
+            ->get()
+            ->sum(function($child) {
+                return $child->feesCollects->sum(function($fee) {
+                    return $fee->amount - $fee->total_paid;
+                });
+            });
+    }
+
+    public function getFormattedTotalFamilyOutstandingFees(): string
+    {
+        return Setting('currency_symbol') . number_format($this->getTotalFamilyOutstandingFees(), 2);
+    }
+
+    public function canPayAllFeesWithDeposit(): bool
+    {
+        $totalOutstanding = $this->getTotalFamilyOutstandingFees();
+        $totalAvailableDeposit = $this->getTotalAvailableDeposit();
+
+        return $totalAvailableDeposit >= $totalOutstanding;
+    }
+
+    public function getTotalAvailableDeposit(): float
+    {
+        // Get general deposit balance
+        $generalBalance = $this->getAvailableBalance();
+
+        // Get all student-specific deposit balances
+        $studentBalances = $this->children->sum(function($child) {
+            return $this->getAvailableBalance($child);
+        });
+
+        return $generalBalance + $studentBalances;
+    }
+
+    public function getSiblingFeeSummary(): array
+    {
+        $summary = [
+            'total_children' => $this->children->count(),
+            'children_with_fees' => $this->childrenWithOutstandingFees()->count(),
+            'total_outstanding' => $this->getTotalFamilyOutstandingFees(),
+            'formatted_outstanding' => $this->getFormattedTotalFamilyOutstandingFees(),
+            'total_available_deposit' => $this->getTotalAvailableDeposit(),
+            'formatted_available_deposit' => Setting('currency_symbol') . number_format($this->getTotalAvailableDeposit(), 2),
+            'can_pay_all_with_deposit' => $this->canPayAllFeesWithDeposit(),
+        ];
+
+        $summary['children_details'] = [];
+        foreach ($this->children as $child) {
+            $childOutstanding = $child->feesCollects()
+                ->where('academic_year_id', activeAcademicYear())
+                ->whereColumn('total_paid', '<', 'amount')
+                ->get()
+                ->sum(function($fee) {
+                    return $fee->amount - $fee->total_paid;
+                });
+
+            if ($childOutstanding > 0) {
+                $summary['children_details'][] = [
+                    'id' => $child->id,
+                    'name' => $child->full_name,
+                    'outstanding_amount' => (float) $childOutstanding,
+                    'formatted_outstanding' => Setting('currency_symbol') . number_format($childOutstanding, 2),
+                    'class_section' => $child->session_class_student?->class?->name .
+                                     ' - ' . $child->session_class_student?->section?->name,
+                ];
+            }
+        }
+
+        return $summary;
+    }
+
+    public function getOptimalPaymentDistribution(float $totalAmount): array
+    {
+        $childrenWithFees = $this->childrenWithOutstandingFees()
+            ->with(['feesCollects' => function($query) {
+                $query->where('academic_year_id', activeAcademicYear())
+                      ->whereColumn('total_paid', '<', 'amount');
+            }])
+            ->get();
+
+        if ($childrenWithFees->isEmpty()) {
+            return [];
+        }
+
+        $totalOutstanding = 0;
+        $childrenData = [];
+
+        foreach ($childrenWithFees as $child) {
+            $childOutstanding = $child->feesCollects->sum(function($fee) {
+                return $fee->amount - $fee->total_paid;
+            });
+
+            $childrenData[] = [
+                'student_id' => $child->id,
+                'name' => $child->full_name,
+                'outstanding_amount' => (float) $childOutstanding,
+            ];
+
+            $totalOutstanding += $childOutstanding;
+        }
+
+        // Calculate proportional distribution
+        foreach ($childrenData as &$childData) {
+            if ($totalOutstanding > 0) {
+                $proportion = $childData['outstanding_amount'] / $totalOutstanding;
+                $suggestedPayment = min($totalAmount * $proportion, $childData['outstanding_amount']);
+                $childData['suggested_payment'] = (float) $suggestedPayment;
+                $childData['formatted_suggested'] = Setting('currency_symbol') . number_format($suggestedPayment, 2);
+            } else {
+                $childData['suggested_payment'] = 0;
+                $childData['formatted_suggested'] = Setting('currency_symbol') . '0.00';
+            }
+        }
+
+        return $childrenData;
+    }
 }

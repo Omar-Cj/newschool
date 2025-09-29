@@ -45,7 +45,12 @@ use App\Http\Controllers\Backend\AuthenticationController;
 use App\Http\Controllers\Backend\GeneralSettingController;
 use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
 use App\Http\Controllers\Settings\NotificaticaSettingController;
+use App\Http\Controllers\Fees\FeesCollectController;
 
+// Test route to verify routing works
+Route::get('/test-route', function () {
+    return response()->json(['status' => 'success', 'message' => 'Routes are working']);
+});
 
 Route::middleware(saasMiddleware())->group(function () {
 
@@ -310,6 +315,29 @@ Route::middleware(saasMiddleware())->group(function () {
                         Route::get('/notification-settings',             'notificationSettings')->name('settings.notification-settings');
                         Route::post('/notification-settings',            'updateNotificationSetting')->name('settings.notification-settings.update')->middleware('PermissionCheck:general_settings_update', 'DemoCheck');
                         Route::get('/notification_event_modal/{id}/{key}',             'notificationEventModal')->name('settings.notification_event_modal');
+                    });
+
+                    // Fee Collection Routes (moved from fees.php to work without SaaS)
+                    Route::controller(FeesCollectController::class)->prefix('fees-collect')->group(function () {
+                        Route::get('/',                 'index')->name('fees-collect.index')->middleware('PermissionCheck:fees_collect_read');
+                        Route::get('/create',           'create')->name('fees-collect.create')->middleware('PermissionCheck:fees_collect_create');
+                        Route::post('/store',           'store')->name('fees-collect.store')->middleware('PermissionCheck:fees_collect_create', 'DemoCheck');
+                        Route::get('/edit/{id}',        'edit')->name('fees-collect.edit')->middleware('PermissionCheck:fees_collect_update');
+                        Route::put('/update/{id}',      'update')->name('fees-collect.update')->middleware('PermissionCheck:fees_collect_update', 'DemoCheck');
+                        Route::delete('/delete/{id}',   'delete')->name('fees-collect.delete')->middleware('PermissionCheck:fees_collect_delete', 'DemoCheck');
+                        Route::get('/collect/{id}',     'collect')->name('fees-collect.collect')->middleware('PermissionCheck:fees_collect_update');
+
+                        Route::any('/search', 'getFeesCollectStudents')->name('fees-collect-search');
+                        Route::get('/fees-show', 'feesShow')->name('fees-collect.fees-show')->middleware('PermissionCheck:fees_collect_update');
+                    });
+
+                    // Sibling Fee Collection Routes (moved from fees.php to work without SaaS)
+                    Route::controller(FeesCollectController::class)->prefix('fees/siblings')->group(function () {
+                        Route::get('/{studentId}/data',        'getSiblingFeeData')->name('fees.siblings.data')->middleware('PermissionCheck:fees_collect_read');
+                        Route::get('/{studentId}/summary',     'getSiblingFeeSummary')->name('fees.siblings.summary')->middleware('PermissionCheck:fees_collect_read');
+                        Route::post('/calculate-distribution', 'calculateSiblingDistribution')->name('fees.siblings.calculate-distribution')->middleware('PermissionCheck:fees_collect_read');
+                        Route::post('/validate',               'validateSiblingPayment')->name('fees.siblings.validate')->middleware('PermissionCheck:fees_collect_create');
+                        Route::post('/process',                'processSiblingPayment')->name('fees.siblings.process')->middleware('PermissionCheck:fees_collect_create', 'DemoCheck');
                     });
                 });
             });

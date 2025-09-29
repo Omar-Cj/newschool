@@ -1,5 +1,12 @@
 <script>
-$(document).ready(function() {
+// Ensure jQuery is loaded before executing
+(function($) {
+    if (typeof $ === 'undefined') {
+        console.error('jQuery is not loaded. Please ensure jQuery is loaded before this script.');
+        return;
+    }
+    
+    $(document).ready(function() {
     // Initialize modal variables
     let selectedFees = [];
     let totalAmount = 0;
@@ -394,6 +401,12 @@ $(document).ready(function() {
         $('#feeCollectionModalLabel').text(`{{ ___('fees.Fee Collection') }} - ${currentStudentName}`);
         $('#summary-student-name').text(currentStudentName);
 
+        // Trigger family payment link check
+        if (window.siblingFeeManager && studentId) {
+            window.siblingFeeManager.familyLinkChecked = false;
+            window.siblingFeeManager.checkAndUpdateFamilyLink(studentId);
+        }
+
         // Handle deposit information
         if (feesData.deposit_info) {
             const depositInfo = feesData.deposit_info;
@@ -601,5 +614,18 @@ $(document).ready(function() {
 
         console.log('Receipt options modal displayed successfully', metaData);
     }
-});
+    });
+})(jQuery);
+</script>
+
+<!-- Sibling Fee Collection JavaScript -->
+<script>
+if (typeof window.siblingFeeCollectionLoaded === 'undefined') {
+    window.siblingFeeCollectionLoaded = true;
+    // Load the script dynamically
+    var script = document.createElement('script');
+    script.src = '{{ asset("backend/assets/js/sibling-fee-collection.js") }}?v=' + Date.now();
+    script.async = false;
+    document.head.appendChild(script);
+}
 </script>

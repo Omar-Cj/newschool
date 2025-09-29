@@ -11,13 +11,16 @@
         </button>
     </div>
 
-    <form id="feeCollectionForm" method="POST" action="{{ route('fees-collect.store') }}">
-        @csrf
-        <input type="hidden" name="student_id" id="modal_student_id">
-        <input type="hidden" name="fees_assign_childrens" id="modal_fees_assign_childrens">
-        <input type="hidden" name="fees_source" id="fees_source" value="legacy">
+    <!-- Individual Payment Form -->
+    <div class="modal-body px-0 pt-3 pb-0">
 
-        <div class="modal-body p-4">
+            <form id="feeCollectionForm" method="POST" action="{{ route('fees-collect.store') }}">
+                @csrf
+                <input type="hidden" name="student_id" id="modal_student_id">
+                <input type="hidden" name="fees_assign_childrens" id="modal_fees_assign_childrens">
+                <input type="hidden" name="fees_source" id="fees_source" value="legacy">
+
+                <div class="modal-body px-4 py-4">
             <!-- Selected Fees Summary -->
             <div class="row mb-4">
                 <div class="col-12">
@@ -27,6 +30,14 @@
                             <div class="student-info d-flex align-items-center">
                                 <i class="fas fa-user-graduate me-2"></i>
                                 <span id="summary-student-name">{{ ___('common.student') }}</span>
+                                <div class="ms-3">
+                                    <button type="button" class="btn btn-link btn-sm text-primary p-0 fw-semibold"
+                                            id="family-payment-link" style="display: none; text-decoration: none !important;">
+                                        <i class="fas fa-users me-1"></i>
+                                        <span id="family-link-text">{{ ___('fees.Pay for Family') }}</span>
+                                        <span class="badge bg-primary ms-1" id="family-siblings-count">0</span>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                         <div class="card-body pb-2">
@@ -171,19 +182,20 @@
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
+                </div>
 
-        <div class="modal-footer">
-            <button type="button" class="btn btn-outline-secondary py-2 px-4" data-bs-dismiss="modal">
-                {{ ___('ui_element.cancel') }}
-            </button>
-            <button type="submit" class="btn ot-btn-primary" id="process_payment_btn">
-                <i class="fas fa-credit-card me-2"></i>
-                {{ ___('fees.Process Payment') }}
-            </button>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary py-2 px-4" data-bs-dismiss="modal">
+                        {{ ___('ui_element.cancel') }}
+                    </button>
+                    <button type="submit" class="btn ot-btn-primary" id="process_payment_btn">
+                        <i class="fas fa-credit-card me-2"></i>
+                        {{ ___('fees.Process Payment') }}
+                    </button>
+                </div>
+            </form>
         </div>
-    </form>
 </div>
 
+@include('backend.fees.collect.family-payment-modal')
 @include('backend.fees.collect.fee-collection-modal-script')

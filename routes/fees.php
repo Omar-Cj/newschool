@@ -73,9 +73,17 @@ Route::middleware(saasMiddleware())->group(function () {
                     Route::delete('/delete/{id}',   'delete')->name('fees-collect.delete')->middleware('PermissionCheck:fees_collect_delete', 'DemoCheck');
                     Route::get('/collect/{id}',     'collect')->name('fees-collect.collect')->middleware('PermissionCheck:fees_collect_update');
 
-
                     Route::any('/search', 'getFeesCollectStudents')->name('fees-collect-search');
                     Route::get('/fees-show', 'feesShow')->name('fees-collect.fees-show')->middleware('PermissionCheck:fees_collect_update');
+                });
+
+                // Sibling Fee Collection Routes
+                Route::controller(FeesCollectController::class)->prefix('fees/siblings')->group(function () {
+                    Route::get('/{studentId}/data',        'getSiblingFeeData')->name('fees.siblings.data')->middleware('PermissionCheck:fees_collect_read');
+                    Route::get('/{studentId}/summary',     'getSiblingFeeSummary')->name('fees.siblings.summary')->middleware('PermissionCheck:fees_collect_read');
+                    Route::post('/calculate-distribution', 'calculateSiblingDistribution')->name('fees.siblings.calculate-distribution')->middleware('PermissionCheck:fees_collect_read');
+                    Route::post('/validate',               'validateSiblingPayment')->name('fees.siblings.validate')->middleware('PermissionCheck:fees_collect_create');
+                    Route::post('/process',                'processSiblingPayment')->name('fees.siblings.process')->middleware('PermissionCheck:fees_collect_create', 'DemoCheck');
                 });
 
                 Route::controller(FeesDiscountController::class)->prefix('fees-discount')->group(function () {

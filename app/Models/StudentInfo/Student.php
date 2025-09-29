@@ -162,6 +162,11 @@ class Student extends BaseModel
         return $this->hasMany(FeesCollect::class);
     }
 
+    public function feesCollects()
+    {
+        return $this->hasMany(FeesCollect::class);
+    }
+
     public function feesMasters()
     {
         return $this->hasManyThrough(

@@ -8,13 +8,16 @@ use App\Http\Requests\Fees\Collect\FeesCollectUpdateRequest;
 use App\Interfaces\Fees\FeesCollectInterface;
 use App\Models\EarlyPaymentDiscount;
 use App\Models\Setting;
+use App\Models\StudentInfo\Student;
 use App\Repositories\Academic\ClassesRepository;
 use App\Repositories\Academic\SectionRepository;
 use App\Repositories\Fees\FeesMasterRepository;
 use App\Repositories\StudentInfo\StudentRepository;
+use App\Services\SiblingFeeCollectionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 
 class FeesCollectController extends Controller
@@ -24,6 +27,7 @@ class FeesCollectController extends Controller
     private $sectionRepo;
     private $studentRepo;
     private $feesMasterRepo;
+    private $siblingFeeService;
 
     function __construct(
         FeesCollectInterface   $repo,
@@ -31,6 +35,7 @@ class FeesCollectController extends Controller
         SectionRepository      $sectionRepo,
         StudentRepository      $studentRepo,
         FeesMasterRepository   $feesMasterRepo,
+        SiblingFeeCollectionService $siblingFeeService
         )
     {
         $this->repo              = $repo;
@@ -38,6 +43,7 @@ class FeesCollectController extends Controller
         $this->sectionRepo       = $sectionRepo;
         $this->studentRepo       = $studentRepo;
         $this->feesMasterRepo    = $feesMasterRepo;
+        $this->siblingFeeService = $siblingFeeService;
     }
 
     public function index()
@@ -398,6 +404,284 @@ class FeesCollectController extends Controller
         return view('backend.fees.collect.fees-show', compact('data'));
     }
 
+    // Sibling Fee Collection Methods
 
+    /**
+     * Get sibling fee data for family payment
+     */
+    public function getSiblingFeeData(Request $request, $studentId)
+    {
+        try {
+            $student = Student::findOrFail($studentId);
+
+            // Check if student has siblings
+            if (!$student->parent) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No parent/guardian found for this student.'
+                ], 404);
+            }
+
+            $siblingData = $this->siblingFeeService->getSiblingFeeData($student);
+
+            // Check if there are any siblings with outstanding fees
+            if (empty($siblingData['siblings'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No siblings found with outstanding fees.',
+                    'show_individual_only' => true
+                ], 200);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $siblingData
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error getting sibling fee data', [
+                'student_id' => $studentId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Unable to load sibling fee data. Please try again.'
+            ], 500);
+        }
+    }
+
+    /**
+     * Calculate payment distribution across siblings
+     */
+    public function calculateSiblingDistribution(Request $request)
+    {
+        $request->validate([
+            'sibling_ids' => 'required|array|min:1',
+            'sibling_ids.*' => 'exists:students,id',
+            'total_amount' => 'required|numeric|min:0.01',
+            'distribution_method' => 'required|in:equal,proportional,priority'
+        ]);
+
+        try {
+            $distribution = $this->siblingFeeService->calculatePaymentDistribution(
+                $request->sibling_ids,
+                $request->total_amount,
+                $request->distribution_method
+            );
+
+            return response()->json([
+                'success' => true,
+                'data' => $distribution
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error calculating sibling distribution', [
+                'sibling_ids' => $request->sibling_ids,
+                'total_amount' => $request->total_amount,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Unable to calculate distribution. Please try again.'
+            ], 500);
+        }
+    }
+
+    /**
+     * Validate sibling payment data
+     */
+    public function validateSiblingPayment(Request $request)
+    {
+        $request->validate([
+            'payment_mode' => 'required|in:deposit,direct',
+            'sibling_payments' => 'required|array|min:1',
+            'sibling_payments.*.student_id' => 'required|exists:students,id',
+            'sibling_payments.*.amount' => 'required|numeric|min:0.01',
+            'sibling_payments.*.fee_ids' => 'required|array|min:1',
+            'sibling_payments.*.fee_ids.*' => 'exists:fees_collects,id'
+        ]);
+
+        try {
+            $validation = $this->siblingFeeService->validateSiblingPayment($request->all());
+
+            return response()->json([
+                'success' => true,
+                'data' => $validation
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error validating sibling payment', [
+                'request_data' => $request->all(),
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed. Please check your payment details.'
+            ], 500);
+        }
+    }
+
+    /**
+     * Process sibling payment transaction
+     */
+    public function processSiblingPayment(Request $request)
+    {
+        // Validate the request
+        $validationRules = [
+            'payment_mode' => 'required|in:deposit,direct',
+            'sibling_payments' => 'required|array|min:1',
+            'sibling_payments.*.student_id' => 'required|exists:students,id',
+            'sibling_payments.*.amount' => 'required|numeric|min:0.01',
+            'sibling_payments.*.fee_ids' => 'required|array|min:1',
+            'sibling_payments.*.fee_ids.*' => 'exists:fees_collects,id',
+            'payment_date' => 'required|date',
+            'payment_notes' => 'nullable|string|max:500',
+        ];
+
+        // Add validation for direct payment mode
+        if ($request->payment_mode === 'direct') {
+            $validationRules['payment_method'] = 'required|in:cash,zaad,edahab';
+            $validationRules['journal_id'] = [
+                'required',
+                Rule::exists('journals', 'id')->where(function ($query) {
+                    $branchId = auth()->user()->branch_id ?? null;
+                    if ($branchId && Schema::hasColumn('journals', 'branch_id')) {
+                        $query->where('branch_id', $branchId);
+                    }
+                })
+            ];
+        }
+
+        $validatedData = $request->validate($validationRules);
+
+        try {
+            // Pre-validate sibling payment data
+            $validation = $this->siblingFeeService->validateSiblingPayment($validatedData);
+
+            if (!$validation['valid']) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Payment validation failed',
+                    'errors' => $validation['errors']
+                ], 422);
+            }
+
+            // Validate each student's fee eligibility
+            foreach ($validatedData['sibling_payments'] as $siblingPayment) {
+                $student = Student::find($siblingPayment['student_id']);
+                $eligibilityCheck = $student->validateFeeOperation('fee collection');
+
+                if (!$eligibilityCheck['allowed']) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Payment blocked for {$student->full_name}: {$eligibilityCheck['reason']}",
+                        'error_type' => 'fee_exempt_student',
+                        'student_info' => $eligibilityCheck['student_info']
+                    ], 403);
+                }
+            }
+
+            // Process the payment
+            $result = $this->siblingFeeService->processSiblingPayment($validatedData);
+
+            if ($result['success']) {
+                Log::info('Sibling payment processed successfully', [
+                    'processed_by' => auth()->id(),
+                    'total_amount' => $validation['total_payment'],
+                    'payment_mode' => $validatedData['payment_mode'],
+                    'siblings_count' => count($validatedData['sibling_payments'])
+                ]);
+
+                // Prepare response with payment details
+                $responseData = [
+                    'success' => true,
+                    'message' => 'Family payment processed successfully!',
+                    'summary' => $result['summary'],
+                    'results' => $result['results']
+                ];
+
+                // Add receipt generation options if available
+                $paymentIds = [];
+                foreach ($result['results'] as $siblingResult) {
+                    if ($siblingResult['success'] && !empty($siblingResult['transactions'])) {
+                        foreach ($siblingResult['transactions'] as $transaction) {
+                            $paymentIds[] = $transaction->id;
+                        }
+                    }
+                }
+
+                if (!empty($paymentIds)) {
+                    $responseData['payment_ids'] = $paymentIds;
+                    $responseData['receipt_options'] = 'Multiple receipts available for each student';
+                }
+
+                return response()->json($responseData);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Payment processing failed. Please try again.',
+                'results' => $result['results'] ?? []
+            ], 422);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+
+        } catch (\Exception $e) {
+            Log::error('Sibling payment processing failed', [
+                'request_data' => $validatedData,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while processing the family payment. Please try again.'
+            ], 500);
+        }
+    }
+
+    /**
+     * Get sibling fee summary for a parent
+     */
+    public function getSiblingFeeSummary(Request $request, $studentId)
+    {
+        try {
+            $student = Student::findOrFail($studentId);
+
+            if (!$student->parent) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No parent/guardian found for this student.'
+                ], 404);
+            }
+
+            $summary = $student->parent->getSiblingFeeSummary();
+
+            return response()->json([
+                'success' => true,
+                'data' => $summary
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error getting sibling fee summary', [
+                'student_id' => $studentId,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Unable to load fee summary. Please try again.'
+            ], 500);
+        }
+    }
 
 }
