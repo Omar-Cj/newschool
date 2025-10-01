@@ -1,3 +1,5 @@
+<script src="{{ asset('backend/assets/js/sibling-fee-collection.js') }}"></script>
+
 <script>
 // Ensure jQuery is loaded before executing
 (function($) {
@@ -6,16 +8,129 @@
         return;
     }
     
-    $(document).ready(function() {
-    // Initialize modal variables
+    // Initialize modal variables (global scope)
     let selectedFees = [];
     let totalAmount = 0;
     let payableAmount = 0;
     let currentStudentName = '';
 
+    // Global function to populate modal with family payment data (called from parent page)
+    window.populateFeeCollectionModal = function(studentId, feesData, studentInfo = null) {
+        console.log('Populating family payment modal for student:', studentId);
+        
+        // Track student info
+        currentStudentName = (studentInfo?.name || studentInfo?.student_name || '').trim();
+        if (!currentStudentName) currentStudentName = '{{ ___('common.student') }}';
+
+        // Update modal title and student name
+        $('#feeCollectionModalLabel').text(`{{ ___('fees.Family Payment') }} - ${currentStudentName}`);
+        $('#modal_student_id').val(studentId);
+        $('#primary_student_id').val(studentId);
+
+        // Show loading state
+        $('#sibling-loading').show();
+        $('#sibling-payment-interface').hide();
+        $('#no-siblings-message').hide();
+        $('#sibling-payment-footer').hide();
+        $('#individual-payment-interface').hide();
+        $('#individual-payment-footer').hide();
+        
+        // Remove required attributes from individual payment fields when showing family payment
+        $('#payment_amount').removeAttr('required');
+        $('#payment_method').removeAttr('required');
+        $('#journal_id').removeAttr('required');
+        $('#payment_date').removeAttr('required');
+
+        // Load family payment data
+        console.log('Checking sibling fee manager availability:', typeof window.siblingFeeManager);
+        console.log('Student ID:', studentId);
+
+        // Wait for sibling fee manager to be available
+        if (!window.siblingFeeManager) {
+            console.error('SiblingFeeCollectionManager not initialized! Family payment unavailable.');
+            $('#sibling-loading').hide();
+            $('#no-siblings-message').show();
+            return;
+        }
+
+        if (window.siblingFeeManager && studentId) {
+            console.log('Loading sibling data...');
+            // Load sibling data directly
+            window.siblingFeeManager.loadSiblingData(studentId).then(() => {
+                console.log('Family payment data loaded successfully');
+            }).catch(error => {
+                console.error('Error loading family payment data:', error);
+                // Check if this is a "no siblings" case or an actual error
+                if (error.message && error.message.includes('no siblings')) {
+                    // Show individual payment interface for students without siblings
+                    showIndividualPaymentInterface(studentId, feesData, studentInfo);
+                } else {
+                    // Show no siblings message for other errors
+                    $('#sibling-loading').hide();
+                    $('#no-siblings-message').show();
+                }
+            });
+        } else {
+            console.error('Sibling fee manager not available, falling back to individual payment');
+            // Fallback to individual payment interface
+            showIndividualPaymentInterface(studentId, feesData, studentInfo);
+        }
+    };
+
+    window.showIndividualPaymentInterface = function(studentId, feesData, studentInfo) {
+        console.log('Showing individual payment interface for student:', studentId);
+        
+        // Hide loading and show individual payment interface
+        $('#sibling-loading').hide();
+        $('#no-siblings-message').hide();
+        
+        // Update modal title
+        $('#feeCollectionModalLabel').text(`{{ ___('fees.Fee Collection') }} - ${currentStudentName}`);
+        
+        // Show individual payment interface
+        $('#individual-payment-interface').show();
+        $('#sibling-payment-interface').hide();
+        
+        // Make individual payment fields required
+        $('#payment_amount').attr('required', 'required');
+        $('#payment_method').attr('required', 'required');
+        $('#journal_id').attr('required', 'required');
+        $('#payment_date').attr('required', 'required');
+        
+        // Populate individual payment data
+        if (feesData && feesData.fees) {
+            selectedFees = Array.isArray(feesData.fees) ? feesData.fees : [];
+            totalAmount = parseFloat(feesData.totalAmount || 0);
+            payableAmount = parseFloat(feesData.payableAmount || 0);
+            
+            $('#payment_amount').val(payableAmount.toFixed(2));
+            updateFeesSummary(selectedFees);
+            calculateNetAmount();
+        }
+        
+        // Show individual payment footer
+        $('#individual-payment-footer').show();
+        $('#sibling-payment-footer').hide();
+    };
+    
+    $(document).ready(function() {
+        // Note: SiblingFeeCollectionManager is initialized in DOMContentLoaded in sibling-fee-collection.js
+        // We just verify it's available here
+        if (typeof window.siblingFeeManager === 'undefined') {
+            console.warn('SiblingFeeCollectionManager not initialized yet');
+        } else {
+            console.log('SiblingFeeManager instance available:', !!window.siblingFeeManager);
+        }
+
     // Load journals on modal open
     $('#modalCustomizeWidth').on('show.bs.modal', function() {
-        loadJournals();
+        // Load journals using the sibling fee manager's method
+        if (window.siblingFeeManager) {
+            window.siblingFeeManager.loadSiblingJournals();
+        } else {
+            // Fallback to individual journals loading
+            loadJournals();
+        }
     });
 
     // Initialize Select2 dropdowns when modal is shown
@@ -46,28 +161,66 @@
         updatePartialPaymentIndicator();
     });
 
-    // Pay full amount button
-    $('#pay_full_amount').click(function() {
-        $('#payment_amount').val(payableAmount.toFixed(2));
-        calculateNetAmount();
-    });
+        // Note: Family payment UI controls (distribution buttons, payment mode, validate button)
+        // are all bound by SiblingFeeCollectionManager class to avoid duplicate event handlers
 
-    // Form submission
-    $('#feeCollectionForm').submit(function(e) {
-        console.log('Form submission triggered');
+        // Family payment discount handlers
+        $('#family_discount_type').change(function() {
+            const discountType = $(this).val();
+            if (discountType) {
+                $('#family_discount_amount').prop('disabled', false).prop('required', true);
+                if (discountType === 'percentage') {
+                    $('#family_discount_amount').attr('max', '100');
+                } else {
+                    $('#family_discount_amount').removeAttr('max');
+                }
+            } else {
+                $('#family_discount_amount').prop('disabled', true).prop('required', false).val('');
+            }
+            calculateFamilyNetAmount();
+        });
+
+        // Real-time discount calculation
+        $('#family_discount_amount').on('input', function() {
+            calculateFamilyNetAmount();
+        });
+
+    // Form submission - Unified handler for both family and individual payment
+    $('#siblingPaymentForm').submit(function(e) {
         e.preventDefault();
+        console.log('Form submission triggered');
 
-        if (!validateForm()) {
-            console.log('Form validation failed');
-            return false;
+        // Check which interface is visible
+        if ($('#sibling-payment-interface').is(':visible')) {
+            // Family payment interface is active
+            console.log('Family payment form submission triggered');
+            
+            if (!validateFamilyPaymentForm()) {
+                console.log('Family payment form validation failed');
+                return false;
+            }
+
+            console.log('Family payment form validation passed, calling processFamilyPayment');
+            processFamilyPayment();
+        } else if ($('#individual-payment-interface').is(':visible')) {
+            // Individual payment interface is active
+            console.log('Individual payment form submission triggered');
+            
+            if (!validateForm()) {
+                console.log('Individual payment form validation failed');
+                return false;
+            }
+
+            console.log('Individual payment form validation passed, calling processPayment');
+            processPayment();
+        } else {
+            console.error('No payment interface is visible');
+            showErrorMessage('No payment interface is active. Please refresh and try again.');
         }
-
-        console.log('Form validation passed, calling processPayment');
-        processPayment();
     });
 
     // Functions
-    function loadJournals() {
+    window.loadJournals = function() {
         $.ajax({
             url: '{{ route("journals.dropdown") }}',
             method: 'GET',
@@ -87,7 +240,7 @@
                     placeholder: "{{ ___('fees.select_journal') }}",
                     allowClear: false,
                     width: '100%',
-                    dropdownParent: $('#feeCollectionModalWidth')
+                    dropdownParent: $('#modalCustomizeWidth')
                 });
             },
             error: function() {
@@ -97,7 +250,7 @@
     }
 
     function initializeSelect2Dropdowns() {
-        const modalParent = $('#feeCollectionModalWidth');
+        const modalParent = $('#modalCustomizeWidth');
 
         // Initialize Payment Method dropdown
         $('#payment_method').select2({
@@ -122,9 +275,74 @@
             width: '100%',
             dropdownParent: modalParent
         });
+
+        // Initialize Family Discount Type dropdown
+        $('#family_discount_type').select2({
+            placeholder: "{{ ___('fees.No Discount') }}",
+            allowClear: true,
+            width: '100%',
+            dropdownParent: modalParent
+        });
     }
 
-    function calculateNetAmount() {
+    window.processPayment = function() {
+        console.log('Processing individual payment...');
+        const submitBtn = $('#process_payment_btn');
+        const originalText = submitBtn.text();
+        
+        // Disable submit button and show loading
+        submitBtn.prop('disabled', true).text('Processing...');
+        
+        // Collect form data
+        const formData = new FormData();
+        formData.append('_token', $('meta[name="csrf-token"]').attr('content'));
+        formData.append('student_id', $('#modal_student_id').val());
+        formData.append('payment_amount', $('#payment_amount').val());
+        formData.append('payment_method', $('#payment_method').val());
+        formData.append('transaction_reference', $('#transaction_reference').val());
+        formData.append('journal_id', $('#journal_id').val());
+        formData.append('discount_type', $('#discount_type').val());
+        formData.append('discount_amount', $('#discount_amount').val());
+        formData.append('payment_date', $('#payment_date').val());
+        formData.append('notes', $('#notes').val());
+        formData.append('fees_source', 'individual_payment');
+        
+        // Submit payment
+        $.ajax({
+            url: $('#siblingPaymentForm').attr('action'),
+            method: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                console.log('Payment processed successfully:', response);
+                if (response.success) {
+                    showSuccessMessage('Payment processed successfully!');
+                    $('#modalCustomizeWidth').modal('hide');
+                    // Refresh the page or update the UI as needed
+                    if (typeof window.location !== 'undefined') {
+                        window.location.reload();
+                    }
+                } else {
+                    showErrorMessage(response.message || 'Payment processing failed');
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Payment processing error:', error);
+                let errorMessage = 'An error occurred while processing payment';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMessage = xhr.responseJSON.message;
+                }
+                showErrorMessage(errorMessage);
+            },
+            complete: function() {
+                // Re-enable submit button
+                submitBtn.prop('disabled', false).text(originalText);
+            }
+        });
+    };
+
+    window.calculateNetAmount = function() {
         const paymentAmount = parseFloat($('#payment_amount').val()) || 0;
         const discountType = $('#discount_type').val();
         const discountValue = parseFloat($('#discount_amount').val()) || 0;
@@ -144,6 +362,28 @@
         $('#display_payment_amount').text('{{ Setting("currency_symbol") }}' + paymentAmount.toFixed(2));
         $('#display_discount_amount').text('{{ Setting("currency_symbol") }}' + discountAmount.toFixed(2));
         $('#display_net_amount').text('{{ Setting("currency_symbol") }}' + Math.max(0, netAmount).toFixed(2));
+    }
+
+    function calculateFamilyNetAmount() {
+        const totalPayment = window.siblingFeeManager ? window.siblingFeeManager.getTotalPaymentAmount() : 0;
+        const discountType = $('#family_discount_type').val();
+        const discountValue = parseFloat($('#family_discount_amount').val()) || 0;
+        let discountAmount = 0;
+
+        if (discountType && discountValue > 0) {
+            if (discountType === 'percentage') {
+                discountAmount = (totalPayment * discountValue) / 100;
+            } else {
+                discountAmount = discountValue;
+            }
+        }
+
+        const netAmount = totalPayment - discountAmount;
+
+        // Update display
+        $('#family-total-payment').text('{{ Setting("currency_symbol") }}' + totalPayment.toFixed(2));
+        $('#family-discount-amount').text('{{ Setting("currency_symbol") }}' + discountAmount.toFixed(2));
+        $('#family-net-amount').text('{{ Setting("currency_symbol") }}' + Math.max(0, netAmount).toFixed(2));
     }
 
     function updatePartialPaymentIndicator() {
@@ -229,6 +469,74 @@
         return isValid;
     }
 
+    function validateFamilyPaymentForm() {
+        console.log('Validating family payment form...');
+        let isValid = true;
+
+        // Clear previous errors
+        $('.error-message').remove();
+        $('.is-invalid').removeClass('is-invalid');
+
+        // Debug: Check payment mode
+        const paymentMode = $('input[name="payment_mode_radio"]:checked').val();
+        console.log('Payment mode:', paymentMode);
+
+        // Validate payment method (only for direct payments)
+        if (paymentMode === 'direct') {
+            const paymentMethod = $('#family_payment_method').val();
+            console.log('Payment method value:', paymentMethod);
+            if (!paymentMethod) {
+                console.log('Payment method validation failed - no value');
+                showFieldError('#family_payment_method', '{{ ___("fees.payment_method_required") }}');
+                isValid = false;
+            }
+        }
+
+        // Validate journal
+        const journalId = $('#family_journal_id').val();
+        console.log('Journal ID value:', journalId);
+        if (!journalId) {
+            console.log('Journal validation failed - no value');
+            showFieldError('#family_journal_id', '{{ ___("fees.journal_required") }}');
+            isValid = false;
+        }
+
+
+        // Validate that at least one sibling has payment amount
+        let hasPayment = false;
+        let paymentCount = 0;
+        $('.payment-amount-input').each(function() {
+            const amount = parseFloat($(this).val()) || 0;
+            if (amount > 0) {
+                hasPayment = true;
+                paymentCount++;
+            }
+        });
+
+        console.log('Payment inputs found:', $('.payment-amount-input').length);
+        console.log('Payments with amount > 0:', paymentCount);
+        console.log('Has payment:', hasPayment);
+
+        if (!hasPayment) {
+            console.log('Payment amount validation failed - no payments');
+            showErrorMessage('{{ ___("fees.at_least_one_payment_required") }}');
+            isValid = false;
+        }
+
+        // Validate discount
+        const discountType = $('#family_discount_type').val();
+        const discountValue = parseFloat($('#family_discount_amount').val()) || 0;
+        if (discountType && discountValue > 0) {
+            if (discountType === 'percentage' && discountValue > 100) {
+                showFieldError('#family_discount_amount', '{{ ___("fees.discount_percentage_invalid") }}');
+                isValid = false;
+            }
+        }
+
+        console.log('Family payment validation result:', isValid);
+        return isValid;
+    }
+
     function showFieldError(selector, message) {
         const field = $(selector);
         const errorDiv = $('<div class="error-message"></div>').text(message);
@@ -236,35 +544,39 @@
         field.addClass('is-invalid');
     }
 
-    function processPayment() {
-        console.log('processPayment function called');
-        const submitBtn = $('#process_payment_btn');
+    function processFamilyPayment() {
+        console.log('processFamilyPayment function called');
+
+        // Check validation state from class instance
+        if (window.siblingFeeManager && !window.siblingFeeManager.validationState.isValid) {
+            console.log('Validation state check failed');
+            showErrorMessage('{{ ___("fees.please_validate_payment_first") }}');
+            return;
+        }
+
+        const submitBtn = $('#process_sibling_payment_btn');
         const originalText = submitBtn.html();
 
         console.log('Submit button found:', submitBtn.length > 0);
-        console.log('Form element found:', $('#feeCollectionForm').length > 0);
+        console.log('Form element found:', $('#siblingPaymentForm').length > 0);
 
         // Show loading state
         submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i>{{ ___("fees.processing") }}');
 
-        // Prepare form data
-        const formData = new FormData($('#feeCollectionForm')[0]);
-        console.log('Form data prepared, starting AJAX request');
+        // Use the class method to collect payment data in correct format
+        if (window.siblingFeeManager) {
+            const paymentData = window.siblingFeeManager.collectPaymentData();
+            console.log('Payment data collected:', paymentData);
 
-        // Add selected fees data
-        formData.append('fees_assign_childrens', JSON.stringify(selectedFees));
-        formData.append('total_amount', totalAmount);
-        formData.append('payable_amount', payableAmount);
-
-        $.ajax({
-            url: $('#feeCollectionForm').attr('action'),
-            method: 'POST',
-            data: formData,
-            processData: false,
-            contentType: false,
-            headers: {
-                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-            },
+            $.ajax({
+                url: $('#siblingPaymentForm').attr('action'),
+                method: 'POST',
+                data: JSON.stringify(paymentData),
+                contentType: 'application/json',
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                    'Accept': 'application/json'
+                },
             success: function(response) {
                 if (!response || !response.success) {
                     showErrorMessage(response?.message || '{{ ___("fees.payment_failed") }}');
@@ -288,7 +600,7 @@
                 totalAmount = 0;
                 payableAmount = 0;
 
-                // Close the collection modal to reveal the receipt
+                // Close the family payment modal
                 $('#modalCustomizeWidth').modal('hide');
 
                 // Check if direct print URL is available (new improved flow)
@@ -347,6 +659,11 @@
                 submitBtn.prop('disabled', false).html(originalText);
             }
         });
+        } else {
+            console.error('SiblingFeeManager not available');
+            showErrorMessage('Family payment system not available');
+            submitBtn.prop('disabled', false).html(originalText);
+        }
     }
 
     function showErrorMessage(message) {
@@ -376,57 +693,8 @@
         $('.modal-body').prepend(alertDiv);
     }
 
-    // Global function to populate modal with selected fees (called from parent page)
-    window.populateFeeCollectionModal = function(studentId, feesData, studentInfo = null) {
-        // Identify source and extract display items
-        const source = feesData.source || 'service_based';
-        const displayFees = Array.isArray(feesData.fees) ? feesData.fees : [];
 
-        // Persist only legacy items for submission (service-based is display-only; backend handles via fees_source)
-        selectedFees = source === 'legacy' ? displayFees : [];
-        totalAmount = parseFloat(feesData.totalAmount || 0);
-        payableAmount = parseFloat(feesData.payableAmount || 0);
-
-        // Track student info
-        currentStudentName = (studentInfo?.name || studentInfo?.student_name || '').trim();
-        if (!currentStudentName) currentStudentName = '{{ ___('common.student') }}';
-
-        // Populate base fields
-        $('#modal_student_id').val(studentId);
-        $('#payment_amount').val(payableAmount.toFixed(2));
-        $('#modal_fees_assign_childrens').val(JSON.stringify(selectedFees));
-        $('#fees_source').val(source);
-
-        // Update labels in header and summary
-        $('#feeCollectionModalLabel').text(`{{ ___('fees.Fee Collection') }} - ${currentStudentName}`);
-        $('#summary-student-name').text(currentStudentName);
-
-        // Trigger family payment link check
-        if (window.siblingFeeManager && studentId) {
-            window.siblingFeeManager.familyLinkChecked = false;
-            window.siblingFeeManager.checkAndUpdateFamilyLink(studentId);
-        }
-
-        // Handle deposit information
-        if (feesData.deposit_info) {
-            const depositInfo = feesData.deposit_info;
-            if (depositInfo.has_deposit && depositInfo.available_deposit > 0) {
-                $('#deposit-amount').text(depositInfo.formatted_deposit);
-                $('#deposit-indicator').show();
-            } else {
-                $('#deposit-indicator').hide();
-            }
-        } else {
-            $('#deposit-indicator').hide();
-        }
-
-        // Update summary display and calculations (use display fees, not submission list)
-        updateFeesSummary(displayFees);
-        calculateNetAmount();
-        updatePartialPaymentIndicator();
-    };
-
-    function updateFeesSummary(fees) {
+    window.updateFeesSummary = function(fees) {
         const summaryContainer = $('#selected-fees-summary');
         summaryContainer.empty();
 

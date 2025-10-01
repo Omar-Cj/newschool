@@ -186,13 +186,13 @@
             </div>
 
             <!-- Direct Payment Configuration (shown only for direct payment mode) -->
-            <div class="row mb-4" id="direct-payment-config" style="display: none;">
+            <div class="row mb-4" id="family-payment-method-config" style="display: none;">
                 <div class="col-md-6">
-                    <label for="sibling_payment_method" class="form-label">
+                    <label for="family_payment_method" class="form-label">
                         {{ ___('fees.payment_method') }}
                         <span class="fillable">*</span>
                     </label>
-                    <select class="form-control select2" name="payment_method" id="sibling_payment_method" required>
+                    <select class="form-control select2" name="payment_method" id="family_payment_method" required>
                         <option value="" disabled selected>{{ ___('fees.select_payment_method') }}</option>
                         <option value="cash">{{ ___('fees.cash') }}</option>
                         <option value="zaad">{{ ___('fees.zaad') }}</option>
@@ -200,10 +200,22 @@
                     </select>
                 </div>
                 <div class="col-md-6">
-                    <label for="sibling_journal_id" class="form-label">
+                    <label for="family_transaction_reference" class="form-label">
+                        {{ ___('fees.Transaction Reference') }}
+                        <span class="text-muted small">({{ ___('fees.for_digital_payments') }})</span>
+                    </label>
+                    <input type="text" class="form-control ot-input" name="transaction_reference"
+                           id="family_transaction_reference" placeholder="{{ ___('fees.enter_transaction_reference') }}">
+                </div>
+            </div>
+
+            <!-- Journal Configuration (always required) -->
+            <div class="row mb-4" id="family-journal-config">
+                <div class="col-md-6">
+                    <label for="family_journal_id" class="form-label">
                         {{ ___('fees.Journal') }} <span class="fillable">*</span>
                     </label>
-                    <select class="form-control select2" name="journal_id" id="sibling_journal_id" required>
+                    <select class="form-control select2" name="journal_id" id="family_journal_id" required>
                         <option value="">{{ ___('fees.select_journal') }}</option>
                         <!-- Will be populated by JavaScript -->
                     </select>
@@ -213,15 +225,15 @@
             <!-- Payment Date and Notes -->
             <div class="row mb-4">
                 <div class="col-md-6">
-                    <label for="sibling_payment_date" class="form-label">
+                    <label for="family_payment_date" class="form-label">
                         {{ ___('fees.Payment Date') }} <span class="fillable">*</span>
                     </label>
                     <input type="date" class="form-control ot-input" name="payment_date"
-                           id="sibling_payment_date" value="{{ date('Y-m-d') }}" required>
+                           id="family_payment_date" value="{{ date('Y-m-d') }}" required>
                 </div>
                 <div class="col-md-6">
-                    <label for="sibling_payment_notes" class="form-label">{{ ___('fees.Payment Notes') }}</label>
-                    <textarea class="form-control ot-input" name="payment_notes" id="sibling_payment_notes"
+                    <label for="family_payment_notes" class="form-label">{{ ___('fees.Payment Notes') }}</label>
+                    <textarea class="form-control ot-input" name="payment_notes" id="family_payment_notes"
                               rows="2" placeholder="{{ ___('fees.enter_payment_notes') }}"></textarea>
                 </div>
             </div>

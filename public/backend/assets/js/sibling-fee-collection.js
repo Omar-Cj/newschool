@@ -42,50 +42,18 @@ class SiblingFeeCollectionManager {
      * Bind all event listeners
      */
     bindEvents() {
-        console.log('Binding events for modal-in-modal approach...');
+        console.log('Binding events for integrated family payment approach...');
 
-        // Family payment link click event
-        const familyPaymentLink = document.getElementById('family-payment-link');
-        if (familyPaymentLink) {
-            familyPaymentLink.addEventListener('click', () => {
-                console.log('Family payment link clicked');
-                this.openFamilyPaymentModal();
-            });
-            console.log('Family payment link event listener bound successfully');
-        } else {
-            console.error('Family payment link element not found!');
-        }
-
-        // Family payment modal show event
-        const familyModal = document.getElementById('familyPaymentModal');
-        if (familyModal) {
-            familyModal.addEventListener('shown.bs.modal', () => {
-                console.log('Family payment modal shown event triggered');
-                this.onFamilyModalShown();
-            });
-            console.log('Family payment modal event listener bound successfully');
-        } else {
-            console.error('Family payment modal element not found!');
-        }
-
-        // Main fee collection modal show event - check for siblings to show/hide family link
-        const mainModal = document.getElementById('feeCollectionModalWidth') ||
-                         document.querySelector('#modalCustomizeWidth .modal-content');
+        // Main fee collection modal show event
+        const mainModal = document.getElementById('modalCustomizeWidth');
         if (mainModal) {
-            // Listen for when the modal content is populated
-            const observer = new MutationObserver((mutations) => {
-                mutations.forEach((mutation) => {
-                    if (mutation.type === 'childList' || mutation.type === 'attributes') {
-                        const studentId = document.getElementById('modal_student_id')?.value;
-                        if (studentId && !this.familyLinkChecked) {
-                            this.familyLinkChecked = true;
-                            this.checkAndUpdateFamilyLink(studentId);
-                        }
-                    }
-                });
+            mainModal.addEventListener('shown.bs.modal', () => {
+                console.log('Main modal shown event triggered');
+                // The modal population will be handled by populateFeeCollectionModal
             });
-            observer.observe(mainModal, { childList: true, subtree: true, attributes: true });
-            console.log('Main modal mutation observer set up for family link visibility');
+            console.log('Main modal event listener bound successfully');
+        } else {
+            console.error('Main modal element not found!');
         }
 
         // Payment mode radio buttons
@@ -93,28 +61,43 @@ class SiblingFeeCollectionManager {
             radio.addEventListener('change', this.handlePaymentModeChange);
         });
 
+
         // Distribution buttons
-        document.getElementById('equal-distribution-btn')?.addEventListener('click', () => {
-            this.calculateDistribution('equal');
-        });
+        const equalBtn = document.getElementById('equal-distribution-btn');
+        if (equalBtn && !equalBtn.hasAttribute('data-listener-attached')) {
+            equalBtn.addEventListener('click', () => {
+                this.calculateDistribution('equal');
+            });
+            equalBtn.setAttribute('data-listener-attached', 'true');
+        }
 
-        document.getElementById('proportional-distribution-btn')?.addEventListener('click', () => {
-            this.calculateDistribution('proportional');
-        });
+        const proportionalBtn = document.getElementById('proportional-distribution-btn');
+        if (proportionalBtn && !proportionalBtn.hasAttribute('data-listener-attached')) {
+            proportionalBtn.addEventListener('click', () => {
+                this.calculateDistribution('proportional');
+            });
+            proportionalBtn.setAttribute('data-listener-attached', 'true');
+        }
 
-        document.getElementById('clear-distribution-btn')?.addEventListener('click', () => {
-            this.clearDistribution();
-        });
+        const clearBtn = document.getElementById('clear-distribution-btn');
+        if (clearBtn && !clearBtn.hasAttribute('data-listener-attached')) {
+            clearBtn.addEventListener('click', () => {
+                this.clearDistribution();
+            });
+            clearBtn.setAttribute('data-listener-attached', 'true');
+        }
 
         // Validation and submission
-        document.getElementById('validate_sibling_payment_btn')?.addEventListener('click', () => {
-            this.validatePayment();
-        });
+        const validateBtn = document.getElementById('validate_sibling_payment_btn');
+        if (validateBtn && !validateBtn.hasAttribute('data-listener-attached')) {
+            validateBtn.addEventListener('click', () => {
+                this.validatePayment();
+            });
+            validateBtn.setAttribute('data-listener-attached', 'true');
+        }
 
-        document.getElementById('siblingPaymentForm')?.addEventListener('submit', (e) => {
-            e.preventDefault();
-            this.processPayment();
-        });
+        // Note: Form submission is handled by modal-script to allow routing between
+        // family and individual payment. The processPayment() method is called from there.
     }
 
     /**
@@ -211,7 +194,6 @@ class SiblingFeeCollectionManager {
                 console.log('Sibling data load failed:', data.message);
                 if (data.show_individual_only) {
                     noSiblingsEl.style.display = 'block';
-                    this.updateFamilyPaymentLink();
                 } else {
                     throw new Error(data.message || 'Failed to load sibling data');
                 }
@@ -226,12 +208,12 @@ class SiblingFeeCollectionManager {
             console.log('Siblings loaded:', this.siblings.length, 'siblings');
             console.log('Available deposit:', this.availableDeposit);
             console.log('Total outstanding:', this.totalOutstanding);
+            console.log('First sibling data structure:', this.siblings[0]);
 
             // Update UI
             this.updateFamilySummary(data.data);
             this.renderSiblingTable();
             this.updateSiblingsCount();
-            this.updateFamilyPaymentLink();
             this.setupPaymentModeState();
 
             // Show interface
@@ -258,6 +240,12 @@ class SiblingFeeCollectionManager {
             } else {
                 console.error('Footer element not found!');
             }
+            
+            // Load journals for the family payment interface
+            this.loadSiblingJournals();
+            
+            // Update totals after interface is shown
+            this.updateTotals();
             
             this.isLoaded = true;
             console.log('Sibling data loaded successfully - interface ready');
@@ -296,9 +284,9 @@ class SiblingFeeCollectionManager {
         .then(journals => {
             console.log('Journals received:', journals);
 
-            const journalSelect = document.getElementById('sibling_journal_id');
+            const journalSelect = document.getElementById('family_journal_id');
             if (!journalSelect) {
-                console.error('Sibling journal select element not found!');
+                console.error('Family journal select element not found!');
                 return;
             }
 
@@ -328,10 +316,10 @@ class SiblingFeeCollectionManager {
      * Initialize Select2 dropdowns for family payment modal
      */
     initializeSiblingSelect2() {
-        const modalParent = document.getElementById('familyPaymentModal');
+        const modalParent = document.getElementById('modalCustomizeWidth');
 
         // Initialize journal dropdown
-        const journalSelect = document.getElementById('sibling_journal_id');
+        const journalSelect = document.getElementById('family_journal_id');
         if (journalSelect) {
             // Destroy existing Select2 if it exists
             if (journalSelect.classList.contains('select2-hidden-accessible')) {
@@ -348,7 +336,7 @@ class SiblingFeeCollectionManager {
         }
 
         // Initialize payment method dropdown
-        const paymentMethodSelect = document.getElementById('sibling_payment_method');
+        const paymentMethodSelect = document.getElementById('family_payment_method');
         if (paymentMethodSelect) {
             // Destroy existing Select2 if it exists
             if (paymentMethodSelect.classList.contains('select2-hidden-accessible')) {
@@ -456,7 +444,6 @@ class SiblingFeeCollectionManager {
             console.error('Sibling table element not found after rendering');
         }
 
-        this.updateTotals();
         console.log('Sibling table rendered successfully');
     }
 
@@ -541,41 +528,51 @@ class SiblingFeeCollectionManager {
      */
     handlePaymentModeChange(event) {
         this.paymentMode = event.target.value;
-        document.getElementById('sibling_payment_mode').value = this.paymentMode;
+        const paymentModeInput = document.getElementById('sibling_payment_mode');
+        if (paymentModeInput) {
+            paymentModeInput.value = this.paymentMode;
+        }
 
-        // Get elements
-        const paymentMethodConfig = document.getElementById('payment-method-config');
-        const paymentMethodSelect = document.getElementById('sibling_payment_method');
-        const journalConfig = document.getElementById('journal-config');
-        const journalSelect = document.getElementById('sibling_journal_id');
+        // Get elements with correct IDs for integrated modal
+        const paymentMethodConfig = document.getElementById('family-payment-method-config');
+        const paymentMethodSelect = document.getElementById('family_payment_method');
+        const journalConfig = document.getElementById('family-journal-config');
+        const journalSelect = document.getElementById('family_journal_id');
         const depositAlert = document.getElementById('deposit-info-alert');
 
-        if (this.paymentMode === 'direct') {
-            // Show payment method field and make it required
-            paymentMethodConfig.style.display = 'block';
-            paymentMethodSelect.setAttribute('required', 'required');
+        // Check if elements exist before manipulating them
+        if (paymentMethodConfig && paymentMethodSelect) {
+            if (this.paymentMode === 'direct') {
+                // Show payment method field and make it required
+                paymentMethodConfig.style.display = 'block';
+                paymentMethodSelect.setAttribute('required', 'required');
+            } else {
+                // Hide payment method field and remove required attribute
+                paymentMethodConfig.style.display = 'none';
+                paymentMethodSelect.removeAttribute('required');
+            }
+        }
 
-            // Keep journal visible and required
-            journalConfig.style.display = 'block';
-            journalSelect.setAttribute('required', 'required');
-
-            // Hide deposit info
-            depositAlert.style.display = 'none';
-        } else {
-            // Hide payment method field and remove required attribute
-            paymentMethodConfig.style.display = 'none';
-            paymentMethodSelect.removeAttribute('required');
-
+        if (journalConfig && journalSelect) {
             // Keep journal visible and required (journal is always needed)
             journalConfig.style.display = 'block';
             journalSelect.setAttribute('required', 'required');
+        }
 
-            // Show deposit info
-            depositAlert.style.display = 'block';
+
+        if (depositAlert) {
+            if (this.paymentMode === 'direct') {
+                // Hide deposit info
+                depositAlert.style.display = 'none';
+            } else {
+                // Show deposit info
+                depositAlert.style.display = 'block';
+            }
         }
 
         this.updatePaymentCalculations();
     }
+
 
     /**
      * Handle payment amount change
@@ -732,10 +729,24 @@ class SiblingFeeCollectionManager {
         const totalOutstanding = this.siblings.reduce((sum, sibling) => sum + sibling.total_outstanding, 0);
         const totalPayment = this.getTotalPaymentAmount();
 
-        document.getElementById('total-outstanding-amount').textContent = this.formatCurrency(totalOutstanding);
-        document.getElementById('total-payment-amount').textContent = this.formatCurrency(totalPayment);
-        document.getElementById('family-total-payment').textContent = this.formatCurrency(totalPayment);
-        document.getElementById('family-remaining-balance').textContent = this.formatCurrency(totalOutstanding - totalPayment);
+        // Update totals only if elements exist and are visible
+        const totalOutstandingEl = document.getElementById('total-outstanding-amount');
+        const totalPaymentEl = document.getElementById('total-payment-amount');
+        const familyTotalEl = document.getElementById('family-total-payment');
+        const familyRemainingEl = document.getElementById('family-remaining-balance');
+
+        if (totalOutstandingEl) {
+            totalOutstandingEl.textContent = this.formatCurrency(totalOutstanding);
+        }
+        if (totalPaymentEl) {
+            totalPaymentEl.textContent = this.formatCurrency(totalPayment);
+        }
+        if (familyTotalEl) {
+            familyTotalEl.textContent = this.formatCurrency(totalPayment);
+        }
+        if (familyRemainingEl) {
+            familyRemainingEl.textContent = this.formatCurrency(totalOutstanding - totalPayment);
+        }
     }
 
     /**
@@ -751,11 +762,29 @@ class SiblingFeeCollectionManager {
             cashRequired = totalPayment - depositUsed;
         }
 
-        // Update summary
-        document.getElementById('summary-total-payment').textContent = this.formatCurrency(totalPayment);
-        document.getElementById('summary-deposit-used').textContent = this.formatCurrency(depositUsed);
-        document.getElementById('summary-cash-required').textContent = this.formatCurrency(cashRequired);
-        document.getElementById('summary-students-count').textContent = this.getActiveStudentsCount();
+        // Update summary (only if elements exist)
+        const totalPaymentEl = document.getElementById('summary-total-payment');
+        const depositUsedEl = document.getElementById('summary-deposit-used');
+        const cashRequiredEl = document.getElementById('summary-cash-required');
+        const studentsCountEl = document.getElementById('summary-students-count');
+
+        if (totalPaymentEl) {
+            totalPaymentEl.textContent = this.formatCurrency(totalPayment);
+        }
+        if (depositUsedEl) {
+            depositUsedEl.textContent = this.formatCurrency(depositUsed);
+        }
+        if (cashRequiredEl) {
+            cashRequiredEl.textContent = this.formatCurrency(cashRequired);
+        }
+        if (studentsCountEl) {
+            studentsCountEl.textContent = this.getActiveStudentsCount();
+        }
+
+        // Trigger family discount calculation if available
+        if (typeof calculateFamilyNetAmount === 'function') {
+            calculateFamilyNetAmount();
+        }
     }
 
     /**
@@ -785,6 +814,12 @@ class SiblingFeeCollectionManager {
             validateBtn.disabled = true;
             validateBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Validating...';
 
+            // Check if siblings are loaded
+            if (!this.siblings || this.siblings.length === 0) {
+                this.showError('Sibling data not loaded yet. Please wait and try again.');
+                return;
+            }
+
             const paymentData = this.collectPaymentData();
 
             const response = await fetch('/~omar/schooltemplate/public/index.php/fees/siblings/validate', {
@@ -800,16 +835,28 @@ class SiblingFeeCollectionManager {
 
             const data = await response.json();
 
-            if (data.success && data.data.valid) {
+            if (data.success && data.data && data.data.valid) {
                 this.validationState.isValid = true;
                 this.validationState.errors = [];
                 processBtn.disabled = false;
                 this.showSuccess('Payment validation successful!');
             } else {
                 this.validationState.isValid = false;
-                this.validationState.errors = data.data.errors || [data.message];
+                // Handle different response structures
+                let errors = [];
+                if (data.data && data.data.errors) {
+                    errors = Array.isArray(data.data.errors) ? data.data.errors : Object.values(data.data.errors);
+                } else if (data.errors) {
+                    errors = Array.isArray(data.errors) ? data.errors : Object.values(data.errors);
+                } else if (data.message) {
+                    errors = [data.message];
+                } else {
+                    errors = ['Validation failed'];
+                }
+                
+                this.validationState.errors = errors;
                 processBtn.disabled = true;
-                this.showError('Payment validation failed: ' + this.validationState.errors.join(', '));
+                this.showError('Payment validation failed: ' + errors.join(', '));
             }
 
         } catch (error) {
@@ -900,24 +947,45 @@ class SiblingFeeCollectionManager {
                 const siblingIndex = parseInt(input.dataset.siblingIndex);
                 const sibling = this.siblings[siblingIndex];
 
-                siblingPayments.push({
-                    student_id: studentId,
-                    amount: amount,
-                    fee_ids: sibling.outstanding_fees.map(fee => fee.id)
-                });
+                // Check if sibling exists and has outstanding_fees
+                if (sibling && sibling.outstanding_fees && Array.isArray(sibling.outstanding_fees)) {
+                    const feeIds = sibling.outstanding_fees.map(fee => fee.id);
+                    
+                    siblingPayments.push({
+                        student_id: studentId,
+                        amount: amount,
+                        fee_ids: feeIds
+                    });
+                } else {
+                    console.warn('Sibling data incomplete for student:', studentId, 'sibling:', sibling);
+                    // Fallback: create payment without specific fee IDs
+                    siblingPayments.push({
+                        student_id: studentId,
+                        amount: amount,
+                        fee_ids: []
+                    });
+                }
             }
         });
+
+        // Get form values with correct element IDs
+        const paymentDateEl = document.getElementById('family_payment_date');
+        const paymentNotesEl = document.getElementById('family_payment_notes');
+        const paymentMethodEl = document.getElementById('family_payment_method');
+        const journalIdEl = document.getElementById('family_journal_id');
 
         const paymentData = {
             payment_mode: this.paymentMode,
             sibling_payments: siblingPayments,
-            payment_date: document.getElementById('sibling_payment_date').value,
-            payment_notes: document.getElementById('sibling_payment_notes').value
+            payment_date: paymentDateEl ? paymentDateEl.value : '',
+            payment_notes: paymentNotesEl ? paymentNotesEl.value : '',
+            discount_type: document.getElementById('family_discount_type')?.value || '',
+            discount_amount: document.getElementById('family_discount_amount')?.value || ''
         };
 
         if (this.paymentMode === 'direct') {
-            paymentData.payment_method = document.getElementById('sibling_payment_method').value;
-            paymentData.journal_id = document.getElementById('sibling_journal_id').value;
+            paymentData.payment_method = paymentMethodEl ? paymentMethodEl.value : '';
+            paymentData.journal_id = journalIdEl ? journalIdEl.value : '';
         }
 
         return paymentData;
@@ -979,6 +1047,7 @@ class SiblingFeeCollectionManager {
 
         modalBody.innerHTML = html;
 
+        // Show the modal
         const modal = new bootstrap.Modal(document.getElementById('siblingFeeDetailModal'));
         modal.show();
     }
@@ -1154,17 +1223,18 @@ class SiblingFeeCollectionManager {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('SiblingFeeCollectionManager: DOM ready, checking for modals...');
 
-    // Only initialize if we're on a page with the fee collection modal or family payment modal
-    const mainModal = document.getElementById('feeCollectionModalWidth');
-    const familyModal = document.getElementById('familyPaymentModal');
+    // Only initialize if we're on a page with the fee collection modal
+    const mainModal = document.getElementById('modalCustomizeWidth');
+    console.log('Main modal found:', !!mainModal);
 
-    if (mainModal || familyModal) {
-        console.log('SiblingFeeCollectionManager: Fee collection modals found, initializing...');
+    if (mainModal) {
+        console.log('SiblingFeeCollectionManager: Fee collection modal found, initializing...');
         window.siblingFeeManager = new SiblingFeeCollectionManager();
         window.siblingFeeManager.init();
         console.log('SiblingFeeCollectionManager: Initialized successfully');
+        console.log('SiblingFeeManager available globally:', !!window.siblingFeeManager);
     } else {
-        console.log('SiblingFeeCollectionManager: Fee collection modals not found, skipping initialization');
+        console.log('SiblingFeeCollectionManager: Fee collection modal not found, skipping initialization');
     }
 });
 
