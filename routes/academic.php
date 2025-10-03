@@ -12,6 +12,7 @@ use App\Http\Controllers\Academic\ClassRoutineController;
 use App\Http\Controllers\Academic\TimeScheduleController;
 use App\Http\Controllers\Academic\SubjectAssignController;
 use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
+use App\Http\Controllers\Academic\TermController;
 
 
 
@@ -56,6 +57,35 @@ Route::middleware(saasMiddleware())->group(function () {
                     Route::get('/edit/{id}',        'edit')->name('subject.edit')->middleware('PermissionCheck:subject_update');
                     Route::put('/update/{id}',      'update')->name('subject.update')->middleware('PermissionCheck:subject_update', 'DemoCheck');
                     Route::delete('/delete/{id}',   'delete')->name('subject.delete')->middleware('PermissionCheck:subject_delete', 'DemoCheck');
+                });
+
+                // Terms Management Routes
+                Route::controller(TermController::class)->prefix('terms')->group(function () {
+                    // Main Terms Routes
+                    Route::get('/',                         'index')->name('terms.index')->middleware('PermissionCheck:terms_read');
+                    Route::get('/ajax-data',                'ajaxData')->name('terms.ajax-data')->middleware('PermissionCheck:terms_read');
+                    Route::get('/create',                   'create')->name('terms.create')->middleware('PermissionCheck:terms_create');
+                    Route::post('/store',                   'store')->name('terms.store')->middleware('PermissionCheck:terms_create', 'DemoCheck');
+                    Route::get('/{id}/edit',                'edit')->name('terms.edit')->middleware('PermissionCheck:terms_update');
+                    Route::put('/{id}',                     'update')->name('terms.update')->middleware('PermissionCheck:terms_update', 'DemoCheck');
+                    Route::put('/{id}/close',               'close')->name('terms.close')->middleware('PermissionCheck:terms_update', 'DemoCheck');
+                    Route::put('/{id}/activate',            'activate')->name('terms.activate')->middleware('PermissionCheck:terms_update', 'DemoCheck');
+
+                    // Term Definitions Routes
+                    Route::get('/definitions',              'definitions')->name('terms.definitions')->middleware('PermissionCheck:terms_read');
+                    Route::get('/definitions/ajax-data',    'definitionsAjaxData')->name('terms.definitions.ajax-data')->middleware('PermissionCheck:terms_read');
+                    Route::post('/definitions/store',       'storeDefinition')->name('terms.definitions.store')->middleware('PermissionCheck:terms_create', 'DemoCheck');
+                    Route::get('/definitions/{id}/edit',    'editDefinition')->name('terms.definitions.edit')->middleware('PermissionCheck:terms_update');
+                    Route::put('/definitions/{id}',         'updateDefinition')->name('terms.definitions.update')->middleware('PermissionCheck:terms_update', 'DemoCheck');
+                    Route::delete('/definitions/{id}',      'deleteDefinition')->name('terms.definitions.delete')->middleware('PermissionCheck:terms_delete', 'DemoCheck');
+
+                    // Additional Term Routes
+                    Route::get('/suggestions',              'suggestions')->name('terms.suggestions')->middleware('PermissionCheck:terms_read');
+                    Route::post('/bulk-open',               'bulkOpen')->name('terms.bulk-open')->middleware('PermissionCheck:terms_create', 'DemoCheck');
+                    Route::post('/clone-terms',             'cloneTerms')->name('terms.clone')->middleware('PermissionCheck:terms_create', 'DemoCheck');
+                    Route::get('/timeline',                 'timeline')->name('terms.timeline')->middleware('PermissionCheck:terms_read');
+                    Route::get('/statistics',               'statistics')->name('terms.statistics')->middleware('PermissionCheck:terms_read');
+                    Route::post('/validate',                'validateTermDates')->name('terms.validate')->middleware('PermissionCheck:terms_create');
                 });
 
                 Route::controller(ShiftController::class)->prefix('shift')->group(function () {

@@ -42,6 +42,7 @@ class PermissionSeeder extends Seeder
             'fees_generation'   => ['read' => 'fees_generate_read', 'create' => 'fees_generate_create', 'update' => 'fees_generate_update', 'delete' => 'fees_generate_delete'],
             'discount_setup'    => ['siblings_discount' => 'siblings_discount', 'early_payment_discount' => 'early_payment_discount'],
             // examinations
+            'terms'             => ['read' => 'terms_read', 'create' => 'terms_create', 'update' => 'terms_update', 'delete' => 'terms_delete'],
             'exam_type'         => ['read' => 'exam_type_read', 'create' => 'exam_type_create', 'update' => 'exam_type_update', 'delete' => 'exam_type_delete'],
             'marks_grade'       => ['read' => 'marks_grade_read', 'create' => 'marks_grade_create', 'update' => 'marks_grade_update', 'delete' => 'marks_grade_delete'],
             'exam_assign'       => ['read' => 'exam_assign_read', 'create' => 'exam_assign_create', 'update' => 'exam_assign_update', 'delete' => 'exam_assign_delete'],

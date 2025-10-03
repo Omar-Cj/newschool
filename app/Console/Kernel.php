@@ -27,6 +27,10 @@ class Kernel extends ConsoleKernel
 
         $schedule->command('attendance:cron')
                  ->everyMinute();
+
+        // Update term statuses daily at midnight
+        $schedule->command('terms:update-status')
+                 ->dailyAt('00:01');
     }
 
     /**

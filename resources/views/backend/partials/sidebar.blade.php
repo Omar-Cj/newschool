@@ -395,19 +395,27 @@
 
                 {{-- Start exam --}}
                 @if (
-                    (hasPermission('exam_type_read') ||
+                    (hasPermission('terms_read') ||
+                        hasPermission('exam_type_read') ||
                         hasPermission('marks_grade_read') ||
                         hasPermission('exam_assign_read') ||
                         hasPermission('marks_register_read') ||
                         hasPermission('exam_setting_read')) &&
                         hasFeature('examination'))
                     <li
-                        class="sidebar-menu-item {{ set_menu(['exam-type*', 'marks-grade*', 'exam-assign*', 'marks-register*', 'examination-settings*']) }}">
+                        class="sidebar-menu-item {{ set_menu(['exam-type*', 'marks-grade*', 'exam-assign*', 'marks-register*', 'examination-settings*', 'terms*']) }}">
                         <a class="parent-item-content has-arrow">
                             <i class="las la-book-reader"></i>
                             <span class="on-half-expanded">{{ ___('settings.examination') }}</span>
                         </a>
                         <ul class="child-menu-list">
+                            @if (hasPermission('terms_read'))
+                                <li class="sidebar-menu-item {{ set_menu(['terms*']) }}">
+                                    <a href="{{ route('terms.index') }}">
+                                        <i class="las la-calendar-alt"></i> {{ ___('academic.terms') }}
+                                    </a>
+                                </li>
+                            @endif
                             @if (hasPermission('exam_type_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['exam-type*']) }}">
                                     <a href="{{ route('exam-type.index') }}">{{ ___('settings.type') }}</a>

@@ -42,6 +42,23 @@ class Branch extends Model
     }
 
     /**
+     * Get all terms for this branch
+     */
+    public function terms(): HasMany
+    {
+        return $this->hasMany(\App\Models\Examination\Term::class);
+    }
+
+    /**
+     * Get active terms for this branch
+     */
+    public function activeTerms(): HasMany
+    {
+        return $this->hasMany(\App\Models\Examination\Term::class)
+            ->where('status', 'active');
+    }
+
+    /**
      * Scope to get only active branches
      */
     public function scopeActive($query)

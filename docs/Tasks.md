@@ -1,9 +1,35 @@
   # Tasks.md - School Management System
 
 ## Current Sprint / Phase
-**Sprint Goal:** Receipt Functionality Optimization - Enhance transparency, accuracy, and performance of fee collection receipts
+**Sprint Goal:** Examination Module Enhancement - Comprehensive redesign of examination system with Terms management, ActivityType refactoring, and student-centric exam entries
 
 ## Completed ✅
+
+### Terms Module Implementation ✅
+**Completed Date:** January 30, 2025
+**Impact:** Foundation for academic calendar management with template-based term system
+
+#### Implementation Details
+- **Database Layer**: Created migrations for `term_definitions` and `terms` tables
+- **Models**: Built `Term` and `TermDefinition` models with comprehensive relationships
+- **Repository Pattern**: Implemented `TermRepository` with AJAX DataTables support
+- **Service Layer**: Created `TermService` with business logic and validations
+- **Controller**: Built `TermController` with 20+ AJAX endpoints
+- **Views**: Created DataTables-based views with modal CRUD operations
+- **Routes**: Registered routes in `academic.php` with permission middleware
+- **Menu Integration**: Added to Examination module sidebar
+- **Automation**: Created cron command for auto-updating term statuses
+- **Permissions**: Added migration for Terms permissions
+
+#### Key Features
+- ✅ Template-based term system (define once, reuse yearly)
+- ✅ Zero page reloads - all AJAX operations
+- ✅ Smart date suggestions based on previous years
+- ✅ Automatic status updates via cron job
+- ✅ Overlap detection and validation
+- ✅ Progress tracking with visual indicators
+- ✅ Bulk operations and term cloning
+- ✅ Timeline visualization
 
 ### Receipt Functionality Optimization Project ✅
 **Completed Date:** January 25, 2025
@@ -253,6 +279,312 @@
 - 🔧 **Existing features intact** - edit, delete, fee collection continue to work
 
 ## Current Tasks (In Progress) 🔄
+
+### 🎯 Examination Module Enhancement
+**Start Date:** 2 Oct 2025
+**Status:** Phase 1 Complete ✅ - Phase 2 Ready for Implementation
+**Impact:** Complete examination system overhaul with modern architecture and improved user experience
+**Progress:** Phase 1 (Terms Module) ✅ | Phase 2 (ActivityType) ⏳ | Phase 3 (ExamEntry) ⏳ | Phase 4 (Reports) ⏳
+
+#### Project Overview
+Comprehensive redesign of the examination module to implement Terms management, refactor ExamType to ActivityType, transform ExamAssign to student-centric ExamEntry, and enhance reporting capabilities. All features will follow the AJAX DataTables pattern for seamless user experience.
+
+#### Phase 1: Academic Terms Module [HIGH PRIORITY] ✅
+**Estimated Time:** 18 hours
+**Actual Time:** 20 hours
+**Status:** ✅ Completed
+**Completion Date:** 3 Oct 2025
+
+##### Database Design
+- **Table:** `term_definitions` (Reusable term templates)
+  - id (primary key)
+  - name (varchar) - e.g., "First Term", "Second Term"
+  - code (varchar, nullable) - e.g., "T1", "T2"
+  - sequence (integer) - Order of terms in academic year
+  - typical_duration_weeks (integer) - Standard duration
+  - typical_start_month (integer) - Typical starting month
+  - description (text, nullable)
+  - is_active (boolean)
+  - created_at, updated_at (timestamps)
+
+- **Table:** `terms` (Actual term instances)
+  - id (primary key)
+  - term_definition_id (foreign key) - References term template
+  - session_id (foreign key) - Academic session
+  - start_date (date) - Actual start date
+  - end_date (date) - Actual end date
+  - actual_weeks (integer) - Calculated duration
+  - status (enum: draft, upcoming, active, closed)
+  - notes (text, nullable)
+  - opened_by (foreign key to users)
+  - opened_at (timestamp)
+  - closed_by (foreign key to users, nullable)
+  - closed_at (timestamp, nullable)
+  - created_at, updated_at (timestamps)
+
+##### Implementation Tasks
+- [x] **[2h]** Create migrations for term_definitions and terms tables
+- [x] **[2h]** Create TermDefinition and Term models with relationships
+- [x] **[3h]** Implement TermRepository with CRUD operations for both tables
+- [x] **[5h]** Build TermController with comprehensive AJAX endpoints
+  - index() - Display terms listing page
+  - ajaxData() - DataTables server-side processing for terms
+  - definitions() - Display term definitions management page
+  - definitionsAjaxData() - DataTables server-side processing for definitions
+  - create() - Show create modal for terms
+  - store() - Save new term
+  - edit() - Show edit modal for terms
+  - update() - Update existing term
+  - storeDefinition() - Save new term definition
+  - editDefinition() - Get term definition for editing
+  - updateDefinition() - Update existing term definition
+  - deleteDefinition() - Delete term definition
+  - activate() - Activate upcoming term
+  - close() - Close active term
+  - suggestions() - Get term date suggestions
+  - bulkOpen() - Bulk create terms for session
+  - cloneTerms() - Clone terms from previous session
+  - timeline() - Get term timeline for calendar view
+  - validateTermDates() - Pre-submission validation
+- [x] **[7h]** Create views with DataTables and modal CRUD
+  - index.blade.php - Terms listing with DataTables
+  - definitions.blade.php - Term definitions management with DataTables
+  - AJAX filters for session, status, and term definition
+  - Modal-based CRUD operations for both terms and definitions
+  - Dashboard cards showing active, upcoming, and closed terms
+- [x] **[1h]** Register routes and add permissions in academic.php
+- [x] **[1h]** Fix DataTables JSON structure in TermRepository (associative arrays)
+
+##### Technical Requirements
+- ✅ Server-side DataTables processing with associative array responses
+- ✅ Modal-based CRUD operations (zero page reloads)
+- ✅ Date range validation and overlap detection
+- ✅ Template-based term system (define once, reuse yearly)
+- ✅ Automatic status management (draft → upcoming → active → closed)
+- ✅ Smart date suggestions based on previous terms
+- ✅ Bulk operations and term cloning capabilities
+- ✅ Complete audit trail (opened_by, opened_at, closed_by, closed_at)
+
+##### Key Features Implemented
+- ✅ **Term Definitions (Templates)**: Reusable term templates with typical durations and start months
+- ✅ **Terms Management**: Session-specific term instances based on templates
+- ✅ **Status Workflow**: Automatic progression from draft → upcoming → active → closed
+- ✅ **Date Suggestions**: Smart suggestions based on term definitions and academic calendar
+- ✅ **Overlap Detection**: Prevents conflicting term dates within same session
+- ✅ **Bulk Operations**: Create multiple terms at once, clone from previous session
+- ✅ **Timeline View**: Visual calendar representation of terms
+- ✅ **Progress Tracking**: Real-time progress indicators for active terms
+- ✅ **Validation**: Pre-submission date validation and sequence checking
+
+#### Phase 2: ExamType → ActivityType Refactoring [HIGH PRIORITY]
+**Estimated Time:** 15 hours
+**Status:** ⏳ Pending
+
+##### Refactoring Scope
+Complete system-wide rename from "ExamType" to "ActivityType" to better reflect the purpose of various academic activities (exams, assignments, projects, etc.)
+
+##### Implementation Tasks
+- [ ] **[2h]** Create migration to rename exam_types → activity_types
+  - Rename table
+  - Update indexes
+- [ ] **[2h]** Refactor ExamType model to ActivityType
+  - Rename model file
+  - Update class name and relationships
+- [ ] **[4h]** Update all controller/repository references
+  - ExamTypeController → ActivityTypeController
+  - ExamTypeRepository → ActivityTypeRepository
+  - Update dependency injection
+- [ ] **[3h]** Update views and language files
+  - Rename view directories
+  - Update blade templates
+  - Update language strings
+- [ ] **[2h]** Update foreign key references in related tables
+  - exam_assigns.exam_type_id → activity_type_id
+  - exam_routines.type_id → activity_type_id
+  - marks_registers.exam_type_id → activity_type_id
+- [ ] **[2h]** Test refactoring and fix edge cases
+
+##### Migration Strategy
+- Create backward-compatible migrations
+- Update seeders and factories
+- Provide rollback capability
+
+#### Phase 3: ExamAssign → ExamEntry Module [MEDIUM PRIORITY]
+**Estimated Time:** 26 hours
+**Status:** ⏳ Pending
+
+##### Transformation Overview
+Convert the current subject-based exam assignment system to a student-centric exam entry system for better management of individual student examinations.
+
+##### Database Redesign
+- **Table:** `exam_entries`
+  - id (primary key)
+  - student_id (foreign key)
+  - term_id (foreign key)
+  - activity_type_id (foreign key)
+  - class_id (foreign key)
+  - section_id (foreign key)
+  - subject_id (foreign key)
+  - total_marks (float)
+  - obtained_marks (float nullable)
+  - grade (varchar nullable)
+  - remarks (text nullable)
+  - status (enum: pending, completed, absent)
+  - exam_date (date)
+  - created_at, updated_at
+
+##### Implementation Tasks
+- [ ] **[3h]** Design and create exam_entries migration
+- [ ] **[2h]** Create ExamEntry model with relationships
+  - belongsTo: Student, Term, ActivityType, Class, Section, Subject
+  - Scopes: byTerm, byActivity, byClass, pending, completed
+- [ ] **[4h]** Build ExamEntryRepository with bulk operations
+  - Bulk create for multiple students
+  - Bulk update marks
+  - Filter by various criteria
+- [ ] **[6h]** Create ExamEntryController with student management
+  - AJAX student selection by class/section
+  - Bulk entry creation
+  - Individual and bulk marks entry
+  - Status management
+- [ ] **[8h]** Build entry management UI
+  - Student selection interface with checkboxes
+  - DataTables with inline editing
+  - Bulk actions toolbar
+  - Quick filters for term/activity/status
+- [ ] **[3h]** Create data migration from exam_assigns
+  - Map existing data to new structure
+  - Preserve historical records
+
+##### Features
+- Bulk student selection for exam entry
+- Quick marks entry with keyboard navigation
+- Automatic grade calculation
+- Absent/present status tracking
+- Export to Excel for offline entry
+
+#### Phase 4: ExamReport Enhancement [LOW PRIORITY]
+**Estimated Time:** 16 hours
+**Status:** ⏳ Pending
+
+##### Enhancement Overview
+Redesign the examination reports (formerly marksheets) with improved analytics, visualizations, and export capabilities.
+
+##### Implementation Tasks
+- [ ] **[4h]** Redesign report structure
+  - Term-based filtering
+  - Activity type grouping
+  - Class/section selection
+  - Date range filters
+- [ ] **[3h]** Add performance analytics
+  - Class average calculations
+  - Subject-wise performance
+  - Student ranking
+  - Trend analysis
+- [ ] **[4h]** Implement export functionality
+  - PDF generation with proper formatting
+  - Excel export with formulas
+  - Bulk report generation
+- [ ] **[3h]** Add visual charts
+  - Grade distribution pie charts
+  - Performance trend line graphs
+  - Subject comparison bar charts
+  - Use Chart.js or similar library
+- [ ] **[2h]** Create responsive report templates
+  - Mobile-friendly design
+  - Print-optimized CSS
+  - Customizable headers/footers
+
+##### Report Types
+- Individual student report card
+- Class performance summary
+- Subject analysis report
+- Term comparison report
+- Annual academic report
+
+#### Technical Standards & Patterns
+
+##### AJAX DataTables Pattern
+Following the successful pattern from student listing implementation:
+```javascript
+// Server-side processing
+$('#terms-table').DataTable({
+    processing: true,
+    serverSide: true,
+    ajax: {
+        url: '/academic-terms/ajax-data',
+        type: 'GET',
+        data: function(d) {
+            d.session_id = $('#filter-session').val();
+            d.status = $('#filter-status').val();
+        }
+    },
+    columns: [
+        { data: 'name' },
+        { data: 'start_date' },
+        { data: 'end_date' },
+        { data: 'session' },
+        { data: 'status' },
+        { data: 'actions', orderable: false }
+    ]
+});
+```
+
+##### Repository Pattern
+```php
+interface AcademicTermRepositoryInterface {
+    public function getAjaxData($request);
+    public function create(array $data);
+    public function update($id, array $data);
+    public function delete($id);
+}
+```
+
+##### Modal CRUD Operations
+- All create/edit operations in Bootstrap modals
+- AJAX form submissions
+- Real-time validation feedback
+- Success/error toast notifications
+- Automatic table refresh on changes
+
+#### Dependencies & Prerequisites
+1. **Existing System Knowledge**
+   - Current ExamType and ExamAssign structure
+   - Marks register functionality
+   - Session management system
+
+2. **Technical Requirements**
+   - Laravel 8+ with Repository pattern
+   - DataTables 1.10+
+   - Bootstrap 4/5 modals
+   - jQuery for AJAX operations
+
+3. **Database Considerations**
+   - Maintain data integrity during migrations
+   - Backup before major refactoring
+   - Test migrations on staging first
+
+#### Testing Strategy
+- [ ] Unit tests for repositories
+- [ ] Feature tests for controllers
+- [ ] Browser tests for AJAX operations
+- [ ] Data migration validation
+- [ ] Performance testing with large datasets
+
+#### Rollback Plan
+- Each phase can be rolled back independently
+- Database migrations include down() methods
+- Git branches for each phase
+- Backup points before major changes
+
+#### Success Metrics
+- ✅ Zero page reloads during operations
+- ✅ < 500ms response time for AJAX calls
+- ✅ 100% data migration accuracy
+- ✅ All existing features preserved
+- ✅ Improved user satisfaction scores
+
+---
 
 ### ✅ Parent Deposit System - COMPLETED
 **Completed Date:** January 27, 2025
