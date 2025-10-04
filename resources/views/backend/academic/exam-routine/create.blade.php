@@ -168,3 +168,22 @@
         </div>
     </div>
 @endsection
+
+@push('script')
+<script>
+    $(document).ready(function() {
+        // Trigger exam type loading when class and section are both selected
+        function checkAndLoadExamTypes() {
+            var classId = $(".class").val();
+            var sectionId = $(".section").val();
+
+            if (classId && sectionId) {
+                getExamtype();
+            }
+        }
+
+        // Initial load - check if class and section are pre-selected (e.g., from validation errors)
+        checkAndLoadExamTypes();
+    });
+</script>
+@endpush

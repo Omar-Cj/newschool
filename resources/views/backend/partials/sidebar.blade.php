@@ -418,7 +418,7 @@
                             @endif
                             @if (hasPermission('exam_type_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['exam-type*']) }}">
-                                    <a href="{{ route('exam-type.index') }}">{{ ___('settings.type') }}</a>
+                                    <a href="{{ route('exam-type.index') }}">{{ ___('examination.exam_type') }}</a>
                                 </li>
                             @endif
                             @if (hasPermission('marks_grade_read'))

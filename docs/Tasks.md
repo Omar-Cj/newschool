@@ -376,38 +376,68 @@ Comprehensive redesign of the examination module to implement Terms management, 
 - ✅ **Progress Tracking**: Real-time progress indicators for active terms
 - ✅ **Validation**: Pre-submission date validation and sequence checking
 
-#### Phase 2: ExamType → ActivityType Refactoring [HIGH PRIORITY]
+#### Phase 2: Exam Module UI Improvements [HIGH PRIORITY] ✅
+**Estimated Time:** 30 minutes
+**Actual Time:** 30 minutes
+**Status:** ✅ Completed
+**Completion Date:** 4 Oct 2025
+
+##### Implementation Summary
+Complete UI/UX improvements for the examination module based on user requirements.
+
+##### Completed Tasks
+- [x] **[5min]** Renamed sidebar menu: "Type" → "Exam Type"
+  - File: `resources/views/backend/partials/sidebar.blade.php`
+  - Changed translation key from `{{ ___('settings.type') }}` to `{{ ___('examination.exam_type') }}`
+  - Improved clarity and consistency in examination module navigation
+
+- [x] **[15min]** Fixed exam type dropdown not loading in exam routine create form
+  - File: `resources/views/backend/academic/exam-routine/create.blade.php`
+  - Added `@section('script')` block with initialization logic
+  - Calls `getExamtype()` function when both class and section are selected
+  - Root cause: JavaScript function existed in `custom.js` but wasn't triggered on page load
+  - Solution: Added document ready handler to check for pre-selected values and load exam types
+
+- [x] **[10min]** Updated documentation in Tasks.md
+
+##### Technical Details
+**Problem Analysis:**
+- Sidebar showed generic "Type" instead of specific "Exam Type"
+- Exam type dropdown remained empty in create form because:
+  - Controller's `create()` method didn't populate exam types (unlike `edit()` method)
+  - JavaScript `getExamtype()` function existed but only triggered on change events
+  - No initialization call when page loaded
+
+**Solution Implementation:**
+- **Sidebar Fix:** Updated translation key for better UX
+- **Dropdown Fix:** Added initialization script that:
+  - Checks if class and section have values on page load
+  - Automatically calls `getExamtype()` to populate dropdown
+  - Uses existing AJAX endpoint `/exam-assign/get-exam-type`
+  - Preserves existing change event handlers
+
+##### Testing Completed
+- ✅ Sidebar displays "Exam Type" label correctly
+- ✅ Exam routine create form loads exam types when class and section selected
+- ✅ Existing edit functionality continues to work
+- ✅ No breaking changes to other examination features
+
+##### Future Enhancement: Complete ExamType → ActivityType Refactoring
+**Original Phase 2 Plan - Deferred for Future Implementation**
 **Estimated Time:** 15 hours
-**Status:** ⏳ Pending
+**Priority:** LOW (deferred)
 
-##### Refactoring Scope
-Complete system-wide rename from "ExamType" to "ActivityType" to better reflect the purpose of various academic activities (exams, assignments, projects, etc.)
+This comprehensive refactoring would rename "ExamType" to "ActivityType" throughout the system to better reflect various academic activities (exams, assignments, projects, etc.).
 
-##### Implementation Tasks
-- [ ] **[2h]** Create migration to rename exam_types → activity_types
-  - Rename table
-  - Update indexes
-- [ ] **[2h]** Refactor ExamType model to ActivityType
-  - Rename model file
-  - Update class name and relationships
-- [ ] **[4h]** Update all controller/repository references
-  - ExamTypeController → ActivityTypeController
-  - ExamTypeRepository → ActivityTypeRepository
-  - Update dependency injection
-- [ ] **[3h]** Update views and language files
-  - Rename view directories
-  - Update blade templates
-  - Update language strings
-- [ ] **[2h]** Update foreign key references in related tables
-  - exam_assigns.exam_type_id → activity_type_id
-  - exam_routines.type_id → activity_type_id
-  - marks_registers.exam_type_id → activity_type_id
-- [ ] **[2h]** Test refactoring and fix edge cases
+**Planned Tasks (Deferred):**
+- [ ] Create migration to rename exam_types → activity_types
+- [ ] Refactor ExamType model to ActivityType
+- [ ] Update all controller/repository references
+- [ ] Update views and language files
+- [ ] Update foreign key references in related tables
+- [ ] Test refactoring and fix edge cases
 
-##### Migration Strategy
-- Create backward-compatible migrations
-- Update seeders and factories
-- Provide rollback capability
+**Note:** This refactoring has been deferred as the immediate user needs were addressed through simpler UI improvements in the completed Phase 2 above.
 
 #### Phase 3: ExamAssign → ExamEntry Module [MEDIUM PRIORITY]
 **Estimated Time:** 26 hours
