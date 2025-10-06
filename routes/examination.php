@@ -10,6 +10,8 @@ use App\Http\Controllers\Examination\MarksGradeController;
 use App\Http\Controllers\Examination\MarksRegisterController;
 use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
 use App\Http\Controllers\Examination\ExaminationSettingsController;
+use App\Http\Controllers\Backend\Examination\ExamEntryController;
+use App\Http\Controllers\Academic\TermController;
 
 
 Route::middleware(saasMiddleware())->group(function () {
@@ -70,6 +72,50 @@ Route::middleware(saasMiddleware())->group(function () {
                 Route::controller(ExaminationSettingsController::class)->prefix('examination-settings')->group(function () {
                     Route::get('/',                 'index')->name('examination-settings.index')->middleware('PermissionCheck:exam_assign_read');
                     Route::put('/update',           'update')->name('examination-settings.update')->middleware('PermissionCheck:exam_assign_create', 'DemoCheck');
+                });
+
+                // Exam Entry Routes
+                Route::controller(ExamEntryController::class)->prefix('exam-entry')->group(function () {
+                    Route::get('/',                         'index')->name('exam-entry.index')->middleware('PermissionCheck:exam_entry_read');
+                    Route::get('/ajax-data',                'ajaxData')->name('exam-entry.ajax-data')->middleware('PermissionCheck:exam_entry_read');
+                    Route::get('/create',                   'create')->name('exam-entry.create')->middleware('PermissionCheck:exam_entry_create');
+                    Route::post('/store',                   'store')->name('exam-entry.store')->middleware('PermissionCheck:exam_entry_create', 'DemoCheck');
+                    Route::get('/show/{id}',                'show')->name('exam-entry.show')->middleware('PermissionCheck:exam_entry_read');
+                    Route::get('/edit/{id}',                'edit')->name('exam-entry.edit')->middleware('PermissionCheck:exam_entry_update');
+                    Route::put('/update/{id}',              'update')->name('exam-entry.update')->middleware('PermissionCheck:exam_entry_update', 'DemoCheck');
+                    Route::delete('/delete/{id}',           'destroy')->name('exam-entry.delete')->middleware('PermissionCheck:exam_entry_delete', 'DemoCheck');
+                    Route::put('/publish/{id}',             'publish')->name('exam-entry.publish')->middleware('PermissionCheck:exam_entry_update', 'DemoCheck');
+                    Route::get('/get-students',             'getStudents')->name('exam-entry.get-students');
+                    Route::get('/download-template',        'downloadTemplate')->name('exam-entry.download-template');
+                    Route::post('/upload-results',          'uploadResults')->name('exam-entry.upload-results')->middleware('PermissionCheck:exam_entry_create', 'DemoCheck');
+                    Route::get('/get-terms',                'getTerms')->name('exam-entry.get-terms');
+                    Route::get('/get-sections',             'getSections')->name('exam-entry.get-sections');
+                    Route::get('/get-subjects',             'getSubjects')->name('exam-entry.get-subjects');
+                    Route::put('/calculate-grades/{id}',    'calculateGrades')->name('exam-entry.calculate-grades')->middleware('PermissionCheck:exam_entry_update', 'DemoCheck');
+                });
+
+                // Terms Routes (needed for exam entry)
+                Route::controller(TermController::class)->prefix('terms')->group(function () {
+                    Route::get('/',                     'index')->name('terms.index');
+                    Route::get('/ajax-data',            'ajaxData')->name('terms.ajax-data');
+                    Route::get('/create',               'create')->name('terms.create');
+                    Route::post('/store',               'store')->name('terms.store');
+                    Route::get('/edit/{id}',            'edit')->name('terms.edit');
+                    Route::put('/update/{id}',          'update')->name('terms.update');
+                    Route::put('/close/{id}',           'close')->name('terms.close');
+                    Route::put('/activate/{id}',        'activate')->name('terms.activate');
+                    Route::get('/suggestions',          'suggestions')->name('terms.suggestions');
+                    Route::post('/bulk-open',           'bulkOpen')->name('terms.bulk-open');
+                    Route::post('/clone',               'cloneTerms')->name('terms.clone');
+                    Route::get('/timeline',             'timeline')->name('terms.timeline');
+                    Route::get('/statistics',           'statistics')->name('terms.statistics');
+                    Route::post('/validate-dates',      'validateTermDates')->name('terms.validate-dates');
+                    Route::get('/definitions',          'definitions')->name('terms.definitions');
+                    Route::get('/definitions/ajax-data', 'definitionsAjaxData')->name('terms.definitions.ajax-data');
+                    Route::post('/definitions/store',   'storeDefinition')->name('terms.definitions.store');
+                    Route::get('/definitions/edit/{id}', 'editDefinition')->name('terms.definitions.edit');
+                    Route::put('/definitions/update/{id}', 'updateDefinition')->name('terms.definitions.update');
+                    Route::delete('/definitions/delete/{id}', 'deleteDefinition')->name('terms.definitions.delete');
                 });
             });
         });

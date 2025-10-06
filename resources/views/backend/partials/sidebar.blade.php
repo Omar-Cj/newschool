@@ -400,10 +400,11 @@
                         hasPermission('marks_grade_read') ||
                         hasPermission('exam_assign_read') ||
                         hasPermission('marks_register_read') ||
+                        hasPermission('exam_entry_read') ||
                         hasPermission('exam_setting_read')) &&
                         hasFeature('examination'))
                     <li
-                        class="sidebar-menu-item {{ set_menu(['exam-type*', 'marks-grade*', 'exam-assign*', 'marks-register*', 'examination-settings*', 'terms*']) }}">
+                        class="sidebar-menu-item {{ set_menu(['exam-type*', 'marks-grade*', 'exam-assign*', 'marks-register*', 'examination-settings*', 'terms*', 'exam-entry*']) }}">
                         <a class="parent-item-content has-arrow">
                             <i class="las la-book-reader"></i>
                             <span class="on-half-expanded">{{ ___('settings.examination') }}</span>
@@ -412,7 +413,14 @@
                             @if (hasPermission('terms_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['terms*']) }}">
                                     <a href="{{ route('terms.index') }}">
-                                        <i class="las la-calendar-alt"></i> {{ ___('academic.terms') }}
+                                        {{ ___('academic.terms') }}
+                                    </a>
+                                </li>
+                            @endif
+                            @if (hasPermission('exam_entry_read'))
+                                <li class="sidebar-menu-item {{ set_menu(['exam-entry*']) }}">
+                                    <a href="{{ route('exam-entry.index') }}">
+                                        {{ ___('examination.exam_entry') }}
                                     </a>
                                 </li>
                             @endif

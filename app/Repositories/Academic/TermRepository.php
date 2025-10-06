@@ -22,8 +22,8 @@ class TermRepository
         $orderColumn = $request->input('order.0.column');
         $orderDir = $request->input('order.0.dir', 'asc');
 
-        // Base query
-        $query = TermDefinition::query();
+        // Base query with relationship count
+        $query = TermDefinition::withCount('terms');
 
         // Count total records
         $totalRecords = TermDefinition::count();
@@ -61,18 +61,22 @@ class TermRepository
             $text = $row->is_active ? 'Active' : 'Inactive';
             $statusBadge = '<span class="badge bg-'.$badge.'">'.$text.'</span>';
 
-            // Terms count
-            $termsCount = $row->terms()->count();
+            // Terms count (use cached count from withCount)
+            $termsCount = $row->terms_count ?? 0;
 
             // Actions
             $action = '<div class="btn-group" role="group">';
             $action .= '<button type="button" class="btn btn-sm btn-primary edit-definition" data-id="'.$row->id.'" title="Edit">
                         <i class="fas fa-edit"></i></button>';
 
-            if ($row->canBeDeleted()) {
-                $action .= '<button type="button" class="btn btn-sm btn-danger delete-definition" data-id="'.$row->id.'" title="Delete">
-                            <i class="fas fa-trash"></i></button>';
-            }
+            // Delete button - always shown, validation happens on click
+            $action .= '<button type="button" class="btn btn-sm btn-danger delete-definition"
+                        data-id="'.$row->id.'"
+                        data-name="'.htmlspecialchars($row->name, ENT_QUOTES).'"
+                        data-terms-count="'.$termsCount.'"
+                        title="Delete">
+                        <i class="fas fa-trash"></i></button>';
+
             $action .= '</div>';
 
             $data[] = [
@@ -115,7 +119,7 @@ class TermRepository
         $termDefinitionFilter = $request->input('term_definition_id');
 
         // Base query with relationships
-        $with = ['termDefinition', 'session', 'openedBy'];
+        $with = ['termDefinition', 'session', 'openedBy', 'examEntries'];
 
         // Add branch relationship if MultiBranch module is enabled
         if (hasModule('MultiBranch')) {
@@ -240,10 +244,9 @@ class TermRepository
             // Actions
             $action = '<div class="btn-group" role="group">';
 
-            if ($row->status === 'upcoming' || $row->status === 'draft') {
-                $action .= '<button type="button" class="btn btn-sm btn-primary edit-term" data-id="'.$row->id.'" title="Edit">
-                            <i class="fas fa-edit"></i></button>';
-            }
+            // Edit button - always shown, validation happens on click
+            $action .= '<button type="button" class="btn btn-sm btn-primary edit-term" data-id="'.$row->id.'" title="Edit">
+                        <i class="fas fa-edit"></i></button>';
 
             if ($row->status === 'active') {
                 $action .= '<button type="button" class="btn btn-sm btn-warning close-term" data-id="'.$row->id.'" title="Close Term">
@@ -263,6 +266,14 @@ class TermRepository
 
             $action .= '<button type="button" class="btn btn-sm btn-info view-term" data-id="'.$row->id.'" title="View Details">
                         <i class="fas fa-eye"></i></button>';
+
+            // Delete button - always shown, validation happens on click
+            $action .= '<button type="button" class="btn btn-sm btn-danger delete-term"
+                        data-id="'.$row->id.'"
+                        data-name="'.htmlspecialchars($termName, ENT_QUOTES).'"
+                        data-session="'.htmlspecialchars($sessionName, ENT_QUOTES).'"
+                        title="Delete Term">
+                        <i class="fas fa-trash"></i></button>';
 
             $action .= '</div>';
 
@@ -313,10 +324,41 @@ class TermRepository
         $definition = TermDefinition::findOrFail($id);
 
         if (!$definition->canBeDeleted()) {
-            throw new \Exception('Cannot delete term definition with existing terms');
+            $termsCount = $definition->terms()->count();
+            throw new \Exception("Cannot delete term definition. {$termsCount} term(s) are created from this definition. Please delete those terms first.");
         }
 
         return $definition->delete();
+    }
+
+    /**
+     * Delete a term
+     *
+     * @param int $id
+     * @return bool
+     * @throws \Exception
+     */
+    public function deleteTerm($id)
+    {
+        return DB::transaction(function () use ($id) {
+            $term = Term::with(['examEntries'])->findOrFail($id);
+
+            // Validate deletion eligibility
+            $validation = $term->canBeDeleted();
+
+            if (!$validation['can_delete']) {
+                throw new \Exception($validation['reason']);
+            }
+
+            // Perform deletion
+            $deleted = $term->delete();
+
+            if (!$deleted) {
+                throw new \Exception('Failed to delete term. Please try again.');
+            }
+
+            return true;
+        });
     }
 
     /**
@@ -334,20 +376,29 @@ class TermRepository
             throw new \Exception('Term dates overlap with existing term in this session');
         }
 
-        // Calculate initial status
         $startDate = Carbon::parse($data['start_date']);
         $endDate = Carbon::parse($data['end_date']);
         $now = now();
 
-        if ($now->lessThan($startDate)) {
-            $data['status'] = 'upcoming';
-        } elseif ($now->between($startDate, $endDate)) {
-            $data['status'] = 'active';
-            // Close any other active terms (branch-scoped automatically)
-            Term::active()->update(['status' => 'closed']);
+        // Determine initial status: manual draft override or auto-calculate
+        if (isset($data['save_as_draft']) && $data['save_as_draft']) {
+            // User explicitly chose to save as draft
+            $data['status'] = 'draft';
         } else {
-            $data['status'] = 'closed';
+            // Auto-calculate status based on dates
+            if ($now->lessThan($startDate)) {
+                $data['status'] = 'upcoming';
+            } elseif ($now->between($startDate, $endDate)) {
+                $data['status'] = 'active';
+                // Close any other active terms (branch-scoped automatically)
+                Term::active()->update(['status' => 'closed']);
+            } else {
+                $data['status'] = 'closed';
+            }
         }
+
+        // Remove checkbox flag from data before saving to database
+        unset($data['save_as_draft']);
 
         return Term::create($data);
     }

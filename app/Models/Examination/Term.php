@@ -102,6 +102,14 @@ class Term extends BaseModel
     }
 
     /**
+     * Get all exam entries for this term
+     */
+    public function examEntries()
+    {
+        return $this->hasMany(\App\Models\Examination\ExamEntry::class);
+    }
+
+    /**
      * Scope for active terms
      */
     public function scopeActive($query)
@@ -178,7 +186,7 @@ class Term extends BaseModel
     }
 
     /**
-     * Get current week number
+     * Get current week number (rounded to whole number)
      */
     public function getCurrentWeek()
     {
@@ -190,8 +198,30 @@ class Term extends BaseModel
             return null;
         }
 
+        // Use ceil to round UP to nearest whole week for better UX
         $weeksElapsed = $this->start_date->diffInWeeks(now());
-        return min($weeksElapsed + 1, $this->actual_weeks ?: 1);
+        $currentWeek = (int) ceil($weeksElapsed + 1);
+
+        // Ensure we don't exceed total weeks
+        return min($currentWeek, $this->actual_weeks ?: 1);
+    }
+
+    /**
+     * Get remaining days (rounded up to whole number)
+     *
+     * @return int|null
+     */
+    public function getRemainingDays()
+    {
+        if ($this->status !== 'active' || !$this->end_date) {
+            return null;
+        }
+
+        // Calculate days remaining
+        $days = now()->diffInDays($this->end_date, false);
+
+        // Use ceil to round UP, ensure non-negative
+        return max(0, (int) ceil($days));
     }
 
     /**
@@ -269,5 +299,73 @@ class Term extends BaseModel
         }
 
         return $query->exists();
+    }
+
+    /**
+     * Check if this term can be deleted
+     *
+     * @return array ['can_delete' => bool, 'reason' => string, 'exam_entries_count' => int]
+     */
+    public function canBeDeleted()
+    {
+        // Check 1: Cannot delete active or closed terms
+        if (in_array($this->status, ['active', 'closed'])) {
+            return [
+                'can_delete' => false,
+                'reason' => 'Cannot delete ' . $this->status . ' terms. Only draft or upcoming terms can be deleted.',
+                'exam_entries_count' => 0,
+                'status_issue' => true
+            ];
+        }
+
+        // Check 2: Check for exam entries (critical - cascade delete risk)
+        $examEntriesCount = $this->examEntries()->count();
+        if ($examEntriesCount > 0) {
+            $resultsCount = \App\Models\Examination\ExamEntryResult::whereIn(
+                'exam_entry_id',
+                $this->examEntries()->pluck('id')
+            )->count();
+
+            return [
+                'can_delete' => false,
+                'reason' => "This term has {$examEntriesCount} exam entries with {$resultsCount} student results. Deleting will permanently remove all associated data.",
+                'exam_entries_count' => $examEntriesCount,
+                'results_count' => $resultsCount,
+                'has_dependencies' => true
+            ];
+        }
+
+        // All checks passed
+        return [
+            'can_delete' => true,
+            'reason' => 'Term can be safely deleted',
+            'exam_entries_count' => 0
+        ];
+    }
+
+    /**
+     * Get deletion warning message
+     *
+     * @return string|null
+     */
+    public function getDeletionWarning()
+    {
+        $check = $this->canBeDeleted();
+
+        if ($check['can_delete']) {
+            return null;
+        }
+
+        if (isset($check['status_issue'])) {
+            return $check['reason'];
+        }
+
+        if (isset($check['has_dependencies'])) {
+            $entries = $check['exam_entries_count'];
+            $results = $check['results_count'] ?? 0;
+            return "Warning: Deleting this term will cascade delete {$entries} exam entries and {$results} student results. This action cannot be undone!";
+        }
+
+        return $check['reason'];
     }
 }

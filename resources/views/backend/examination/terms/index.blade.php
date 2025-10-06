@@ -139,6 +139,14 @@
 
     <!-- Edit Term Modal -->
     @include('backend.examination.terms.modals.edit-term')
+
+    {{-- Hidden inputs for SweetAlert2 i18n --}}
+    <input type="hidden" id="alert_title" value="{{ ___('examination.delete_term') }}">
+    <input type="hidden" id="alert_subtitle" value="{{ ___('examination.are_you_sure_delete') }}">
+    <input type="hidden" id="alert_yes_btn" value="{{ ___('common.yes') }}">
+    <input type="hidden" id="alert_cancel_btn" value="{{ ___('common.cancel') }}">
+    <input type="hidden" id="alert_cannot_undo" value="{{ ___('examination.cannot_undo') }}">
+    <input type="hidden" id="alert_deletion_warning" value="{{ ___('examination.deletion_warning') }}">
 @endsection
 
 @push('script')
@@ -467,10 +475,90 @@
                                 $('#open_start_date').val(response.suggested_dates.start_date);
                                 $('#open_end_date').val(response.suggested_dates.end_date);
                                 toastr.info('Suggested dates loaded. You can adjust them if needed.');
+                                // Trigger status preview update after dates are set
+                                updateStatusPreview();
                             }
                         }
                     });
                 }
+            });
+
+            // Status Preview Calculator - Real-time status calculation based on dates
+            function updateStatusPreview() {
+                const startDate = $('#open_start_date').val();
+                const endDate = $('#open_end_date').val();
+                const isDraft = $('#save_as_draft').is(':checked');
+
+                // Hide preview if dates not selected
+                if (!startDate || !endDate) {
+                    $('#statusPreviewContainer').hide();
+                    return;
+                }
+
+                // Validate date order
+                if (new Date(startDate) >= new Date(endDate)) {
+                    $('#statusPreviewContainer').hide();
+                    return;
+                }
+
+                const now = new Date();
+                const start = new Date(startDate);
+                const end = new Date(endDate);
+
+                let statusText = '';
+                let alertClass = 'alert-info';
+                let iconClass = 'fa-info-circle';
+
+                if (isDraft) {
+                    // Draft override selected
+                    statusText = 'This term will be saved as <strong class="text-uppercase">DRAFT</strong>. You can review and activate it later.';
+                    alertClass = 'alert-secondary';
+                    iconClass = 'fa-file-alt';
+                } else if (start > now) {
+                    // Future term - will be upcoming
+                    const daysUntil = Math.ceil((start - now) / (1000 * 60 * 60 * 24));
+                    const weeksUntil = Math.floor(daysUntil / 7);
+                    const timeText = weeksUntil > 0
+                        ? `${weeksUntil} week${weeksUntil > 1 ? 's' : ''} (${daysUntil} days)`
+                        : `${daysUntil} day${daysUntil > 1 ? 's' : ''}`;
+
+                    statusText = `This term will be <strong class="text-uppercase text-info">UPCOMING</strong>. It starts in ${timeText}.`;
+                    alertClass = 'alert-info';
+                    iconClass = 'fa-clock';
+                } else if (now >= start && now <= end) {
+                    // Current dates - will be active immediately
+                    statusText = 'This term will be <strong class="text-uppercase text-warning">ACTIVE</strong> immediately. ';
+                    statusText += '<br><small class="text-warning"><i class="fas fa-exclamation-triangle"></i> Any currently active term will be automatically closed.</small>';
+                    alertClass = 'alert-warning';
+                    iconClass = 'fa-exclamation-triangle';
+                } else {
+                    // Past dates - will be closed
+                    const daysPast = Math.ceil((now - end) / (1000 * 60 * 60 * 24));
+                    statusText = `This term will be <strong class="text-uppercase text-danger">CLOSED</strong> immediately (ended ${daysPast} day${daysPast > 1 ? 's' : ''} ago). `;
+                    statusText += '<br><small class="text-danger"><i class="fas fa-info-circle"></i> Closed terms cannot be edited or activated.</small>';
+                    alertClass = 'alert-danger';
+                    iconClass = 'fa-times-circle';
+                }
+
+                // Update preview UI
+                $('#statusPreviewAlert')
+                    .removeClass('alert-info alert-warning alert-danger alert-secondary')
+                    .addClass(alertClass);
+                $('#statusPreviewAlert i.fas')
+                    .removeClass('fa-info-circle fa-clock fa-exclamation-triangle fa-times-circle fa-file-alt')
+                    .addClass(iconClass);
+                $('#statusPreviewText').html(statusText);
+                $('#statusPreviewContainer').slideDown(200);
+            }
+
+            // Bind status preview to date and checkbox changes
+            $('#open_start_date, #open_end_date').on('change', updateStatusPreview);
+            $('#save_as_draft').on('change', updateStatusPreview);
+
+            // Reset status preview when modal is closed
+            $('#openTermModal').on('hidden.bs.modal', function() {
+                $('#statusPreviewContainer').hide();
+                $('#save_as_draft').prop('checked', false);
             });
 
             // Submit Open Term Form
@@ -627,6 +715,127 @@
                     });
                 }
             });
+
+            // Delete Term - SweetAlert2 Implementation
+            $(document).on('click', '.delete-term', function() {
+                const termId = $(this).data('id');
+                const termName = $(this).data('name');
+                const sessionName = $(this).data('session');
+
+                // Check deletion eligibility
+                $.ajax({
+                    url: "{{ url('terms') }}/" + termId + "/check-deletion",
+                    type: 'GET',
+                    success: function(response) {
+                        if (response.success && response.can_delete) {
+                            // Pattern 1: Standard Confirmation (can delete)
+                            showTermDeleteConfirmation(termId, termName, sessionName);
+                        } else {
+                            // Pattern 2 & 3: Warning or Blocked
+                            if (response.exam_entries_count > 0) {
+                                // Pattern 2: Warning with cascade details
+                                showTermDeleteWarning(termId, termName, sessionName, response);
+                            } else {
+                                // Pattern 3: Blocked deletion (status issue)
+                                showTermDeleteBlocked(termName, response.message);
+                            }
+                        }
+                    },
+                    error: function(xhr) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: xhr.responseJSON?.message || 'Error checking term deletion status'
+                        });
+                    }
+                });
+            });
+
+            // Pattern 1: Standard Confirmation
+            function showTermDeleteConfirmation(termId, termName, sessionName) {
+                Swal.fire({
+                    title: $('#alert_title').val(),
+                    html: `<p>${$('#alert_subtitle').val()}</p>
+                           <p><strong>Term:</strong> ${termName}</p>
+                           <p><strong>Session:</strong> ${sessionName}</p>
+                           <p class="text-danger"><small>${$('#alert_cannot_undo').val()}</small></p>`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: $('#alert_yes_btn').val(),
+                    cancelButtonText: $('#alert_cancel_btn').val()
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        executeTermDeletion(termId);
+                    }
+                });
+            }
+
+            // Pattern 2: Warning with Cascade Details
+            function showTermDeleteWarning(termId, termName, sessionName, response) {
+                Swal.fire({
+                    title: $('#alert_deletion_warning').val(),
+                    html: `<p><strong>Term:</strong> ${termName} (${sessionName})</p>
+                           <p class="text-warning">${response.message}</p>
+                           <div class="alert alert-danger mt-3">
+                               <strong>This will permanently delete:</strong><br>
+                               • ${response.exam_entries_count} exam entries<br>
+                               • ${response.results_count} student results
+                           </div>
+                           <p class="text-danger"><strong>${$('#alert_cannot_undo').val()}</strong></p>`,
+                    icon: 'error',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Delete Anyway',
+                    cancelButtonText: $('#alert_cancel_btn').val()
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        executeTermDeletion(termId);
+                    }
+                });
+            }
+
+            // Pattern 3: Blocked Deletion
+            function showTermDeleteBlocked(termName, reason) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Cannot Delete Term',
+                    html: `<p><strong>Term:</strong> ${termName}</p>
+                           <p class="text-danger">${reason}</p>`,
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: '#3085d6'
+                });
+            }
+
+            // Execute Deletion
+            function executeTermDeletion(termId) {
+                $.ajax({
+                    url: "{{ url('terms') }}/" + termId,
+                    type: 'DELETE',
+                    data: { _token: '{{ csrf_token() }}' },
+                    success: function(response) {
+                        if (response.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Deleted!',
+                                text: response.message,
+                                timer: 2000,
+                                showConfirmButton: false
+                            });
+                            table.ajax.reload();
+                        }
+                    },
+                    error: function(xhr) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: xhr.responseJSON?.message || 'Error deleting term'
+                        });
+                    }
+                });
+            }
 
             // View Term Details
             $(document).on('click', '.view-term', function() {

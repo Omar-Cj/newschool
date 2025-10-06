@@ -161,9 +161,7 @@ class TermService
             'progress_percentage' => $term->getProgressPercentage(),
             'current_week' => $term->getCurrentWeek(),
             'total_weeks' => $term->actual_weeks,
-            'days_remaining' => $term->status === 'active'
-                ? max(0, now()->diffInDays($term->end_date, false))
-                : null,
+            'days_remaining' => $term->getRemainingDays(),
             'start_date' => $term->start_date->format('d M Y'),
             'end_date' => $term->end_date->format('d M Y'),
         ];

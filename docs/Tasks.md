@@ -282,9 +282,9 @@
 
 ### 🎯 Examination Module Enhancement
 **Start Date:** 2 Oct 2025
-**Status:** Phase 1 Complete ✅ - Phase 2 Ready for Implementation
+**Status:** Phase 1, 2, 3 Complete ✅ - Phase 4 Pending
 **Impact:** Complete examination system overhaul with modern architecture and improved user experience
-**Progress:** Phase 1 (Terms Module) ✅ | Phase 2 (ActivityType) ⏳ | Phase 3 (ExamEntry) ⏳ | Phase 4 (Reports) ⏳
+**Progress:** Phase 1 (Terms Module) ✅ | Phase 2 (UI Improvements) ✅ | Phase 3 (Exam Entry) ✅ | Phase 4 (Reports) ⏳
 
 #### Project Overview
 Comprehensive redesign of the examination module to implement Terms management, refactor ExamType to ActivityType, transform ExamAssign to student-centric ExamEntry, and enhance reporting capabilities. All features will follow the AJAX DataTables pattern for seamless user experience.
@@ -439,59 +439,190 @@ This comprehensive refactoring would rename "ExamType" to "ActivityType" through
 
 **Note:** This refactoring has been deferred as the immediate user needs were addressed through simpler UI improvements in the completed Phase 2 above.
 
-#### Phase 3: ExamAssign → ExamEntry Module [MEDIUM PRIORITY]
+#### Phase 3: Exam Entry Module [MEDIUM PRIORITY] ✅
 **Estimated Time:** 26 hours
-**Status:** ⏳ Pending
+**Actual Time:** 24 hours
+**Status:** ✅ Completed
+**Completion Date:** 4 Oct 2025
 
-##### Transformation Overview
-Convert the current subject-based exam assignment system to a student-centric exam entry system for better management of individual student examinations.
+##### Implementation Overview
+Complete exam entry system with dual workflow support (manual entry and Excel upload) for efficient exam marks management with student-centric approach.
 
-##### Database Redesign
-- **Table:** `exam_entries`
+##### Database Design
+- **Table:** `exam_entries` (Container for exam entries)
   - id (primary key)
-  - student_id (foreign key)
-  - term_id (foreign key)
-  - activity_type_id (foreign key)
-  - class_id (foreign key)
-  - section_id (foreign key)
-  - subject_id (foreign key)
+  - session_id, term_id, grade_id, class_id, section_id (foreign keys)
+  - exam_type_id (foreign key to exam_types table)
+  - subject_id (nullable for "all subjects" mode)
+  - is_all_subjects (boolean)
+  - entry_method (enum: manual, excel)
+  - upload_file_path (nullable for Excel files)
   - total_marks (float)
-  - obtained_marks (float nullable)
-  - grade (varchar nullable)
-  - remarks (text nullable)
-  - status (enum: pending, completed, absent)
-  - exam_date (date)
+  - status (enum: draft, completed, published)
+  - created_by (foreign key to users)
+  - published_at (nullable timestamp)
   - created_at, updated_at
 
-##### Implementation Tasks
-- [ ] **[3h]** Design and create exam_entries migration
-- [ ] **[2h]** Create ExamEntry model with relationships
-  - belongsTo: Student, Term, ActivityType, Class, Section, Subject
-  - Scopes: byTerm, byActivity, byClass, pending, completed
-- [ ] **[4h]** Build ExamEntryRepository with bulk operations
-  - Bulk create for multiple students
-  - Bulk update marks
-  - Filter by various criteria
-- [ ] **[6h]** Create ExamEntryController with student management
-  - AJAX student selection by class/section
-  - Bulk entry creation
-  - Individual and bulk marks entry
-  - Status management
-- [ ] **[8h]** Build entry management UI
-  - Student selection interface with checkboxes
-  - DataTables with inline editing
-  - Bulk actions toolbar
-  - Quick filters for term/activity/status
-- [ ] **[3h]** Create data migration from exam_assigns
-  - Map existing data to new structure
-  - Preserve historical records
+- **Table:** `exam_entry_results` (Individual student results)
+  - id (primary key)
+  - exam_entry_id (foreign key)
+  - student_id, subject_id (foreign keys)
+  - obtained_marks (float nullable)
+  - grade (varchar nullable - auto-calculated)
+  - remarks (text nullable)
+  - is_absent (boolean)
+  - entry_source (enum: manual, excel)
+  - entered_by (foreign key to users)
+  - created_at, updated_at
 
-##### Features
-- Bulk student selection for exam entry
-- Quick marks entry with keyboard navigation
-- Automatic grade calculation
-- Absent/present status tracking
-- Export to Excel for offline entry
+##### Implementation Tasks Completed
+- [x] **[3h]** Created migrations for exam_entries and exam_entry_results tables
+- [x] **[0.5h]** Added exam entry permissions migration (exam_entry_read, create, update, delete)
+- [x] **[0.5h]** Fixed grade field migration - replaced grade_id foreign key with grade string field
+- [x] **[0.5h]** Fixed permissions migration - corrected to use Permission model with proper structure
+- [x] **[2h]** Created ExamEntry and ExamEntryResult models with relationships
+  - belongsTo: Session, Term, Grade, Class, Section, ExamType, Subject, Creator
+  - hasMany: Results
+  - Scopes: draft(), completed(), published(), bySession(), byTerm(), byClass()
+- [x] **[4h]** Built ExamEntryRepository with AJAX DataTables support
+  - getAjaxData() for server-side processing
+  - getStudentsWithSubjects() for form population
+  - store(), update(), destroy(), publish() operations
+  - show() with statistics integration
+- [x] **[3h]** Created ExamEntryService with Excel processing logic
+  - generateExcelTemplate() with protected student columns
+  - processExcelUpload() with comprehensive validation
+  - calculateGrade() with MarksGrade integration
+  - autoCalculateGrades() for bulk grade computation
+  - getStatistics() for performance analytics
+  - validateExamEntry() for duplicate prevention
+  - bulkStoreResults() for Excel data storage
+- [x] **[6h]** Built ExamEntryController with 15+ AJAX endpoints
+  - index(), ajaxData() for list view
+  - create(), store() for entry creation
+  - edit(), update() for mark modification
+  - show() for results viewing
+  - destroy() for draft deletion
+  - publish() for result publication
+  - getStudents() for dynamic student loading
+  - downloadTemplate() for Excel export
+  - uploadResults() for Excel import
+  - Cascading dropdowns: getTerms(), getSections(), getSubjects()
+  - calculateGrades() for auto-grading
+- [x] **[8h]** Created comprehensive UI with dual workflow
+  - index.blade.php: DataTables list with filters
+  - create.blade.php: Parameter form with dual workflow (Manual/Excel)
+  - edit.blade.php: Marks editing interface
+  - show.blade.php: Results viewer with statistics
+  - JavaScript: Cascading dropdowns, dynamic tables, AJAX operations
+- [x] **[2h]** Registered routes in examination.php with permission middleware
+- [x] **[0.5h]** Added Exam Entry to sidebar navigation under Examination menu
+- [x] **[1h]** Added comprehensive language translations in examination.json
+
+##### Key Features Implemented
+- ✅ **Dual Workflow System**: Manual entry OR Excel upload
+- ✅ **Parameter Selection**: Session, Term, Grade, Class, Section, Exam Type, Subject (individual/all)
+- ✅ **Manual Entry**: Dynamic table with inline marks entry
+- ✅ **Excel Workflow**: Template download → Offline editing → Upload with validation
+- ✅ **Protected Excel**: Student columns locked, marks columns editable
+- ✅ **Auto-grading**: Automatic grade calculation from MarksGrade table
+- ✅ **Statistics**: Real-time analytics (average, pass%, highest/lowest marks)
+- ✅ **Status Workflow**: Draft → Completed → Published
+- ✅ **Permission Control**: Role-based access to all operations
+- ✅ **DataTables Integration**: Server-side processing with filters
+- ✅ **Cascading Dropdowns**: Dynamic sections, subjects based on selections
+- ✅ **Data Validation**: Comprehensive validation for both manual and Excel entry
+
+##### Critical Fixes Applied
+
+**Fix #1: Grade Field Architecture ✅**
+- **Issue**: Migration incorrectly used `grade_id` as foreign key to non-existent `grades` table
+- **Investigation**: Discovered students table uses `grade` as STRING field (values: KG-1, KG-2, Grade1-8, Form1-4)
+- **Solution**: Replaced `foreignId('grade_id')` with `string('grade')->nullable()`
+- **Impact**: Updated entire stack (migration, model, controller, repository, all views)
+- **Files Modified**:
+  - `database/migrations/tenant/2025_10_04_071011_create_exam_entries_table.php`
+  - `app/Models/Examination/ExamEntry.php`
+  - `app/Http/Controllers/Backend/Examination/ExamEntryController.php`
+  - `app/Repositories/Examination/ExamEntryRepository.php`
+  - `resources/views/backend/examination/exam_entry/*.blade.php` (create, index, show)
+
+**Fix #2: Permission System Migration ✅**
+- **Issue**: Migration tried to insert 'name' column that doesn't exist in permissions table
+- **Error**: `SQLSTATE[42S22]: Column not found: 1054 Unknown column 'name' in 'field list'`
+- **Investigation**: Permissions table only has `attribute` and `keywords` columns (no 'name' column)
+- **Understanding**: Custom permission system uses:
+  - `attribute`: Module/feature name (e.g., 'exam_entry')
+  - `keywords`: JSON array mapping actions to permission names
+    ```php
+    [
+        'read' => 'exam_entry_read',
+        'create' => 'exam_entry_create',
+        'update' => 'exam_entry_update',
+        'delete' => 'exam_entry_delete'
+    ]
+    ```
+- **Solution**: Replaced `DB::table()->insert()` with Permission model pattern:
+  ```php
+  $permission = new Permission();
+  $permission->attribute = 'exam_entry';
+  $permission->keywords = [
+      'read' => 'exam_entry_read',
+      'create' => 'exam_entry_create',
+      'update' => 'exam_entry_update',
+      'delete' => 'exam_entry_delete'
+  ];
+  $permission->save();
+  ```
+- **Files Modified**:
+  - `database/migrations/tenant/2025_10_04_071236_add_exam_entry_permissions.php`
+- **Pattern Source**: Based on existing `fees_generation` migration and `PermissionSeeder.php`
+
+##### Technical Implementation
+- **Controllers**: `ExamEntryController` with 15+ AJAX endpoints
+- **Models**: `ExamEntry`, `ExamEntryResult` with full relationships
+- **Services**: `ExamEntryService` with Excel processing and grading logic
+- **Repositories**: `ExamEntryRepository` following existing pattern
+- **Excel Classes**: `ExamEntryTemplateExport`, `ExamEntryImport` using Laravel-Excel
+- **Views**: 4 Blade templates with DataTables and modals
+- **Routes**: 15 routes with proper permission middleware
+- **Permissions**: exam_entry_read, create, update, delete
+
+##### Excel Processing Features
+- **Template Generation**: Dynamic column creation based on subject selection
+- **Sheet Protection**: Password-protected with unlocked marks columns
+- **Data Validation**: Cell validation for numeric marks (0-100)
+- **Import Validation**: Comprehensive validation with row-level error reporting
+- **Error Collection**: Detailed error messages with row numbers for easy correction
+
+##### Deployment Instructions
+
+**Running Migrations**:
+```bash
+# Run all three exam entry migrations
+php artisan migrate --path=database/migrations/tenant
+```
+
+**Migration Files** (in order):
+1. `2025_10_04_071011_create_exam_entries_table.php` - Main exam entries table with grade field
+2. `2025_10_04_071012_create_exam_entry_results_table.php` - Student results table
+3. `2025_10_04_071236_add_exam_entry_permissions.php` - Permissions for exam entry
+
+**Expected Results**:
+- ✅ `exam_entries` table created with `grade` string field (not grade_id foreign key)
+- ✅ `exam_entry_results` table created with student results structure
+- ✅ Permission record created with attribute 'exam_entry' and keywords array
+- ✅ All migrations run without errors
+
+**Verification**:
+```sql
+-- Verify exam_entries table structure
+DESCRIBE exam_entries;  -- Should show 'grade' as varchar/string, not grade_id
+
+-- Verify permission record
+SELECT * FROM permissions WHERE attribute = 'exam_entry';
+-- Should show one record with keywords as JSON array
+```
 
 #### Phase 4: ExamReport Enhancement [LOW PRIORITY]
 **Estimated Time:** 16 hours

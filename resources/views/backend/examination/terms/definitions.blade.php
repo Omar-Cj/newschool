@@ -67,6 +67,13 @@
 
     <!-- Add/Edit Definition Modal -->
     @include('backend.examination.terms.modals.term-definition')
+
+    {{-- Hidden inputs for SweetAlert2 i18n --}}
+    <input type="hidden" id="alert_title" value="{{ ___('examination.delete_term_definition') }}">
+    <input type="hidden" id="alert_subtitle" value="{{ ___('examination.are_you_sure_delete') }}">
+    <input type="hidden" id="alert_yes_btn" value="{{ ___('common.yes') }}">
+    <input type="hidden" id="alert_cancel_btn" value="{{ ___('common.cancel') }}">
+    <input type="hidden" id="alert_cannot_undo" value="{{ ___('examination.cannot_undo') }}">
 @endsection
 
 @push('script')
@@ -431,28 +438,77 @@
                 });
             });
 
-            // Delete Definition
+            // Delete Definition - SweetAlert2 Implementation with Contextual Warnings
             $(document).on('click', '.delete-definition', function() {
-                if (confirm('Are you sure you want to delete this term template?')) {
-                    var definitionId = $(this).data('id');
+                const definitionId = $(this).data('id');
+                const definitionName = $(this).data('name');
+                const termsCount = parseInt($(this).data('terms-count')) || 0;
 
-                    $.ajax({
-                        url: "{{ url('terms/definitions') }}/" + definitionId,
-                        type: 'DELETE',
-                        data: {
-                            _token: '{{ csrf_token() }}'
-                        },
-                        success: function(response) {
-                            if (response.success) {
-                                table.ajax.reload();
-                                toastr.success(response.message);
-                            }
-                        },
-                        error: function(xhr) {
-                            toastr.error(xhr.responseJSON.message || 'Cannot delete term template with existing terms');
-                        }
-                    });
+                // Build modal configuration based on terms count
+                let modalConfig = {};
+
+                if (termsCount === 0) {
+                    // Pattern A: Simple Confirmation (Safe to Delete)
+                    modalConfig = {
+                        title: $('#alert_title').val(),
+                        html: `<p>${$('#alert_subtitle').val()}</p>
+                               <p><strong>Template:</strong> ${definitionName}</p>
+                               <p class="text-info"><small>No terms have been created from this template.</small></p>
+                               <p class="text-danger"><small>${$('#alert_cannot_undo').val()}</small></p>`,
+                        icon: 'warning',
+                        confirmButtonText: $('#alert_yes_btn').val()
+                    };
+                } else {
+                    // Pattern B: Warning with Cascade Details
+                    modalConfig = {
+                        title: 'Delete Template with Terms?',
+                        html: `<p><strong>Template:</strong> ${definitionName}</p>
+                               <div class="alert alert-warning mt-3">
+                                   <strong>Warning:</strong> This template has ${termsCount} term(s) created from it.
+                               </div>
+                               <p class="text-danger">Deleting this template may affect these terms.</p>
+                               <p class="text-danger"><strong>${$('#alert_cannot_undo').val()}</strong></p>`,
+                        icon: 'error',
+                        confirmButtonText: 'Delete Anyway'
+                    };
                 }
+
+                // Show confirmation dialog with appropriate configuration
+                Swal.fire({
+                    ...modalConfig,
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    cancelButtonText: $('#alert_cancel_btn').val()
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Execute deletion
+                        $.ajax({
+                            url: "{{ url('terms/definitions') }}/" + definitionId,
+                            type: 'DELETE',
+                            data: { _token: '{{ csrf_token() }}' },
+                            success: function(response) {
+                                if (response.success) {
+                                    Swal.fire({
+                                        icon: 'success',
+                                        title: 'Deleted!',
+                                        text: response.message,
+                                        timer: 2000,
+                                        showConfirmButton: false
+                                    });
+                                    table.ajax.reload();
+                                }
+                            },
+                            error: function(xhr) {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Cannot Delete',
+                                    html: `<p class="text-danger">${xhr.responseJSON?.message || 'Cannot delete term template with existing terms'}</p>`
+                                });
+                            }
+                        });
+                    }
+                });
             });
         });
     </script>

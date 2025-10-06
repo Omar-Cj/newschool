@@ -546,4 +546,51 @@ class TermController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Check if term can be deleted (AJAX validation)
+     */
+    public function checkDeletion($id)
+    {
+        try {
+            $term = Term::with(['examEntries', 'termDefinition', 'session'])->findOrFail($id);
+            $validation = $term->canBeDeleted();
+
+            return response()->json([
+                'success' => true,
+                'can_delete' => $validation['can_delete'],
+                'message' => $validation['reason'],
+                'exam_entries_count' => $validation['exam_entries_count'] ?? 0,
+                'results_count' => $validation['results_count'] ?? 0,
+                'term_name' => $term->termDefinition->name ?? 'Unknown',
+                'session_name' => $term->session->name ?? 'Unknown',
+                'warning' => $term->getDeletionWarning()
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Term not found'
+            ], 404);
+        }
+    }
+
+    /**
+     * Delete a term (AJAX)
+     */
+    public function destroy($id)
+    {
+        try {
+            $this->termRepository->deleteTerm($id);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Term deleted successfully'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 400);
+        }
+    }
 }

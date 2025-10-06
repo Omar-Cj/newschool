@@ -70,6 +70,8 @@ Route::middleware(saasMiddleware())->group(function () {
                     Route::put('/{id}',                     'update')->name('terms.update')->middleware('PermissionCheck:terms_update', 'DemoCheck');
                     Route::put('/{id}/close',               'close')->name('terms.close')->middleware('PermissionCheck:terms_update', 'DemoCheck');
                     Route::put('/{id}/activate',            'activate')->name('terms.activate')->middleware('PermissionCheck:terms_update', 'DemoCheck');
+                    Route::get('/{id}/check-deletion',      'checkDeletion')->name('terms.check-deletion')->middleware('PermissionCheck:terms_delete');
+                    Route::delete('/{id}',                  'destroy')->name('terms.delete')->middleware('PermissionCheck:terms_delete', 'DemoCheck');
 
                     // Term Definitions Routes
                     Route::get('/definitions',              'definitions')->name('terms.definitions')->middleware('PermissionCheck:terms_read');

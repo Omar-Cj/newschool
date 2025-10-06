@@ -69,6 +69,35 @@
                         </div>
                     </div>
 
+                    <!-- Status Preview -->
+                    <div class="row mb-3" id="statusPreviewContainer" style="display: none;">
+                        <div class="col-md-12">
+                            <div class="alert mb-0" id="statusPreviewAlert" role="alert">
+                                <div class="d-flex align-items-start">
+                                    <i class="fas fa-info-circle mt-1 me-2"></i>
+                                    <div>
+                                        <strong>{{ ___('examination.status_preview') }}:</strong>
+                                        <span id="statusPreviewText"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Draft Override Option -->
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="save_as_draft" name="save_as_draft" value="1">
+                                <label class="form-check-label" for="save_as_draft">
+                                    <i class="fas fa-file-alt me-1"></i>
+                                    {{ ___('examination.save_as_draft') }}
+                                    <small class="text-muted">({{ ___('examination.save_as_draft_help') }})</small>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Notes -->
                     <div class="row">
                         <div class="col-md-12">
