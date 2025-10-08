@@ -39,7 +39,8 @@ Route::middleware(saasMiddleware())->group(function () {
                     Route::get('/', 'index')->name('report-progress-card.index')->middleware('PermissionCheck:report_progress_card_read');
                     Route::post('/search', 'search')->name('report-progress-card.search');
                     Route::get('/get-students', 'getStudents');
-                    Route::get('/pdf-generate/{class}/{section}/{student}', 'generatePDF')->name('report-progress-card.pdf-generate');
+                    Route::get('/get-terms/{sessionId}', 'getTerms')->name('report-progress-card.get-terms');
+                    Route::get('/pdf-generate/{session}/{term}/{class}/{section}/{student}', 'generatePDF')->name('report-progress-card.pdf-generate');
                 });
 
                 Route::controller(DueFeesController::class)->prefix('report-due-fees')->group(function () {

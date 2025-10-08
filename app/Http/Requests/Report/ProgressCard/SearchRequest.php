@@ -24,6 +24,8 @@ class SearchRequest extends FormRequest
     public function rules()
     {
         return [
+            'session'      => 'required|exists:sessions,id',
+            'term'         => 'required|exists:terms,id',
             'class'        => 'required',
             'section'      => 'required',
             'student'      => 'required',

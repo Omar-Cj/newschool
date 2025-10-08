@@ -38,6 +38,8 @@ class ProgressCardController extends Controller
 
     public function index()
     {
+        $data['sessions']           = \App\Models\Session::orderBy('id', 'desc')->get();
+        $data['terms']              = [];
         $data['classes']            = $this->classRepo->assignedAll();
         $data['sections']           = [];
         $data['students']           = [];
@@ -48,23 +50,52 @@ class ProgressCardController extends Controller
         return $this->studentRepo->getStudents($request);
     }
 
+    public function getTerms(Request $request, $sessionId)
+    {
+        try {
+            $terms = \App\Models\Examination\Term::where('session_id', $sessionId)
+                ->whereIn('status', ['active', 'closed'])
+                ->with('termDefinition')
+                ->orderBy('id', 'asc')
+                ->get()
+                ->map(function($term) {
+                    return [
+                        'id' => $term->id,
+                        'name' => $term->termDefinition->name ?? 'Term ' . $term->id,
+                    ];
+                });
+
+            return response()->json($terms, 200);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Failed to load terms'], 500);
+        }
+    }
+
     public function search(SearchRequest $request)
     {
         $data                 = $this->repo->search($request);
         $data['student']      = $this->studentRepo->show($request->student);
         $data['exam_types']   = $this->examAssignRepo->assignedExamType();
         $data['request']      = $request;
+        $data['sessions']     = \App\Models\Session::orderBy('id', 'desc')->get();
+        $data['terms']        = \App\Models\Examination\Term::where('session_id', $request->session)
+                                    ->whereIn('status', ['active', 'closed'])
+                                    ->with('termDefinition')
+                                    ->orderBy('id', 'asc')
+                                    ->get();
         $data['classes']      = $this->classRepo->assignedAll();
         $data['sections']     = $this->classSetupRepo->getSections($request->class);
         $data['students']     = $this->studentRepo->getStudents($request);
-        
+
         // dd($data);
         return view('backend.report.progress-card', compact('data'));
     }
     
-    public function generatePDF($class, $section, $student)
+    public function generatePDF($session, $term, $class, $section, $student)
     {
         $request = new Request([
+            'session'   => $session,
+            'term'      => $term,
             'class'     => $class,
             'section'   => $section,
             'student'   => $student,
@@ -72,7 +103,7 @@ class ProgressCardController extends Controller
 
         $data                 = $this->repo->search($request);
         $data['student']      = $this->studentRepo->show($request->student);
-        
+
         $pdf = PDF::loadView('backend.report.progress-cardPDF', compact('data'));
         return $pdf->download('progress_card'.'_'.date('d_m_Y').'_'.@$data['student']->first_name .'_'. @$data['student']->last_name .'.pdf');
     }

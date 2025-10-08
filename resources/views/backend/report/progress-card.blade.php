@@ -4,6 +4,11 @@
     {{ ___('common.Online Class Routine 2023') }}
 @endsection
 <style>
+    @page {
+        size: A4 landscape;
+        margin: 20mm;
+    }
+
     body {
         font-family: 'Poppins', sans-serif;
         font-size: 14px;
@@ -27,7 +32,7 @@
     }
 
     .routine_wrapper {
-        max-width: 900px;
+        max-width: 1200px;
         margin: auto;
         background: #fff;
         padding: 0px;
@@ -602,6 +607,40 @@
                                 <!-- table_searchBox -->
 
                                 <div class="single_large_selectBox">
+                                    <select id="getTerms" class="session nice-select niceSelect bordered_style wide @error('session') is-invalid @enderror"
+                                        name="session">
+                                        <option value="">{{ ___('examination.select_session') }} *</option>
+                                        @foreach ($data['sessions'] as $session)
+                                            <option {{ old('session', @$data['request']->session) == $session->id ? 'selected' : '' }}
+                                                value="{{ $session->id }}">{{ $session->name }}</option>
+                                        @endforeach
+                                    </select>
+                                    @error('session')
+                                        <div id="validationServer04Feedback" class="invalid-feedback">
+                                            {{ $message }}
+                                        </div>
+                                    @enderror
+                                </div>
+
+                                <div class="single_large_selectBox">
+                                    <select class="term nice-select niceSelect bordered_style wide @error('term') is-invalid @enderror"
+                                        name="term">
+                                        <option value="">{{ ___('examination.select_term') }} *</option>
+                                        @if(isset($data['request']))
+                                            @foreach ($data['terms'] ?? [] as $term)
+                                                <option {{ old('term', @$data['request']->term) == $term->id ? 'selected' : '' }}
+                                                    value="{{ $term->id }}">{{ $term->termDefinition->name ?? 'Term ' . $term->id }}</option>
+                                            @endforeach
+                                        @endif
+                                    </select>
+                                    @error('term')
+                                        <div id="validationServer04Feedback" class="invalid-feedback">
+                                            {{ $message }}
+                                        </div>
+                                    @enderror
+                                </div>
+
+                                <div class="single_large_selectBox">
                                     <select id="getSections" class="class nice-select niceSelect bordered_style wide @error('class') is-invalid @enderror"
                                         name="class">
                                         <option value="">{{ ___('student_info.select_class') }} *</option>
@@ -664,7 +703,7 @@
                             {{___('common.print_now')}}
                             <span><i class="fa-solid fa-print"></i></span>
                         </button>
-                        <a class="btn btn-lg ot-btn-primary" href="{{ route('report-progress-card.pdf-generate', ['class'=>$data['request']->class, 'section'=>$data['request']->section, 'student'=>$data['request']->student ]) }}">
+                        <a class="btn btn-lg ot-btn-primary" href="{{ route('report-progress-card.pdf-generate', ['session'=>$data['request']->session, 'term'=>$data['request']->term, 'class'=>$data['request']->class, 'section'=>$data['request']->section, 'student'=>$data['request']->student ]) }}">
                             {{___('common.Pdf Preview')}}
                             <span><i class="fa-brands fa-dochub"></i></span>
                         </a>
@@ -695,7 +734,6 @@
                                     <table class="table border_table mb-0">
                                         <thead>
                                             <tr>
-                                                <th class="marked_bg">{{___('report.subject_code')}}</th>
                                                 <th class="marked_bg">{{___('report.subject_name')}}</th>
                                                 @foreach (@$data['exams'] as $item)
                                                     <th class="marked_bg">{{$item->exam_type->name}} <small>{{___('report.mark_grade')}}</small></th>
@@ -705,11 +743,6 @@
                                         <tbody>
                                             @foreach (@$data['subjects'] as $item)
                                                 <tr>
-                                                    <td>
-                                                        <div class="classBox_wiz">
-                                                            <h5>{{ $item->subject->code }}</h5>
-                                                        </div>
-                                                    </td>
                                                     <td>
                                                         <div class="classBox_wiz">
                                                             <h5>{{ $item->subject->name }}</h5>
@@ -744,7 +777,6 @@
                                         <tr>
                                             <th>{{___('report.exam_name')}}</th>
                                             <th>{{___('report.Result')}}</th>
-                                            <th>{{___('report.GPA')}}</th>
                                             <th>{{___('report.total_mark')}}</th>
                                             <th>{{___('report.avg_marks')}}</th>
                                             <th>{{___('report.avg_grade')}}</th>
@@ -755,7 +787,6 @@
                                             <tr>
                                                 <td>{{ $item->exam_type->name }}</td>
                                                 <td>{{ $data['result'][$key] }}</td>
-                                                <td>{{ $data['result'][$key] == 'Failed' ? '0.00' : $data['gpa'][$key] }}</td>
                                                 <td>{{ $data['total_marks'][$key] }}</td>
                                                 <td>{{ substr($data['avg_marks'][$key],0,5) }}</td>
                                                 <td>{{ $data['result'][$key] == 'Failed' ? 'F' : markGrade((int)$data['avg_marks'][$key]) }}</td>
@@ -775,3 +806,40 @@
         </div>
     </div>
 @endsection
+
+@push('script')
+<script>
+$(document).ready(function() {
+    // Session change handler - Load terms
+    $('#getTerms').on('change', function (e) {
+        var sessionId = $(this).val();
+        var ajaxUrl = '{{ url("") }}/report-progress-card/get-terms/' + sessionId;
+
+        // Clear term dropdown
+        $("select.term").html('<option value="">{{ ___("examination.select_term") }} *</option>');
+
+        if (sessionId) {
+            $.ajax({
+                url: ajaxUrl,
+                type: 'GET',
+                success: function(response) {
+                    // Populate term dropdown
+                    $.each(response, function(key, term) {
+                        $("select.term").append('<option value="' + term.id + '">' + term.name + '</option>');
+                    });
+
+                    // Update NiceSelect display
+                    $("select.term").niceSelect('update');
+                },
+                error: function(xhr, status, error) {
+                    alert('Failed to load terms. Please try again.');
+                }
+            });
+        } else {
+            // Update NiceSelect when cleared
+            $("select.term").niceSelect('update');
+        }
+    });
+});
+</script>
+@endpush
