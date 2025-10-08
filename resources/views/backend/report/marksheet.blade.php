@@ -609,6 +609,40 @@
                                 <!-- table_searchBox -->
 
                                 <div class="single_large_selectBox">
+                                    <select id="getTerms" class="session nice-select niceSelect bordered_style wide @error('session') is-invalid @enderror"
+                                        name="session">
+                                        <option value="">{{ ___('examination.select_session') }} *</option>
+                                        @foreach ($data['sessions'] as $session)
+                                            <option {{ old('session', @$data['request']->session) == $session->id ? 'selected' : '' }}
+                                                value="{{ $session->id }}">{{ $session->name }}</option>
+                                        @endforeach
+                                    </select>
+                                    @error('session')
+                                        <div id="validationServer04Feedback" class="invalid-feedback">
+                                            {{ $message }}
+                                        </div>
+                                    @enderror
+                                </div>
+
+                                <div class="single_large_selectBox">
+                                    <select class="term nice-select niceSelect bordered_style wide @error('term') is-invalid @enderror"
+                                        name="term">
+                                        <option value="">{{ ___('examination.select_term') }} *</option>
+                                        @if(isset($data['request']))
+                                            @foreach ($data['terms'] ?? [] as $term)
+                                                <option {{ old('term', @$data['request']->term) == $term->id ? 'selected' : '' }}
+                                                    value="{{ $term->id }}">{{ $term->name }}</option>
+                                            @endforeach
+                                        @endif
+                                    </select>
+                                    @error('term')
+                                        <div id="validationServer04Feedback" class="invalid-feedback">
+                                            {{ $message }}
+                                        </div>
+                                    @enderror
+                                </div>
+
+                                <div class="single_large_selectBox">
                                     <select id="getSections" class="class nice-select niceSelect bordered_style wide @error('class') is-invalid @enderror"
                                         name="class">
                                         <option value="">{{ ___('student_info.select_class') }} *</option>
@@ -687,7 +721,7 @@
                                     <span><i class="fa-solid fa-print"></i></span>
                                 </button>
 
-                                <a class="btn btn-lg ot-btn-primary" href="{{ route('report-marksheet.pdf-generate', ['id'=>$data['request']->student, 'type'=>$data['request']->exam_type, 'class'=>$data['request']->class, 'section'=>$data['request']->section ]) }}">
+                                <a class="btn btn-lg ot-btn-primary" href="{{ route('report-marksheet.pdf-generate', ['id'=>$data['request']->student, 'type'=>$data['request']->exam_type, 'class'=>$data['request']->class, 'section'=>$data['request']->section, 'session'=>$data['request']->session, 'term'=>$data['request']->term ]) }}">
                                     {{ ___('common.pdf_download') }}
                                     <span><i class="fa-brands fa-dochub"></i></span>
                                 </a>
@@ -776,21 +810,12 @@
                                             ({{ @$data['student']->session_class_student->section->name }})</h5>
                                     </div>
                                     <div class="student_info_single">
-                                        <span>{{___('report.guardian_email')}} :</span>
-                                        <h5>{{ @$data['student']->parent->guardian_email }}</h5>
+                                        <span>{{___('examination.exam_type')}} :</span>
+                                        <h5>{{ @$data['examType']->name ?? 'N/A' }}</h5>
                                     </div>
                                     <div class="student_info_single">
                                         <span>{{___('report.Result')}} :</span>
                                         <h5>{{ @$data['resultData']['result'] }}</h5>
-                                    </div>
-
-                                    <div class="student_info_single">
-                                        <span>{{___('report.GPA')}} :</span>
-                                        @if($data['resultData']['result'] == "Passed")
-                                        <h5>{{ @$data['resultData']['gpa'] }}</h5>
-                                        @else
-                                        <h5>{{ '0.00' }}</h5>
-                                        @endif
                                     </div>
 
 
@@ -803,35 +828,31 @@
                                     <table class="table border_table mb-0">
                                         <thead>
                                             <tr>
-                                                <th class="marked_bg">{{___('report.subject_code')}}</th>
                                                 <th class="marked_bg">{{___('report.subject_name')}}</th>
+                                                <th class="marked_bg">{{___('report.result_marks')}}</th>
                                                 <th class="marked_bg">{{___('report.Grade')}}</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            @forelse (@$data['resultData']['marks_registers'] as $item)
+                                            @forelse (@$data['resultData']['exam_results'] as $result)
                                                 <tr>
                                                     <td>
                                                         <div class="classBox_wiz">
-                                                            <h5>{{ $item->subject->code }}</h5>
+                                                            <h5>{{ $result->subject_name }}</h5>
                                                         </div>
                                                     </td>
                                                     <td>
                                                         <div class="classBox_wiz">
-                                                            <h5>{{ $item->subject->name }}</h5>
+                                                            @if($result->is_absent)
+                                                                <h5 class="text-danger">{{ ___('examination.Absent') }}</h5>
+                                                            @else
+                                                                <h5>{{ number_format($result->result, 2) }}</h5>
+                                                            @endif
                                                         </div>
                                                     </td>
                                                     <td>
                                                         <div class="classBox_wiz">
-                                                            @php
-                                                                $n = 0;
-                                                            @endphp
-                                                            @foreach ($item->marksRegisterChilds as $item)
-                                                                    @php
-                                                                        $n += $item->mark;
-                                                                    @endphp
-                                                            @endforeach
-                                                            <h5>{{ markGrade($n) }}</h5>
+                                                            <h5>{{ $result->grade }}</h5>
                                                         </div>
                                                     </td>
                                                 </tr>
@@ -910,3 +931,40 @@
     </div>
 
 @endsection
+
+@push('script')
+<script>
+$(document).ready(function() {
+    // Session change handler - Load terms
+    $('#getTerms').on('change', function (e) {
+        var sessionId = $(this).val();
+        var ajaxUrl = '{{ url("") }}/report-marksheet/get-terms/' + sessionId;
+
+        // Clear term dropdown
+        $("select.term").html('<option value="">{{ ___("examination.select_term") }} *</option>');
+
+        if (sessionId) {
+            $.ajax({
+                url: ajaxUrl,
+                type: 'GET',
+                success: function(response) {
+                    // Populate term dropdown
+                    $.each(response, function(key, term) {
+                        $("select.term").append('<option value="' + term.id + '">' + term.name + '</option>');
+                    });
+
+                    // Update NiceSelect display
+                    $("select.term").niceSelect('update');
+                },
+                error: function(xhr, status, error) {
+                    alert('Failed to load terms. Please try again.');
+                }
+            });
+        } else {
+            // Update NiceSelect when cleared
+            $("select.term").niceSelect('update');
+        }
+    });
+});
+</script>
+@endpush

@@ -60,6 +60,10 @@ class MarksheetController extends Controller
 
         $data               = $this->repo->search($request);
         $data['request']    = $request;
+
+        // Load exam type for display
+        $data['examType'] = \App\Models\Examination\ExamType::find($request->exam_type);
+
         return view('parent-panel.marksheet', compact('data','request'));
     }
 
@@ -79,6 +83,9 @@ class MarksheetController extends Controller
 
         $data['student']      = $this->studentRepo->show(@$student->id);
         $data['resultData']   = $this->reportMarksheetRepo->search($request);
+
+        // Load exam type for display
+        $data['examType'] = \App\Models\Examination\ExamType::find($type);
 
         $pdf = PDF::loadView('backend.report.marksheetPDF', compact('data'));
         return $pdf->download('marksheet'.'_'.date('d_m_Y').'_'.@$data['student']->first_name .'_'. @$data['student']->last_name .'.pdf');

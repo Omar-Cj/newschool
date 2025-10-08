@@ -150,6 +150,12 @@
     <input type="hidden" id="alert_yes_btn" value="{{ ___('common.yes') }}">
     <input type="hidden" id="alert_cancel_btn" value="{{ ___('common.cancel') }}">
     <input type="hidden" id="alert_cannot_undo" value="{{ ___('examination.cannot_undo') }}">
+
+    {{-- Hidden inputs for publish SweetAlert2 i18n --}}
+    <input type="hidden" id="publish_title" value="{{ ___('examination.publish_exam_entry') }}">
+    <input type="hidden" id="publish_subtitle" value="{{ ___('examination.are_you_sure_publish') }}">
+    <input type="hidden" id="publish_warning" value="{{ ___('examination.results_visible_to_students') }}">
+    <input type="hidden" id="publish_yes_btn" value="{{ ___('common.yes_publish') }}">
 @endsection
 
 @push('script')
@@ -421,7 +427,7 @@
                     if (result.isConfirmed) {
                         // Execute deletion
                         $.ajax({
-                            url: "{{ url('exam-entry') }}/" + entryId,
+                            url: "{{ url('exam-entry/delete') }}/" + entryId,
                             type: 'DELETE',
                             data: { _token: '{{ csrf_token() }}' },
                             success: function(response) {
@@ -454,30 +460,67 @@
                 });
             });
 
-            // Publish exam entry
+            // Publish exam entry - SweetAlert2 Implementation
             $(document).on('click', '.publish-entry', function() {
-                if (confirm('Are you sure you want to publish this exam entry? Results will be visible to students.')) {
-                    var entryId = $(this).data('id');
+                const entryId = $(this).data('id');
+                const examType = $(this).data('exam-type');
+                const className = $(this).data('class');
+                const subjectName = $(this).data('subject');
+                const resultsCount = $(this).data('results-count');
 
-                    $.ajax({
-                        url: "{{ url('exam-entry') }}/" + entryId + "/publish",
-                        type: 'PUT',
-                        data: {
-                            _token: '{{ csrf_token() }}'
-                        },
-                        success: function(response) {
-                            if (response.success) {
-                                table.ajax.reload();
-                                toastr.success(response.message);
-                            } else {
-                                toastr.error(response.message);
+                // Build confirmation message with details
+                let detailsHtml = `<p>${$('#publish_subtitle').val()}</p>
+                                   <p><strong>Exam Type:</strong> ${examType}</p>
+                                   <p><strong>Class:</strong> ${className}</p>
+                                   <p><strong>Subject:</strong> ${subjectName}</p>
+                                   <p><strong>Results Count:</strong> ${resultsCount} student(s)</p>
+                                   <p class="text-warning"><strong><i class="fas fa-exclamation-triangle"></i> Warning:</strong> ${$('#publish_warning').val()}</p>`;
+
+                // Show confirmation dialog
+                Swal.fire({
+                    title: $('#publish_title').val(),
+                    html: detailsHtml,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#28a745',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: '<i class="fas fa-paper-plane"></i> ' + $('#publish_yes_btn').val(),
+                    cancelButtonText: $('#alert_cancel_btn').val()
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Execute publishing
+                        $.ajax({
+                            url: "{{ url('exam-entry/publish') }}/" + entryId,
+                            type: 'PUT',
+                            data: { _token: '{{ csrf_token() }}' },
+                            success: function(response) {
+                                if (response.success) {
+                                    Swal.fire({
+                                        icon: 'success',
+                                        title: 'Published!',
+                                        text: response.message,
+                                        timer: 2000,
+                                        showConfirmButton: false
+                                    });
+                                    table.ajax.reload();
+                                } else {
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: 'Error',
+                                        text: response.message
+                                    });
+                                }
+                            },
+                            error: function(xhr) {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Cannot Publish',
+                                    html: `<p class="text-danger">${xhr.responseJSON?.message || 'Error publishing exam entry'}</p>`
+                                });
                             }
-                        },
-                        error: function(xhr) {
-                            toastr.error(xhr.responseJSON.message || 'Error publishing exam entry');
-                        }
-                    });
-                }
+                        });
+                    }
+                });
             });
         });
     </script>

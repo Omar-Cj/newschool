@@ -184,35 +184,84 @@ class ExamEntryController extends Controller
             // Transform results from vertical to horizontal format
             $results = $data['examEntry']->results;
 
-            // Get unique subjects
-            $subjects = $results->pluck('subject')->unique('id')->values();
+            // Get subjects from SubjectAssign (source of truth) instead of from results
+            // This ensures ALL assigned subjects are shown, even if no marks exist
+            if ($data['examEntry']->is_all_subjects) {
+                // Get all subjects assigned to this class and section
+                $subjectAssign = \App\Models\Academic\SubjectAssign::where('session_id', $data['examEntry']->session_id)
+                    ->where('classes_id', $data['examEntry']->class_id)
+                    ->where('section_id', $data['examEntry']->section_id)
+                    ->first();
 
-            // Group results by student
-            $studentResults = $results->groupBy('student_id')->map(function($studentMarks, $studentId) use ($subjects) {
-                $student = $studentMarks->first()->student;
+                if ($subjectAssign) {
+                    $subjects = \App\Models\Academic\SubjectAssignChildren::where('subject_assign_id', $subjectAssign->id)
+                        ->with('subject')
+                        ->get()
+                        ->pluck('subject')
+                        ->filter(); // Remove any null values
+                } else {
+                    $subjects = collect();
+                }
+            } else {
+                // Single subject exam
+                $subjects = collect([$data['examEntry']->subject])->filter();
+            }
+
+            // Get unique students from results or from class enrollment
+            $studentIds = $results->pluck('student_id')->unique();
+
+            // If no results yet, get students from SessionClassStudent
+            if ($studentIds->isEmpty()) {
+                $sessionClassStudents = \App\Models\StudentInfo\SessionClassStudent::query()
+                    ->where('session_id', $data['examEntry']->session_id)
+                    ->where('classes_id', $data['examEntry']->class_id)
+                    ->where('section_id', $data['examEntry']->section_id)
+                    ->with('student')
+                    ->get();
+
+                $studentIds = $sessionClassStudents->pluck('student.id')->filter();
+            }
+
+            // Build student results structure
+            $studentResults = $studentIds->map(function($studentId) use ($results, $subjects, $data) {
+                // Get student info from results or load from database
+                $firstResult = $results->where('student_id', $studentId)->first();
+
+                if ($firstResult && $firstResult->student) {
+                    $student = $firstResult->student;
+                } else {
+                    $student = \App\Models\StudentInfo\Student::find($studentId);
+                }
+
+                if (!$student) {
+                    return null;
+                }
 
                 // Create student data structure
                 $studentData = [
                     'id' => $student->id,
                     'name' => $student->full_name ?? $student->name,
                     'grade' => $student->grade ?? '-',
-                    'class' => $studentMarks->first()->examEntry->class->name ?? '-',
-                    'section' => $studentMarks->first()->examEntry->section->name ?? '-',
+                    'class' => $data['examEntry']->class->name ?? '-',
+                    'section' => $data['examEntry']->section->name ?? '-',
                     'marks' => []
                 ];
 
-                // Map marks by subject
+                // Map marks by subject - include ALL subjects even if no marks
                 foreach ($subjects as $subject) {
-                    $result = $studentMarks->firstWhere('subject_id', $subject->id);
+                    $result = $results->where('student_id', $studentId)
+                                     ->where('subject_id', $subject->id)
+                                     ->first();
+
                     $studentData['marks'][$subject->id] = [
                         'obtained_marks' => $result ? $result->obtained_marks : null,
                         'is_absent' => $result ? $result->is_absent : false,
-                        'total_marks' => $result ? $result->examEntry->total_marks : 0
+                        'total_marks' => $data['examEntry']->total_marks
                     ];
                 }
 
                 return $studentData;
-            })->values();
+            })->filter()->values(); // Remove null entries and re-index
 
             $data['subjects'] = $subjects;
             $data['studentResults'] = $studentResults;

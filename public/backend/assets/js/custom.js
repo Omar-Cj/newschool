@@ -2095,7 +2095,10 @@ function getStudents() {
         section: sectionId,
     }
 
+    console.log('getStudents() called - Class:', classId, 'Section:', sectionId);
+
     if (classId && sectionId) {
+        console.log('Loading students from /report-marksheet/get-students...');
         $.ajax({
             type: "GET",
             dataType: 'json',
@@ -2103,8 +2106,9 @@ function getStudents() {
             headers: {
                 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
             },
-            url: '/report-marksheet/get-students',
+            url: url + '/report-marksheet/get-students',
             success: function (data) {
+                console.log('Students loaded successfully:', data);
                 var student_options = '';
                 var student_li = '';
                 $.each(data, function (i, item) {
@@ -2118,11 +2122,18 @@ function getStudents() {
                 $("div .students .current").html($("div .students .list li:first").html());
                 $("div .students .list li").not(':first').remove();
                 $("div .students .list").append(student_li);
+                console.log('Students dropdown populated with', data.length, 'students');
             },
-            error: function (data) {
-                console.log(data);
+            error: function (xhr, status, error) {
+                console.error('Failed to load students');
+                console.error('Status:', status);
+                console.error('Error:', error);
+                console.error('Response:', xhr.responseText);
+                alert('Failed to load students. Please check browser console for details.');
             }
         });
+    } else {
+        console.log('Cannot load students - class or section not selected');
     }
 }
 // Marksheet students end.
@@ -2207,6 +2218,10 @@ function getExamtype() {
         class: classId,
         section: sectionId,
     }
+
+    console.log('getExamtype() called - Class:', classId, 'Section:', sectionId);
+    console.log('Loading exam types from:', url + '/exam-assign/get-exam-type');
+
     $.ajax({
         type: "GET",
         dataType: 'html',
@@ -2216,13 +2231,18 @@ function getExamtype() {
         },
         url: url + '/exam-assign/get-exam-type',
         success: function (data) {
+            console.log('Exam types loaded successfully:', data);
 
             var exam_type_options = '';
             var exam_type_li = '';
 
-            $.each(JSON.parse(data), function (i, item) {
-                exam_type_options += "<option value=" + item.exam_type.id + ">" + item.exam_type.name + "</option>";
-                exam_type_li += "<li data-value=" + item.exam_type.id + " class='option'>" + item.exam_type.name + "</li>";
+            var examTypes = JSON.parse(data);
+            console.log('Parsed exam types:', examTypes);
+
+            $.each(examTypes, function (i, item) {
+                // Direct ExamType structure: item.id and item.name (not nested)
+                exam_type_options += "<option value=" + item.id + ">" + item.name + "</option>";
+                exam_type_li += "<li data-value=" + item.id + " class='option'>" + item.name + "</li>";
             });
 
             $("select.exam_types option").not(':first').remove();
@@ -2232,9 +2252,14 @@ function getExamtype() {
             $("div .exam_types .current").html($("div .exam_types .list li:first").html());
             $("div .exam_types .list li").not(':first').remove();
             $("div .exam_types .list").append(exam_type_li);
+            console.log('Exam types dropdown populated with', examTypes.length, 'types');
         },
-        error: function (data) {
-            console.log(data);
+        error: function (xhr, status, error) {
+            console.error('Failed to load exam types');
+            console.error('Status:', status);
+            console.error('Error:', error);
+            console.error('Response:', xhr.responseText);
+            alert('Failed to load exam types. Please check browser console for details.');
         }
     });
 }

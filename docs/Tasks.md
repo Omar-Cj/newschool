@@ -624,44 +624,172 @@ SELECT * FROM permissions WHERE attribute = 'exam_entry';
 -- Should show one record with keywords as JSON array
 ```
 
-#### Phase 4: ExamReport Enhancement [LOW PRIORITY]
-**Estimated Time:** 16 hours
-**Status:** ⏳ Pending
+#### Phase 4: Exam Report Enhancement (Marksheet Redesign) [MEDIUM PRIORITY]
+**Estimated Time:** 6 hours
+**Actual Time:** 5 hours
+**Status:** ✅ Implementation Complete - Ready for Testing
+**Completion Date:** 7 Oct 2025
 
 ##### Enhancement Overview
-Redesign the examination reports (formerly marksheets) with improved analytics, visualizations, and export capabilities.
+Simplify the examination report (marksheet) functionality by leveraging a stored procedure for data retrieval. The existing report template and user interface will be preserved, with only the backend data source and displayed columns being updated.
+
+**Implementation Summary:**
+- ✅ All 3 repositories updated with stored procedure integration
+- ✅ All 4 view templates updated (backend, PDF, parent, student panels)
+- ✅ Controller compatibility verified - zero changes required
+- ✅ Backward compatibility maintained with dual key support
+- ✅ Absent student handling implemented across all views
+- ✅ Comprehensive documentation created (design + implementation summary)
+
+##### Current System Analysis
+**Existing Files:**
+- **View**: `resources/views/backend/report/marksheet.blade.php`
+- **PDF View**: `resources/views/backend/report/marksheetPDF.blade.php`
+- **Controller**: `app/Http/Controllers/Report/MarksheetController.php`
+- **Repository**: `app/Repositories/Report/MarksheetRepository.php`
+- **Routes**: `routes/report.php` (report-marksheet prefix)
+
+**Current Workflow:**
+1. User selects: Class → Section → Exam Type → Student
+2. Form submits to `marksheet.search` route
+3. Controller calls `MarksheetRepository::search()`
+4. Repository queries `MarksRegister` model with complex calculations
+5. View displays: Subject Code, Subject Name, Grade
+
+##### New Approach: Stored Procedure Integration
+
+**Database Layer:**
+- **Stored Procedure**: `GetStudentExamReport(student_id, class_id, section_id, exam_type_id)`
+- **Returns Columns**:
+  - `subject_name` (VARCHAR) - Subject name
+  - `result` (DECIMAL) - Obtained marks/result
+  - `is_absent` (BOOLEAN) - Absence indicator (0 = present, 1 = absent)
+  - `grade` (VARCHAR) - Letter grade (A, A-, B, etc.)
+  - `grade_point` (DECIMAL) - Grade point value
+  - `total_marks` (DECIMAL) - Total marks for subject
+  - `percentage` (DECIMAL) - Percentage achieved
+  - `remarks` (TEXT) - Optional remarks
+
+**Data Simplification:**
+- **Remove**: Subject Code column
+- **Display**: Subject Name, Result (Marks), Grade
+- **Keep**: Existing template layout, styling, and PDF generation
 
 ##### Implementation Tasks
-- [ ] **[4h]** Redesign report structure
-  - Term-based filtering
-  - Activity type grouping
-  - Class/section selection
-  - Date range filters
-- [ ] **[3h]** Add performance analytics
-  - Class average calculations
-  - Subject-wise performance
-  - Student ranking
-  - Trend analysis
-- [ ] **[4h]** Implement export functionality
-  - PDF generation with proper formatting
-  - Excel export with formulas
-  - Bulk report generation
-- [ ] **[3h]** Add visual charts
-  - Grade distribution pie charts
-  - Performance trend line graphs
-  - Subject comparison bar charts
-  - Use Chart.js or similar library
-- [ ] **[2h]** Create responsive report templates
-  - Mobile-friendly design
-  - Print-optimized CSS
-  - Customizable headers/footers
 
-##### Report Types
-- Individual student report card
-- Class performance summary
-- Subject analysis report
-- Term comparison report
-- Annual academic report
+- [x] **[2h]** Update Repository Layer ✅
+  - Modify `MarksheetRepository::search()` method
+  - Replace MarksRegister Eloquent queries with stored procedure call
+  - Use `DB::select("CALL GetStudentExamReport(?, ?, ?, ?)", [...])` syntax
+  - Transform stored procedure results into array format compatible with view
+  - Maintain existing result/GPA calculation logic or adapt from procedure results
+  - **Files**:
+    - `app/Repositories/Report/MarksheetRepository.php` ✅
+    - `app/Repositories/ParentPanel/MarksheetRepository.php` ✅
+    - `app/Repositories/StudentPanel/MarksheetRepository.php` ✅
+
+- [x] **[1h]** Update View Templates ✅
+  - Modify table structure in `marksheet.blade.php`
+  - Remove Subject Code column from table header and data rows
+  - Update data binding to use stored procedure result fields
+  - Display: `subject_name`, `result` (obtained marks), `grade`
+  - Handle `is_absent` flag (show "Absent" instead of marks if true)
+  - Apply same changes to PDF template
+  - **Files**:
+    - `resources/views/backend/report/marksheet.blade.php` ✅
+    - `resources/views/backend/report/marksheetPDF.blade.php` ✅
+
+- [x] **[1h]** Update Controller Logic ✅
+  - Review `MarksheetController::search()` method
+  - Ensure compatibility with new repository response structure
+  - Update PDF generation method if data structure changes
+  - Maintain approval system integration
+  - **Files**: `app/Http/Controllers/Report/MarksheetController.php` (No changes needed) ✅
+
+- [ ] **[1h]** Testing & Validation ⏳
+  - Test stored procedure with various student scenarios
+  - Verify absent student handling (is_absent = 1)
+  - Test with students having different grade ranges
+  - Validate PDF generation with new data structure
+  - Test approval workflow continues to function
+  - Verify print functionality works correctly
+
+- [x] **[0.5h]** Update Related Panel Views ✅
+  - Apply same changes to parent panel marksheet view
+  - Apply same changes to student panel marksheet view
+  - **Files**:
+    - `resources/views/parent-panel/marksheet.blade.php` ✅
+    - `resources/views/student-panel/marksheet.blade.php` ✅
+
+- [x] **[0.5h]** Documentation Updates ✅
+  - Update Tasks.md with completion details ✅
+  - Document stored procedure parameters and return structure ✅
+  - Add migration notes if needed for stored procedure deployment ✅
+  - Create implementation summary document ✅
+
+##### Technical Implementation Details
+
+**Stored Procedure Call Example:**
+```php
+$results = DB::select("CALL GetStudentExamReport(?, ?, ?, ?)", [
+    $request->student,    // student_id
+    $request->class,      // class_id
+    $request->section,    // section_id
+    $request->exam_type   // exam_type_id
+]);
+```
+
+**View Data Structure (Before):**
+```php
+// Current: Uses MarksRegister relationship
+@foreach ($data['resultData']['marks_registers'] as $item)
+    <td>{{ $item->subject->code }}</td>
+    <td>{{ $item->subject->name }}</td>
+    <td>{{ markGrade($item->marksRegisterChilds->sum('mark')) }}</td>
+@endforeach
+```
+
+**View Data Structure (After):**
+```php
+// New: Uses stored procedure results
+@foreach ($data['resultData']['exam_results'] as $result)
+    <td>{{ $result->subject_name }}</td>
+    <td>{{ $result->is_absent ? 'Absent' : $result->result }}</td>
+    <td>{{ $result->grade }}</td>
+@endforeach
+```
+
+##### Key Benefits
+- **Performance**: Stored procedure executes faster than complex Eloquent queries
+- **Simplicity**: Reduces backend complexity by moving logic to database layer
+- **Maintainability**: Centralized data retrieval logic in single stored procedure
+- **UI Preservation**: No changes to user interface or workflow
+- **Template Integrity**: Existing styling and layout fully preserved
+
+##### Testing Scenarios
+1. **Normal Student**: Has marks in all subjects, passed
+2. **Absent Student**: Has `is_absent = 1` for one or more subjects
+3. **Failed Student**: Has failing grades in one or more subjects
+4. **Edge Cases**:
+   - Student with no exam records
+   - Student with all subjects absent
+   - Different grade ranges (A to F)
+   - Percentage calculations at boundaries (49.5%, 50%, etc.)
+
+##### Deployment Considerations
+- **Stored Procedure Migration**: Create migration to deploy `GetStudentExamReport` procedure
+- **Backward Compatibility**: Consider maintaining old method temporarily during transition
+- **Database Permissions**: Ensure application database user has EXECUTE permission on stored procedure
+- **Testing Environment**: Deploy and test stored procedure in staging before production
+
+##### Future Enhancements (Deferred)
+The following advanced features were originally planned but are deferred to maintain simplicity:
+- [ ] Performance analytics and visualizations
+- [ ] Class-wide comparison reports
+- [ ] Trend analysis and charts
+- [ ] Excel export with advanced formatting
+- [ ] Bulk report generation
+- [ ] Term comparison reports
 
 #### Technical Standards & Patterns
 

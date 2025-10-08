@@ -592,6 +592,29 @@
                         <div
                             class="card_header_right d-flex align-items-center gap-3 flex-fill justify-content-end flex-wrap">
                             <!-- table_searchBox -->
+
+                            <div class="single_large_selectBox">
+                                <select id="getTermsParent" class="session nice-select niceSelect bordered_style wide @error('session') is-invalid @enderror" name="session">
+                                    <option value="">{{ ___('examination.select_session') }} *</option>
+                                </select>
+                                @error('session')
+                                <div id="validationServer04Feedback" class="invalid-feedback">
+                                    {{ $message }}
+                                </div>
+                                @enderror
+                            </div>
+
+                            <div class="single_large_selectBox">
+                                <select class="term nice-select niceSelect bordered_style wide @error('term') is-invalid @enderror" name="term">
+                                    <option value="">{{ ___('examination.select_term') }} *</option>
+                                </select>
+                                @error('term')
+                                <div id="validationServer04Feedback" class="invalid-feedback">
+                                    {{ $message }}
+                                </div>
+                                @enderror
+                            </div>
+
                             <div class="single_large_selectBox">
                                 <select class="nice-select niceSelect bordered_style wide student @error('student') is-invalid @enderror" name="student">
                                     <option value="">{{ ___('student_info.select_student') }}</option>
@@ -680,21 +703,12 @@
                                         ({{ @$data['student']->session_class_student->section->name }})</h5>
                                 </div>
                                 <div class="student_info_single">
-                                    <span>{{___('report.guardian_email')}} :</span>
-                                    <h5>{{ @$data['student']->parent->guardian_email }}</h5>
+                                    <span>{{___('examination.exam_type')}} :</span>
+                                    <h5>{{ @$data['examType']->name ?? 'N/A' }}</h5>
                                 </div>
                                 <div class="student_info_single">
                                     <span>{{___('report.Result')}} :</span>
                                     <h5>{{ @$data['result'] }}</h5>
-                                </div>
-                                
-                                <div class="student_info_single">
-                                    <span>{{___('report.GPA')}} :</span>
-                                    @if($data['result'] == "Passed")
-                                    <h5>{{ @$data['gpa'] }}</h5>
-                                    @else 
-                                    <h5>{{ '0.00' }}</h5>
-                                    @endif
                                 </div>
                             </div>
                             <!-- student_info_wrapper part end -->
@@ -705,35 +719,31 @@
                                 <table class="table border_table mb-0">
                                     <thead>
                                         <tr>
-                                            <th class="marked_bg">{{___('report.subject_code')}}</th>
                                             <th class="marked_bg">{{___('report.subject_name')}}</th>
+                                            <th class="marked_bg">{{___('report.result_marks')}}</th>
                                             <th class="marked_bg">{{___('report.Grade')}}</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @foreach (@$data['marks_registers'] as $item)
+                                        @foreach (@$data['exam_results'] as $result)
                                             <tr>
                                                 <td>
                                                     <div class="classBox_wiz">
-                                                        <h5>{{ $item->subject->code }}</h5>
+                                                        <h5>{{ $result->subject_name }}</h5>
                                                     </div>
                                                 </td>
                                                 <td>
                                                     <div class="classBox_wiz">
-                                                        <h5>{{ $item->subject->name }}</h5>
+                                                        @if($result->is_absent)
+                                                            <h5 class="text-danger">{{ ___('examination.Absent') }}</h5>
+                                                        @else
+                                                            <h5>{{ number_format($result->result, 2) }}</h5>
+                                                        @endif
                                                     </div>
                                                 </td>
                                                 <td>
                                                     <div class="classBox_wiz">
-                                                        @php
-                                                            $n = 0;
-                                                        @endphp
-                                                        @foreach ($item->marksRegisterChilds as $item)
-                                                            @php
-                                                                $n += $item->mark;
-                                                            @endphp
-                                                        @endforeach
-                                                        <h5>{{ markGrade($n) }}</h5>
+                                                        <h5>{{ $result->grade }}</h5>
                                                     </div>
                                                 </td>
                                             </tr>
@@ -768,6 +778,62 @@
                 </div>
             @endif
         @endif
-        
+
     </div>
 @endsection
+
+@push('script')
+<script>
+$(document).ready(function() {
+    // Load sessions on page load
+    $.ajax({
+        url: '{{ url("") }}/report-marksheet/get-sessions',
+        type: 'GET',
+        success: function(response) {
+            var sessionSelect = $('#getTermsParent');
+            sessionSelect.html('<option value="">{{ ___('examination.select_session') }} *</option>');
+            $.each(response, function(key, session) {
+                sessionSelect.append('<option value="' + session.id + '">' + session.name + '</option>');
+            });
+            sessionSelect.niceSelect('update');
+        },
+        error: function(xhr) {
+            alert('Failed to load sessions. Please try again.');
+        }
+    });
+
+    // Load terms when session is selected
+    $('#getTermsParent').on('change', function() {
+        var sessionId = $(this).val();
+
+        if (sessionId) {
+            // Clear dependent dropdowns
+            $('.term').html('<option value="">{{ ___('examination.select_term') }} *</option>');
+            $('.exam_types').html('<option value="">{{ ___('examination.select_exam_type') }} *</option>');
+
+            $('.term').niceSelect('update');
+            $('.exam_types').niceSelect('update');
+
+            // Load terms for selected session
+            $.ajax({
+                url: '{{ url("") }}/report-marksheet/get-terms/' + sessionId,
+                type: 'GET',
+                success: function(response) {
+                    var termSelect = $('.term');
+                    termSelect.html('<option value="">{{ ___('examination.select_term') }} *</option>');
+
+                    $.each(response, function(key, term) {
+                        termSelect.append('<option value="' + term.id + '">' + term.name + '</option>');
+                    });
+
+                    termSelect.niceSelect('update');
+                },
+                error: function(xhr) {
+                    alert('Failed to load terms. Please try again.');
+                }
+            });
+        }
+    });
+});
+</script>
+@endpush

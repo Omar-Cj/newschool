@@ -110,8 +110,8 @@ body {
                         <tr>
                             <th class="table_th">{{___('common.Guardian Name')}} :</th>
                             <td class="table_td">{{ @$data['student']->parent->guardian_name }}</td>
-                            <th class="table_th">{{___('common.Guardian Email')}} :</th>
-                            <td class="table_td">{{ @$data['student']->parent->guardian_email }}</td>
+                            <th class="table_th">{{___('common.Exam Type')}} :</th>
+                            <td class="table_td">{{ @$data['examType']->name ?? 'N/A' }}</td>
                         </tr>
                         <tr>
                             <th class="table_th">{{___('common.Class(Section)')}} :</th>
@@ -122,15 +122,7 @@ body {
                         </tr>
                         <tr>
                             <th class="table_th">{{___('common.DOB')}} :</th>
-                            <td class="table_td">{{ dateFormat(@$data['student']->dob) }}</td>
-                            <th class="table_th">{{___('common.GPA')}} :</th>
-                            <td class="table_td">
-                                @if($data['resultData']['result'] == "Passed")
-                                {{ @$data['resultData']['gpa'] }}
-                                @else
-                                {{ '0.00' }}
-                                @endif
-                            </td>
+                            <td class="table_td" colspan="3">{{ dateFormat(@$data['student']->dob) }}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -143,30 +135,26 @@ body {
                     <table class="table">
                         <thead>
                             <tr>
-                                <th class="table_th">{{___('common.Subject Code')}}</th>
                                 <th class="table_th">{{___('common.Subject Name')}}</th>
+                                <th class="table_th">{{___('common.Result Marks')}}</th>
                                 <th class="table_th">{{___('common.Grade')}}</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach (@$data['resultData']['marks_registers'] as $item)
+                            @foreach (@$data['resultData']['exam_results'] as $result)
                                 <tr>
                                     <td class="table_td">
-                                        {{ $item->subject->code }}
+                                        {{ $result->subject_name }}
                                     </td>
                                     <td class="table_td">
-                                        {{ $item->subject->name }}
+                                        @if($result->is_absent)
+                                            <span style="color: #dc3545;">{{ ___('examination.Absent') }}</span>
+                                        @else
+                                            {{ number_format($result->result, 2) }}
+                                        @endif
                                     </td>
                                     <td class="table_td">
-                                        @php
-                                            $n = 0;
-                                        @endphp
-                                        @foreach ($item->marksRegisterChilds as $item)
-                                                @php
-                                                    $n += $item->mark;
-                                                @endphp
-                                        @endforeach
-                                        {{ markGrade($n) }}
+                                        {{ $result->grade }}
                                     </td>
                                 </tr>
                                 @endforeach

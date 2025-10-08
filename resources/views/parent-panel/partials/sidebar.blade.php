@@ -77,7 +77,7 @@
                         <a href="{{ route('parent-panel-marksheet.index') }}" class="parent-item-content">
                             {{-- <img src="{{ asset('backend') }}/assets/images/icons/notification-status.svg" alt="marksheet" /> --}}
                             <i class="las la-graduation-cap"></i>
-                            <span class="on-half-expanded">{{ ___('settings.marksheet') }}</span>
+                            <span class="on-half-expanded">{{ ___('settings.exam_report') }}</span>
                         </a>
                     </li>
                 @endif

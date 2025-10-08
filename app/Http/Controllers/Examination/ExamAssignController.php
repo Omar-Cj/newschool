@@ -170,7 +170,9 @@ class ExamAssignController extends Controller
 
     public function getExamType(Request $request)
     {
-        $result = $this->repo->getExamType($request);
+        // Load all active exam types directly from exam_types table
+        // ExamType is now standalone in new architecture - no class/section dependency
+        $result = $this->examTypeRepo->all();
         return response()->json($result, 200);
     }
 

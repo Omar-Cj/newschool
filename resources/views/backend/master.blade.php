@@ -8,7 +8,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <input type="hidden" name="url" id="url" value="{{ url('') }}">
+    <input type="hidden" name="url" id="url" value="{{ config('app.url') }}">
     <!-- Delete alert text-->
     <input type="hidden" name="alert_title" id="alert_title" value="{{ ___('common.are_you_sure') }}">
     <input type="hidden" name="alert_subtitle" id="alert_subtitle"

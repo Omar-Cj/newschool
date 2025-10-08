@@ -132,15 +132,22 @@ class ExamEntryRepository
                             <i class="fas fa-edit"></i></a>';
             }
 
-            // Publish button (only for completed)
-            if ($row->status === 'completed') {
-                $action .= '<button type="button" class="btn btn-sm btn-success publish-entry" data-id="'.$row->id.'" title="Publish">
-                            <i class="fas fa-paper-plane"></i></button>';
-            }
-
             // Delete button - always shown, validation happens on click
             $examTypeName = $row->examType->name ?? 'Unknown';
             $className = $row->class->name ?? 'Unknown';
+
+            // Publish button (only for completed)
+            if ($row->status === 'completed') {
+                $subjectName = $row->is_all_subjects ? 'All Subjects' : ($row->subject->name ?? 'Unknown');
+                $action .= '<button type="button" class="btn btn-sm btn-success publish-entry"
+                            data-id="'.$row->id.'"
+                            data-exam-type="'.htmlspecialchars($examTypeName, ENT_QUOTES).'"
+                            data-class="'.htmlspecialchars($className, ENT_QUOTES).'"
+                            data-subject="'.htmlspecialchars($subjectName, ENT_QUOTES).'"
+                            data-results-count="'.$resultsCount.'"
+                            title="Publish">
+                            <i class="fas fa-paper-plane"></i></button>';
+            }
             $action .= '<button type="button" class="btn btn-sm btn-danger delete-entry"
                         data-id="'.$row->id.'"
                         data-exam-type="'.htmlspecialchars($examTypeName, ENT_QUOTES).'"

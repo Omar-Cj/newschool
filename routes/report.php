@@ -25,7 +25,8 @@ Route::middleware(saasMiddleware())->group(function () {
                     Route::get('/', 'index')->name('report-marksheet.index')->middleware('PermissionCheck:report_marksheet_read');
                     Route::get('/search', 'search')->name('marksheet.search')->middleware('PermissionCheck:report_marksheet_read');
                     Route::get('/get-students', 'getStudents');
-                    Route::get('/pdf-generate/{id}/{type}/{class}/{section}', 'generatePDF')->name('report-marksheet.pdf-generate');
+                    Route::get('/get-terms/{session}', 'getTerms');
+                    Route::get('/pdf-generate/{id}/{type}/{class}/{section}/{session}/{term}', 'generatePDF')->name('report-marksheet.pdf-generate');
                 });
 
                 Route::controller(MeritListController::class)->prefix('report-merit-list')->group(function () {

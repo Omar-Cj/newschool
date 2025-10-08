@@ -54,45 +54,60 @@ class MarksheetRepository implements MarksheetInterface
 
             $student        = Student::where('id', Session::get('student_id'))->first();
             $classSection   = SessionClassStudent::where('session_id', setting('session'))->where('student_id', @$student->id)->latest()->first();
-            
-            $request = new Request([
+
+            $searchRequest = new Request([
                 'exam_type'   => $request->exam_type,
                 'class'       => @$classSection->classes_id,
                 'section'     => @$classSection->section_id,
+                'session'     => $request->session,
+                'term'        => $request->term,
             ]);
 
-            $marks_registers = MarksRegister::where('exam_type_id', $request->exam_type)
-            ->where('classes_id', $request->class)
-            ->where('section_id', $request->section)
-            ->where('session_id', setting('session'))
-            ->with('marksRegisterChilds', function ($query) use($student) {
-                $query->where('student_id', $student->id);
-            })
-            ->get();
+            // Call stored procedure with parameters including session and term
+            $examResults = \DB::select("CALL GetStudentExamReport(?, ?, ?, ?, ?, ?)", [
+                $student->id,
+                $searchRequest->class,
+                $searchRequest->section,
+                $searchRequest->exam_type,
+                $searchRequest->session,
+                $searchRequest->term
+            ]);
 
+            // Transform results to collection of stdClass objects
+            $examResults = collect($examResults)->map(function($item) {
+                return (object) $item;
+            });
 
-            $result      = ___('examination.Passed');
-            $total_marks = 0;
-            foreach($marks_registers as $marks_register) {
-                $total_marks += $marks_register->marksRegisterChilds->sum('mark');
-                if($marks_register->marksRegisterChilds->sum('mark') < examSetting('average_pass_marks')) {
+            // Calculate overall result and GPA
+            $result = ___('examination.Passed');
+            $totalMarks = 0;
+            $subjectCount = $examResults->count();
+
+            foreach($examResults as $examResult) {
+                if($examResult->is_absent ||
+                   $examResult->result < examSetting('average_pass_marks')) {
                     $result = ___('examination.Failed');
+                }
+                $totalMarks += (float) $examResult->result;
+            }
+
+            $avgMarks = $subjectCount > 0 ? $totalMarks / $subjectCount : 0;
+
+            // Calculate GPA
+            $grades = MarksGrade::where('session_id', setting('session'))->get();
+            $gpa = '0.00';
+            foreach($grades as $grade) {
+                if($grade->percent_from <= $avgMarks && $grade->percent_upto >= $avgMarks) {
+                    $gpa = (string) $grade->point;
+                    break;
                 }
             }
 
-            $grades = MarksGrade::where('session_id', setting('session'))->get();
-            $gpa = '';
-            foreach($grades as $grade) {
-                    if($grade->percent_from <= $total_marks/count($marks_registers) && $grade->percent_upto >= $total_marks/count($marks_registers)) {
-                        $gpa = $grade->point;
-                    }
-            }
-
-            $data['marks_registers'] = $marks_registers;
+            $data['marks_registers'] = $examResults;  // Backward compatibility
+            $data['exam_results']    = $examResults;  // New key
             $data['result']          = $result;
             $data['gpa']             = $gpa;
-            $data['avg_marks']       = $total_marks/count($marks_registers);
-
+            $data['avg_marks']       = $avgMarks;
             $data['student']         = $student;
 
             return $data;

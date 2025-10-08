@@ -739,7 +739,7 @@
                             @if (hasPermission('report_marksheet_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['report-marksheet*']) }}">
                                     <a
-                                        href="{{ route('report-marksheet.index') }}">{{ ___('settings.marksheet') }}</a>
+                                        href="{{ route('report-marksheet.index') }}">{{ ___('settings.exam_report') }}</a>
                                 </li>
                             @endif
                             @if (hasPermission('report_merit_list_read'))
