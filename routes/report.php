@@ -10,6 +10,7 @@ use App\Http\Controllers\Report\ExamRoutineController;
 use App\Http\Controllers\Report\ClassRoutineController;
 use App\Http\Controllers\Report\ProgressCardController;
 use App\Http\Controllers\Report\ProgressListController;
+use App\Http\Controllers\Report\StudentReportController;
 use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
 use App\Http\Controllers\Attendance\AttendanceController;
 use App\Http\Controllers\Report\FeesCollectionController;
@@ -78,6 +79,16 @@ Route::middleware(saasMiddleware())->group(function () {
                     Route::get('/', 'index')->name('report-exam-routine.index')->middleware('PermissionCheck:report_exam_routine_read');
                     Route::post('/search', 'search')->name('report-exam-routine.search')->middleware('PermissionCheck:report_exam_routine_read');
                     Route::get('/pdf-generate/{class}/{section}/{type}', 'generatePDF')->name('report-exam-routine.pdf-generate');
+                });
+
+                Route::controller(StudentReportController::class)->prefix('report-student')->group(function () {
+                    Route::get('/', 'index')->name('report-student.index')->middleware('PermissionCheck:student_reports_read');
+                    Route::get('/search-student-list', 'searchStudentList')->name('report-student.search-student-list')->middleware('PermissionCheck:student_reports_read');
+                    Route::get('/pdf-student-list', 'generateStudentListPDF')->name('report-student.pdf-student-list')->middleware('PermissionCheck:student_reports_read');
+                    Route::get('/search-student-registration', 'searchStudentRegistration')->name('report-student.search-student-registration')->middleware('PermissionCheck:student_reports_read');
+                    Route::get('/pdf-student-registration', 'generateStudentRegistrationPDF')->name('report-student.pdf-student-registration')->middleware('PermissionCheck:student_reports_read');
+                    Route::get('/search-guardian-list', 'searchGuardianList')->name('report-student.search-guardian-list')->middleware('PermissionCheck:student_reports_read');
+                    Route::get('/pdf-guardian-list', 'generateGuardianListPDF')->name('report-student.pdf-guardian-list')->middleware('PermissionCheck:student_reports_read');
                 });
 
                 Route::controller(MarkSheetApprovalController::class)->prefix('report-marksheet')->group(function () {

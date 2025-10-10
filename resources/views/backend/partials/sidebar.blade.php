@@ -742,6 +742,12 @@
                                         href="{{ route('report-marksheet.index') }}">{{ ___('settings.exam_report') }}</a>
                                 </li>
                             @endif
+                            @if (hasPermission('student_reports_read'))
+                                <li class="sidebar-menu-item {{ set_menu(['report-student*']) }}">
+                                    <a
+                                        href="{{ route('report-student.index') }}">{{ ___('settings.student_report') }}</a>
+                                </li>
+                            @endif
                             @if (hasPermission('report_merit_list_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['report-merit-list*']) }}">
                                     <a
