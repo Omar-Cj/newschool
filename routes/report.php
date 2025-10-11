@@ -93,7 +93,16 @@ Route::middleware(saasMiddleware())->group(function () {
 
                 Route::controller(\App\Http\Controllers\Report\BillingReportController::class)->prefix('report-billing')->group(function () {
                     Route::get('/', 'index')->name('report-billing.index')->middleware('PermissionCheck:billing_reports_read');
-                    // Future routes will be added here for each report type
+
+                    // Paid Students Report Routes
+                    Route::post('/search-paid-students', 'searchPaidStudents')->name('report-billing.search-paid-students')->middleware('PermissionCheck:billing_reports_read');
+                    Route::get('/export-paid-students-pdf', 'exportPaidStudentsPDF')->name('report-billing.export-paid-students-pdf')->middleware('PermissionCheck:billing_reports_read');
+
+                    // Unpaid Students Report Routes
+                    Route::post('/search-unpaid-students', 'searchUnpaidStudents')->name('report-billing.search-unpaid-students')->middleware('PermissionCheck:billing_reports_read');
+                    Route::get('/export-unpaid-students-pdf', 'exportUnpaidStudentsPDF')->name('report-billing.export-unpaid-students-pdf')->middleware('PermissionCheck:billing_reports_read');
+
+                    // Future routes for other report types
                 });
 
                 Route::controller(\App\Http\Controllers\Report\ExaminationReportController::class)->prefix('report-examination')->group(function () {

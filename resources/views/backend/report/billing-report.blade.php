@@ -173,16 +173,29 @@
                                             <h4 class="card-title mb-0 flex-grow-1">{{ ___('settings.filter_options') }}</h4>
                                         </div>
                                         <div class="card-body">
-                                            <form action="#" method="GET">
+                                            <form action="{{ route('report-billing.search-paid-students') }}" method="POST" id="paidStudentsForm">
+                                                @csrf
                                                 <div class="row g-3">
 
-                                                    <!-- Session -->
+                                                    <!-- Start Date -->
+                                                    <div class="col-md-6">
+                                                        <label for="paid_start_date" class="form-label">{{ ___('common.start_date') }} <span class="text-danger">*</span></label>
+                                                        <input type="date" class="form-control" name="start_date" id="paid_start_date" required>
+                                                    </div>
+
+                                                    <!-- End Date -->
+                                                    <div class="col-md-6">
+                                                        <label for="paid_end_date" class="form-label">{{ ___('common.end_date') }} <span class="text-danger">*</span></label>
+                                                        <input type="date" class="form-control" name="end_date" id="paid_end_date" required>
+                                                    </div>
+
+                                                    <!-- Grade -->
                                                     <div class="col-md-3">
                                                         <div class="single_large_selectBox">
-                                                            <select class="nice-select niceSelect bordered_style wide" name="session" id="paid_session">
-                                                                <option value="">{{ ___('common.select_session') }}</option>
-                                                                @foreach ($data['sessions'] as $session)
-                                                                    <option value="{{ $session->id }}">{{ $session->name }}</option>
+                                                            <select class="nice-select niceSelect bordered_style wide" name="grade" id="paid_grade">
+                                                                <option value="">{{ ___('common.select_grade') }}</option>
+                                                                @foreach ($data['grades'] as $grade)
+                                                                    <option value="{{ $grade }}">{{ $grade }}</option>
                                                                 @endforeach
                                                             </select>
                                                         </div>
@@ -191,7 +204,7 @@
                                                     <!-- Class -->
                                                     <div class="col-md-3">
                                                         <div class="single_large_selectBox">
-                                                            <select class="nice-select niceSelect bordered_style wide" name="class" id="paid_class">
+                                                            <select class="nice-select niceSelect bordered_style wide" name="class_id" id="paid_class">
                                                                 <option value="">{{ ___('common.select_class') }}</option>
                                                                 @foreach ($data['classes'] as $class)
                                                                     <option value="{{ $class->id }}">{{ $class->name }}</option>
@@ -203,7 +216,7 @@
                                                     <!-- Section -->
                                                     <div class="col-md-3">
                                                         <div class="single_large_selectBox">
-                                                            <select class="nice-select niceSelect bordered_style wide" name="section" id="paid_section">
+                                                            <select class="nice-select niceSelect bordered_style wide" name="section_id" id="paid_section">
                                                                 <option value="">{{ ___('common.select_section') }}</option>
                                                                 @foreach ($data['sections'] as $section)
                                                                     <option value="{{ $section->id }}">{{ $section->name }}</option>
@@ -212,27 +225,16 @@
                                                         </div>
                                                     </div>
 
-                                                    <!-- Payment Status -->
+                                                    <!-- Gender -->
                                                     <div class="col-md-3">
                                                         <div class="single_large_selectBox">
-                                                            <select class="nice-select niceSelect bordered_style wide" name="payment_status" id="payment_status">
-                                                                <option value="">{{ ___('common.payment_status') }}</option>
-                                                                <option value="full">{{ ___('fees.fully_paid') }}</option>
-                                                                <option value="partial">{{ ___('fees.partially_paid') }}</option>
+                                                            <select class="nice-select niceSelect bordered_style wide" name="gender_id" id="paid_gender">
+                                                                <option value="">{{ ___('common.select_gender') }}</option>
+                                                                @foreach ($data['genders'] as $gender)
+                                                                    <option value="{{ $gender->id }}">{{ $gender->name }}</option>
+                                                                @endforeach
                                                             </select>
                                                         </div>
-                                                    </div>
-
-                                                    <!-- Start Date -->
-                                                    <div class="col-md-6">
-                                                        <label for="paid_start_date" class="form-label">{{ ___('common.start_date') }}</label>
-                                                        <input type="date" class="form-control" name="start_date" id="paid_start_date">
-                                                    </div>
-
-                                                    <!-- End Date -->
-                                                    <div class="col-md-6">
-                                                        <label for="paid_end_date" class="form-label">{{ ___('common.end_date') }}</label>
-                                                        <input type="date" class="form-control" name="end_date" id="paid_end_date">
                                                     </div>
 
                                                     <!-- Search Button -->
@@ -246,10 +248,74 @@
                                         </div>
                                     </div>
 
-                                    <!-- Upcoming Placeholder -->
-                                    <div class="alert alert-info mt-3" role="alert">
-                                        <i class="las la-clock me-2"></i>
-                                        <strong>{{ ___('common.upcoming') }}</strong> - Backend implementation in progress
+                                    <!-- Results Section -->
+                                    <div id="paidStudentsResults" style="display: none;">
+                                        <!-- Action Buttons -->
+                                        <div class="card mt-3">
+                                            <div class="card-body">
+                                                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                                    <h5 class="mb-0">{{ ___('common.search_results') }}</h5>
+                                                    <div>
+                                                        <button type="button" class="btn btn-success" onclick="printPaidStudentsReport()">
+                                                            <i class="las la-print me-1"></i> {{ ___('common.print') }}
+                                                        </button>
+                                                        <button type="button" class="btn btn-danger" onclick="exportPaidStudentsPDF()">
+                                                            <i class="las la-file-pdf me-1"></i> {{ ___('common.export_pdf') }}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Results Table -->
+                                        <div class="card mt-3" id="paidStudentsPrintArea">
+                                            <div class="card-body">
+                                                <div class="table-responsive">
+                                                    <table class="table table-bordered table-hover">
+                                                        <thead class="table-light">
+                                                            <tr>
+                                                                <th>{{ ___('common.payment_date') }}</th>
+                                                                <th>{{ ___('common.journal') }}</th>
+                                                                <th>{{ ___('common.student_name') }}</th>
+                                                                <th>{{ ___('common.mobile') }}</th>
+                                                                <th class="text-end">{{ ___('fees.paid_amount') }}</th>
+                                                                <th class="text-end">{{ ___('fees.deposit') }}</th>
+                                                                <th class="text-end">{{ ___('fees.discount') }}</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody id="paidStudentsTableBody">
+                                                            <!-- Results will be populated via JavaScript -->
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+
+                                                <!-- Summary Section -->
+                                                <div class="row mt-4">
+                                                    <div class="col-md-6 offset-md-6">
+                                                        <table class="table table-bordered">
+                                                            <tbody>
+                                                                <tr>
+                                                                    <th class="text-end">{{ ___('fees.total_paid_amount') }}:</th>
+                                                                    <td class="text-end" id="totalPaidAmount">0.00</td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <th class="text-end">{{ ___('fees.total_deposit') }}:</th>
+                                                                    <td class="text-end" id="totalDeposit">0.00</td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <th class="text-end">{{ ___('fees.total_discount') }}:</th>
+                                                                    <td class="text-end" id="totalDiscount">0.00</td>
+                                                                </tr>
+                                                                <tr class="table-success">
+                                                                    <th class="text-end"><strong>{{ ___('fees.net_total') }}:</strong></th>
+                                                                    <td class="text-end"><strong id="netTotal">0.00</strong></td>
+                                                                </tr>
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
 
                                 </div>
@@ -272,25 +338,38 @@
                                             <h4 class="card-title mb-0 flex-grow-1">{{ ___('settings.filter_options') }}</h4>
                                         </div>
                                         <div class="card-body">
-                                            <form action="#" method="GET">
+                                            <form action="{{ route('report-billing.search-unpaid-students') }}" method="POST" id="unpaidStudentsForm">
+                                                @csrf
                                                 <div class="row g-3">
 
-                                                    <!-- Session -->
+                                                    <!-- Start Date (Required) -->
+                                                    <div class="col-md-6">
+                                                        <label for="unpaid_start_date" class="form-label">{{ ___('common.start_date') }} <span class="text-danger">*</span></label>
+                                                        <input type="date" class="form-control" name="start_date" id="unpaid_start_date" required>
+                                                    </div>
+
+                                                    <!-- End Date (Required) -->
+                                                    <div class="col-md-6">
+                                                        <label for="unpaid_end_date" class="form-label">{{ ___('common.end_date') }} <span class="text-danger">*</span></label>
+                                                        <input type="date" class="form-control" name="end_date" id="unpaid_end_date" required>
+                                                    </div>
+
+                                                    <!-- Grade (Optional) -->
                                                     <div class="col-md-3">
                                                         <div class="single_large_selectBox">
-                                                            <select class="nice-select niceSelect bordered_style wide" name="session" id="unpaid_session">
-                                                                <option value="">{{ ___('common.select_session') }}</option>
-                                                                @foreach ($data['sessions'] as $session)
-                                                                    <option value="{{ $session->id }}">{{ $session->name }}</option>
+                                                            <select class="nice-select niceSelect bordered_style wide" name="grade" id="unpaid_grade">
+                                                                <option value="">{{ ___('academic.select_grade') }}</option>
+                                                                @foreach ($data['grades'] as $grade)
+                                                                    <option value="{{ $grade }}">{{ $grade }}</option>
                                                                 @endforeach
                                                             </select>
                                                         </div>
                                                     </div>
 
-                                                    <!-- Class -->
+                                                    <!-- Class (Optional) -->
                                                     <div class="col-md-3">
                                                         <div class="single_large_selectBox">
-                                                            <select class="nice-select niceSelect bordered_style wide" name="class" id="unpaid_class">
+                                                            <select class="nice-select niceSelect bordered_style wide" name="class_id" id="unpaid_class">
                                                                 <option value="">{{ ___('common.select_class') }}</option>
                                                                 @foreach ($data['classes'] as $class)
                                                                     <option value="{{ $class->id }}">{{ $class->name }}</option>
@@ -299,10 +378,10 @@
                                                         </div>
                                                     </div>
 
-                                                    <!-- Section -->
+                                                    <!-- Section (Optional) -->
                                                     <div class="col-md-3">
                                                         <div class="single_large_selectBox">
-                                                            <select class="nice-select niceSelect bordered_style wide" name="section" id="unpaid_section">
+                                                            <select class="nice-select niceSelect bordered_style wide" name="section_id" id="unpaid_section">
                                                                 <option value="">{{ ___('common.select_section') }}</option>
                                                                 @foreach ($data['sections'] as $section)
                                                                     <option value="{{ $section->id }}">{{ $section->name }}</option>
@@ -311,28 +390,27 @@
                                                         </div>
                                                     </div>
 
-                                                    <!-- Fee Type -->
+                                                    <!-- Status (Optional) -->
                                                     <div class="col-md-3">
                                                         <div class="single_large_selectBox">
-                                                            <select class="nice-select niceSelect bordered_style wide" name="fee_type" id="fee_type">
-                                                                <option value="">{{ ___('fees.fee_type') }}</option>
-                                                                <option value="tuition">{{ ___('fees.tuition_fee') }}</option>
-                                                                <option value="transport">{{ ___('fees.transport_fee') }}</option>
-                                                                <option value="library">{{ ___('fees.library_fee') }}</option>
+                                                            <select class="nice-select niceSelect bordered_style wide" name="status" id="unpaid_status">
+                                                                <option value="">{{ ___('common.select_status') }}</option>
+                                                                <option value="1">{{ ___('common.active') }}</option>
+                                                                <option value="0">{{ ___('common.inactive') }}</option>
                                                             </select>
                                                         </div>
                                                     </div>
 
-                                                    <!-- Due Date Start -->
-                                                    <div class="col-md-6">
-                                                        <label for="unpaid_due_start" class="form-label">{{ ___('fees.due_date_from') }}</label>
-                                                        <input type="date" class="form-control" name="due_start" id="unpaid_due_start">
-                                                    </div>
-
-                                                    <!-- Due Date End -->
-                                                    <div class="col-md-6">
-                                                        <label for="unpaid_due_end" class="form-label">{{ ___('fees.due_date_to') }}</label>
-                                                        <input type="date" class="form-control" name="due_end" id="unpaid_due_end">
+                                                    <!-- Shift (Optional) -->
+                                                    <div class="col-md-12">
+                                                        <div class="single_large_selectBox">
+                                                            <select class="nice-select niceSelect bordered_style wide" name="shift_id" id="unpaid_shift">
+                                                                <option value="">{{ ___('academic.select_shift') }}</option>
+                                                                @foreach ($data['shifts'] as $shift)
+                                                                    <option value="{{ $shift->id }}">{{ $shift->name }}</option>
+                                                                @endforeach
+                                                            </select>
+                                                        </div>
                                                     </div>
 
                                                     <!-- Search Button -->
@@ -346,10 +424,62 @@
                                         </div>
                                     </div>
 
-                                    <!-- Upcoming Placeholder -->
-                                    <div class="alert alert-info mt-3" role="alert">
-                                        <i class="las la-clock me-2"></i>
-                                        <strong>{{ ___('common.upcoming') }}</strong> - Backend implementation in progress
+                                    <!-- Results Section -->
+                                    <div id="unpaidStudentsResults" style="display: none;">
+                                        <!-- Action Buttons -->
+                                        <div class="card mt-3">
+                                            <div class="card-body">
+                                                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                                    <h5 class="mb-0">{{ ___('common.search_results') }}</h5>
+                                                    <div>
+                                                        <button type="button" class="btn btn-success" onclick="printUnpaidStudentsReport()">
+                                                            <i class="las la-print me-1"></i> {{ ___('common.print') }}
+                                                        </button>
+                                                        <button type="button" class="btn btn-danger" onclick="exportUnpaidStudentsPDF()">
+                                                            <i class="las la-file-pdf me-1"></i> {{ ___('common.export_pdf') }}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Results Table -->
+                                        <div class="card mt-3" id="unpaidStudentsPrintArea">
+                                            <div class="card-body">
+                                                <div class="table-responsive">
+                                                    <table class="table table-bordered table-hover">
+                                                        <thead class="table-light">
+                                                            <tr>
+                                                                <th>{{ ___('common.date') }}</th>
+                                                                <th>{{ ___('common.student_name') }}</th>
+                                                                <th>{{ ___('common.mobile') }}</th>
+                                                                <th>{{ ___('academic.grade') }}</th>
+                                                                <th>{{ ___('academic.class') }}</th>
+                                                                <th>{{ ___('academic.section') }}</th>
+                                                                <th class="text-end">{{ ___('fees.outstanding_amount') }}</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody id="unpaidStudentsTableBody">
+                                                            <!-- Results will be populated via JavaScript -->
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+
+                                                <!-- Summary Section -->
+                                                <div class="row mt-4">
+                                                    <div class="col-md-6 offset-md-6">
+                                                        <table class="table table-bordered">
+                                                            <tbody>
+                                                                <tr class="table-danger">
+                                                                    <th class="text-end"><strong>{{ ___('fees.total_outstanding') }}:</strong></th>
+                                                                    <td class="text-end"><strong id="totalOutstanding">0.00</strong></td>
+                                                                </tr>
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
 
                                 </div>
@@ -653,12 +783,231 @@
 
     @push('scripts')
     <script>
-        // Initialize nice-select
         $(document).ready(function() {
+            // Initialize nice-select
             if ($(".niceSelect").length) {
                 $(".niceSelect").niceSelect();
             }
-        });
+
+            // Paid Students Form Submission
+            $('#paidStudentsForm').on('submit', function(e) {
+                e.preventDefault();
+
+                const formData = new FormData(this);
+                const submitBtn = $(this).find('button[type="submit"]');
+                const originalText = submitBtn.html();
+
+                // Disable button and show loading
+                submitBtn.prop('disabled', true).html('<i class="las la-spinner la-spin me-1"></i> Searching...');
+
+                $.ajax({
+                    url: $(this).attr('action'),
+                    method: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function(response) {
+                        if (response.success) {
+                            // Populate results table
+                            let tableBody = '';
+                            if (response.data.length > 0) {
+                                response.data.forEach(function(row) {
+                                    tableBody += `
+                                        <tr>
+                                            <td>${row.payment_date || '-'}</td>
+                                            <td>${row.journal || '-'}</td>
+                                            <td>${row.student_name || '-'}</td>
+                                            <td>${row.mobile || '-'}</td>
+                                            <td class="text-end">${parseFloat(row.paid_amount || 0).toFixed(2)}</td>
+                                            <td class="text-end">${parseFloat(row.deposit_used || 0).toFixed(2)}</td>
+                                            <td class="text-end">${parseFloat(row.discount || 0).toFixed(2)}</td>
+                                        </tr>
+                                    `;
+                                });
+                            } else {
+                                tableBody = '<tr><td colspan="7" class="text-center">No records found</td></tr>';
+                            }
+
+                            $('#paidStudentsTableBody').html(tableBody);
+
+                            // Update summary
+                            $('#totalPaidAmount').text(response.summary.total_paid_amount);
+                            $('#totalDeposit').text(response.summary.total_deposit);
+                            $('#totalDiscount').text(response.summary.total_discount);
+                            $('#netTotal').text(response.summary.net_total);
+
+                            // Show results section
+                            $('#paidStudentsResults').slideDown();
+
+                            // Scroll to results
+                            $('html, body').animate({
+                                scrollTop: $('#paidStudentsResults').offset().top - 100
+                            }, 500);
+                        } else {
+                            alert('Error: ' + (response.error || 'Failed to fetch results'));
+                        }
+                    },
+                    error: function(xhr) {
+                        let errorMsg = 'An error occurred while processing your request.';
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMsg = xhr.responseJSON.message;
+                        }
+                        alert(errorMsg);
+                    },
+                    complete: function() {
+                        // Re-enable button
+                        submitBtn.prop('disabled', false).html(originalText);
+                    }
+                });
+            });
+
+            // Unpaid Students Form Submission
+            $('#unpaidStudentsForm').on('submit', function(e) {
+                e.preventDefault();
+
+                const formData = new FormData(this);
+                const submitBtn = $(this).find('button[type="submit"]');
+                const originalText = submitBtn.html();
+
+                // Disable button and show loading
+                submitBtn.prop('disabled', true).html('<i class="las la-spinner la-spin me-1"></i> Searching...');
+
+                $.ajax({
+                    url: $(this).attr('action'),
+                    method: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function(response) {
+                        if (response.success) {
+                            // Populate results table
+                            let tableBody = '';
+                            if (response.data.length > 0) {
+                                response.data.forEach(function(row) {
+                                    tableBody += `
+                                        <tr>
+                                            <td>${row.date || '-'}</td>
+                                            <td>${row.name || '-'}</td>
+                                            <td>${row.mobile || '-'}</td>
+                                            <td>${row.grade || '-'}</td>
+                                            <td>${row.class || '-'}</td>
+                                            <td>${row.section || '-'}</td>
+                                            <td class="text-end">${parseFloat(row.total_amount || 0).toFixed(2)}</td>
+                                        </tr>
+                                    `;
+                                });
+                            } else {
+                                tableBody = '<tr><td colspan="7" class="text-center">No records found</td></tr>';
+                            }
+
+                            $('#unpaidStudentsTableBody').html(tableBody);
+
+                            // Update summary
+                            $('#totalOutstanding').text(response.summary.total_outstanding);
+
+                            // Show results section
+                            $('#unpaidStudentsResults').slideDown();
+
+                            // Scroll to results
+                            $('html, body').animate({
+                                scrollTop: $('#unpaidStudentsResults').offset().top - 100
+                            }, 500);
+                        } else {
+                            alert('Error: ' + (response.error || 'Failed to fetch results'));
+                        }
+                    },
+                    error: function(xhr) {
+                        let errorMsg = 'An error occurred while processing your request.';
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMsg = xhr.responseJSON.message;
+                        }
+                        alert(errorMsg);
+                    },
+                    complete: function() {
+                        // Re-enable button
+                        submitBtn.prop('disabled', false).html(originalText);
+                    }
+                });
+            });
+        }); // End of document ready
+
+        // Print function for Paid Students Report
+        function printPaidStudentsReport() {
+            var printContents = document.getElementById('paidStudentsPrintArea').innerHTML;
+            var styles = Array.from(document.styleSheets)
+                .map(styleSheet => {
+                    try {
+                        return Array.from(styleSheet.cssRules)
+                            .map(rule => rule.cssText)
+                            .join('\n');
+                    } catch (e) {
+                        return '';
+                    }
+                })
+                .join('\n');
+
+            var printWindow = window.open('', '', 'height=600,width=800');
+            printWindow.document.write('<html><head><title>Paid Students Report</title>');
+            printWindow.document.write('<style>' + styles + '</style>');
+            printWindow.document.write('</head><body>');
+            printWindow.document.write('<h2>Paid Students Report</h2>');
+            printWindow.document.write(printContents);
+            printWindow.document.write('</body></html>');
+            printWindow.document.close();
+            printWindow.print();
+        }
+
+        // Export PDF function for Paid Students Report
+        function exportPaidStudentsPDF() {
+            // Get form data
+            const form = document.getElementById('paidStudentsForm');
+            const formData = new FormData(form);
+
+            // Build query string
+            const params = new URLSearchParams(formData);
+
+            // Open PDF export URL in new tab
+            window.open('{{ route("report-billing.export-paid-students-pdf") }}?' + params.toString(), '_blank');
+        }
+
+        // Print function for Unpaid Students Report
+        function printUnpaidStudentsReport() {
+            var printContents = document.getElementById('unpaidStudentsPrintArea').innerHTML;
+            var styles = Array.from(document.styleSheets)
+                .map(styleSheet => {
+                    try {
+                        return Array.from(styleSheet.cssRules)
+                            .map(rule => rule.cssText)
+                            .join('\n');
+                    } catch (e) {
+                        return '';
+                    }
+                })
+                .join('\n');
+
+            var printWindow = window.open('', '', 'height=600,width=800');
+            printWindow.document.write('<html><head><title>Unpaid Students Report</title>');
+            printWindow.document.write('<style>' + styles + '</style>');
+            printWindow.document.write('</head><body>');
+            printWindow.document.write('<h2>Unpaid Students Report</h2>');
+            printWindow.document.write(printContents);
+            printWindow.document.write('</body></html>');
+            printWindow.document.close();
+            printWindow.print();
+        }
+
+        // Export PDF function for Unpaid Students Report
+        function exportUnpaidStudentsPDF() {
+            // Get form data
+            const form = document.getElementById('unpaidStudentsForm');
+            const formData = new FormData(form);
+
+            // Build query string
+            const params = new URLSearchParams(formData);
+
+            // Open PDF export URL in new tab
+            window.open('{{ route("report-billing.export-unpaid-students-pdf") }}?' + params.toString(), '_blank');
+        }
     </script>
     @endpush
 @endsection
