@@ -194,11 +194,33 @@ class SiblingFeeCollectionService extends EnhancedFeeCollectionService
 
             $paymentDate = $paymentData['payment_date'] ?? now();
             $notes = $paymentData['notes'] ?? '';
+            $journalId = $paymentData['journal_id'] ?? null;
+
+            // Extract discount information
+            $discountType = $paymentData['discount_type'] ?? null;
+            $discountValue = (float) ($paymentData['discount_amount'] ?? 0);
+
+            // Calculate total outstanding amount for proportional discount distribution
+            $totalOutstanding = array_sum(array_column($siblingPayments, 'amount'));
+
+            // Calculate total discount amount
+            $totalDiscountAmount = 0;
+            if ($discountType && $discountValue > 0 && $totalOutstanding > 0) {
+                if ($discountType === 'percentage') {
+                    $totalDiscountAmount = ($totalOutstanding * $discountValue) / 100;
+                    // Cap percentage discount at 100%
+                    $totalDiscountAmount = min($totalDiscountAmount, $totalOutstanding);
+                } else {
+                    // Fixed amount discount
+                    $totalDiscountAmount = min($discountValue, $totalOutstanding);
+                }
+            }
 
             $results = [];
             $totalProcessed = 0;
             $totalDepositUsed = 0;
             $totalCashPayment = 0;
+            $totalDiscountApplied = 0;
 
             foreach ($siblingPayments as $siblingPayment) {
                 $student = Student::findOrFail($siblingPayment['student_id']);
@@ -214,21 +236,37 @@ class SiblingFeeCollectionService extends EnhancedFeeCollectionService
                     ->where('student_id', $student->id)
                     ->get();
 
+                // Calculate proportional discount for this sibling
+                $siblingDiscount = 0;
+                if ($totalDiscountAmount > 0 && $totalOutstanding > 0) {
+                    $proportion = $paymentAmount / $totalOutstanding;
+                    $siblingDiscount = $totalDiscountAmount * $proportion;
+                }
+
+                // Calculate net payment amount after discount
+                // User pays: original amount - discount
+                $netPaymentAmount = $paymentAmount - $siblingDiscount;
+
                 $siblingResult = $this->processSiblingIndividualPayment(
                     $student,
                     $feesToPay,
-                    $paymentAmount,
+                    $netPaymentAmount,  // Use net amount (after discount)
                     $paymentMode,
                     is_string($paymentMethod) ? $this->convertPaymentMethodToId($paymentMethod) : $paymentMethod,
                     $paymentDate,
-                    $notes
+                    $notes,
+                    $journalId,
+                    $siblingDiscount,
+                    $discountType
                 );
 
                 $results[] = [
                     'student_id' => $student->id,
                     'student_name' => $student->full_name,
                     'success' => $siblingResult['success'],
-                    'payment_amount' => $paymentAmount,
+                    'gross_amount' => $paymentAmount,           // Original amount before discount
+                    'discount_amount' => $siblingDiscount,       // Discount applied
+                    'net_payment' => $netPaymentAmount,          // Actual amount paid (gross - discount)
                     'deposit_used' => $siblingResult['deposit_used'] ?? 0,
                     'cash_payment' => $siblingResult['cash_payment'] ?? 0,
                     'transactions' => $siblingResult['transactions'] ?? [],
@@ -236,17 +274,21 @@ class SiblingFeeCollectionService extends EnhancedFeeCollectionService
                 ];
 
                 if ($siblingResult['success']) {
-                    $totalProcessed += $paymentAmount;
+                    $totalProcessed += $netPaymentAmount;       // Track net payment, not gross
                     $totalDepositUsed += $siblingResult['deposit_used'] ?? 0;
                     $totalCashPayment += $siblingResult['cash_payment'] ?? 0;
+                    $totalDiscountApplied += $siblingDiscount;
                 }
             }
 
             Log::info('Sibling payment processing completed', [
                 'payment_mode' => $paymentMode,
-                'total_processed' => $totalProcessed,
+                'total_net_payment' => $totalProcessed,         // Net amount actually paid
                 'total_deposit_used' => $totalDepositUsed,
                 'total_cash_payment' => $totalCashPayment,
+                'total_discount_applied' => $totalDiscountApplied,
+                'discount_type' => $discountType,
+                'total_coverage' => $totalProcessed + $totalDiscountApplied,  // Payment + Discount
                 'results_count' => count($results),
             ]);
 
@@ -254,9 +296,12 @@ class SiblingFeeCollectionService extends EnhancedFeeCollectionService
                 'success' => true,
                 'results' => $results,
                 'summary' => [
-                    'total_processed' => (float) $totalProcessed,
+                    'total_net_payment' => (float) $totalProcessed,           // Net payment (after discount)
+                    'total_discount_applied' => (float) $totalDiscountApplied, // Total discount
+                    'total_coverage' => (float) ($totalProcessed + $totalDiscountApplied),  // Total covered
                     'total_deposit_used' => (float) $totalDepositUsed,
                     'total_cash_payment' => (float) $totalCashPayment,
+                    'discount_type' => $discountType,
                     'successful_payments' => count(array_filter($results, fn($r) => $r['success'])),
                     'failed_payments' => count(array_filter($results, fn($r) => !$r['success'])),
                 ],
@@ -274,7 +319,10 @@ class SiblingFeeCollectionService extends EnhancedFeeCollectionService
         string $paymentMode,
         int $paymentMethod,
         $paymentDate,
-        string $notes
+        string $notes,
+        ?int $journalId = null,
+        float $discountAmount = 0,
+        ?string $discountType = null
     ): array {
         try {
             $parent = $student->parent;
@@ -293,15 +341,37 @@ class SiblingFeeCollectionService extends EnhancedFeeCollectionService
                 }
             }
 
-            // Distribute payment across fees
-            $remainingAmount = $paymentAmount;
-            foreach ($feesToPay as $feeCollect) {
-                if ($remainingAmount <= 0) break;
+            // Distribute payment and discount across fees proportionally
+            // NOTE: $paymentAmount here is already the NET amount (after discount deduction)
+            // Example: If user owes $30 and has $10 discount, $paymentAmount = $20
+            // The $discountAmount ($10) is stored separately and distributed proportionally
+            // Both payment and discount are split proportionally based on each fee's balance
+            $totalFeesBalance = $feesToPay->sum(function($fee) {
+                return $fee->getBalanceAmount();
+            });
 
+            foreach ($feesToPay as $feeCollect) {
                 $feeBalance = $feeCollect->getBalanceAmount();
-                $feePayment = min($remainingAmount, $feeBalance);
+
+                // Distribute payment proportionally to match discount distribution
+                if ($totalFeesBalance > 0) {
+                    $feeProportion = $feeBalance / $totalFeesBalance;
+                    $feePayment = $paymentAmount * $feeProportion;
+                    $feePayment = min($feePayment, $feeBalance); // Cap at fee balance
+                    $feePayment = round($feePayment, 2);
+                } else {
+                    $feePayment = 0;
+                }
 
                 if ($feePayment > 0) {
+                    // Calculate proportional discount for this specific fee
+                    $feeDiscount = 0;
+                    if ($discountAmount > 0 && $totalFeesBalance > 0) {
+                        $feeProportion = $feeBalance / $totalFeesBalance;
+                        $feeDiscount = $discountAmount * $feeProportion;
+                        $feeDiscount = round($feeDiscount, 2);
+                    }
+
                     // Create payment transaction
                     $transaction = PaymentTransaction::create([
                         'fees_collect_id' => $feeCollect->id,
@@ -314,22 +384,41 @@ class SiblingFeeCollectionService extends EnhancedFeeCollectionService
                             'SIBLING_DEPOSIT_' . time() :
                             ($paymentData['transaction_reference'] ?? null),
                         'payment_notes' => $notes . ' (Sibling Payment)',
+                        'journal_id' => $journalId,
                         'collected_by' => auth()->id(),
                         'branch_id' => activeBranch(),
                     ]);
 
-                    // Update fee collection
+                    // Update fee collection with payment and discount
+                    // Payment is the NET amount (already reduced by discount)
                     $feeCollect->increment('total_paid', $feePayment);
+
+                    // Store discount information in fees_collects table
+                    // Discount + Payment = Total Coverage
+                    // Example: $10 payment + $5 discount = $15 fee covered
+                    if ($feeDiscount > 0) {
+                        $feeCollect->update([
+                            'discount_amount' => ($feeCollect->discount_amount ?? 0) + $feeDiscount,
+                            'discount_type' => $discountType,
+                            'discount_applied' => ($feeCollect->discount_applied ?? 0) + $feeDiscount, // Legacy field
+                        ]);
+                    }
+
+                    // Update payment status based on new balance
+                    // Balance = amount - total_paid - discount_applied
                     $feeCollect->updatePaymentStatus();
 
                     $transactions[] = $transaction;
-                    $remainingAmount -= $feePayment;
                 }
             }
 
+            // Calculate actual overpayment (proportional distribution may leave unused funds)
+            $totalActualPayment = collect($transactions)->sum('amount');
+            $overpayment = max(0, $paymentAmount - $totalActualPayment);
+
             // Handle overpayment by depositing to parent account
-            if ($remainingAmount > 0 && $parent && $paymentMode === 'direct') {
-                $this->depositService->addDeposit($parent, $remainingAmount, $student, 'Fee overpayment deposit');
+            if ($overpayment > 0 && $parent && $paymentMode === 'direct') {
+                $this->depositService->addDeposit($parent, $overpayment, $student, 'Fee overpayment deposit');
             }
 
             return [
@@ -337,7 +426,7 @@ class SiblingFeeCollectionService extends EnhancedFeeCollectionService
                 'deposit_used' => (float) $depositUsed,
                 'cash_payment' => (float) $cashPayment,
                 'transactions' => $transactions,
-                'overpayment_deposited' => (float) max(0, $remainingAmount),
+                'overpayment_deposited' => (float) $overpayment,
             ];
 
         } catch (Exception $e) {
@@ -388,6 +477,28 @@ class SiblingFeeCollectionService extends EnhancedFeeCollectionService
         if (empty($siblingPayments)) {
             $errors[] = 'No sibling payments specified';
             return ['valid' => false, 'errors' => $errors];
+        }
+
+        // Validate discount if provided
+        $discountType = $paymentData['discount_type'] ?? null;
+        $discountAmount = (float) ($paymentData['discount_amount'] ?? 0);
+
+        if ($discountType && $discountAmount > 0) {
+            // Validate discount type
+            if (!in_array($discountType, ['fixed', 'percentage'])) {
+                $errors[] = 'Invalid discount type. Must be "fixed" or "percentage".';
+            }
+
+            // Validate percentage discount
+            if ($discountType === 'percentage' && $discountAmount > 100) {
+                $errors[] = 'Percentage discount cannot exceed 100%.';
+            }
+
+            // Validate discount doesn't exceed total payment
+            $totalPayment = array_sum(array_column($siblingPayments, 'amount'));
+            if ($discountType === 'fixed' && $discountAmount > $totalPayment) {
+                $errors[] = 'Fixed discount amount cannot exceed total payment amount.';
+            }
         }
 
         $totalPayment = 0;

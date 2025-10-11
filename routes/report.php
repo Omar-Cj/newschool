@@ -91,6 +91,19 @@ Route::middleware(saasMiddleware())->group(function () {
                     Route::get('/pdf-guardian-list', 'generateGuardianListPDF')->name('report-student.pdf-guardian-list')->middleware('PermissionCheck:student_reports_read');
                 });
 
+                Route::controller(\App\Http\Controllers\Report\BillingReportController::class)->prefix('report-billing')->group(function () {
+                    Route::get('/', 'index')->name('report-billing.index')->middleware('PermissionCheck:billing_reports_read');
+                    // Future routes will be added here for each report type
+                });
+
+                Route::controller(\App\Http\Controllers\Report\ExaminationReportController::class)->prefix('report-examination')->group(function () {
+                    Route::get('/', 'index')->name('report-examination.index')->middleware('PermissionCheck:report_marksheet_read');
+                    Route::get('/search-marksheet', 'searchMarksheet')->name('report-examination.search-marksheet')->middleware('PermissionCheck:report_marksheet_read');
+                    Route::post('/search-progress-card', 'searchProgressCard')->name('report-examination.search-progress-card')->middleware('PermissionCheck:report_progress_card_read');
+                    Route::get('/get-students', 'getStudents')->name('report-examination.get-students');
+                    Route::get('/get-terms/{session}', 'getTerms')->name('report-examination.get-terms');
+                });
+
                 Route::controller(MarkSheetApprovalController::class)->prefix('report-marksheet')->group(function () {
                     Route::post('/', 'approveOrReject')->name('report-marksheet.approve-or-reject');
                 });

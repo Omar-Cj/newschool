@@ -227,8 +227,14 @@ class StudentController extends Controller
 
             $fees['total_fees'] = $allGeneratedFees->sum('amount');
             $fees['total_paid'] = $allGeneratedFees->sum('total_paid');
-            $fees['fees_due'] = $fees['total_fees'] - $fees['total_paid'];
             $fees['total_discounts'] = $allGeneratedFees->sum('discount_applied');
+
+            // Use getBalanceAmount() for consistency with listing page and accurate outstanding calculation
+            // Formula: (amount + fine + late_fee - discount_applied) - total_paid
+            $fees['fees_due'] = $allGeneratedFees->sum(function($fee) {
+                return $fee->getBalanceAmount();
+            });
+
             $fees['fees_payments'] = $data->feesPayments;
 
             // Get monthly fees grouped by billing period for service-based system
@@ -543,11 +549,13 @@ class StudentController extends Controller
                         ->where('academic_year_id', $academicYearId)
                         ->get();
 
-                    $totalFees = $allGeneratedFees->sum('amount');
-                    $totalPaid = $allGeneratedFees->sum('total_paid');
-                    $outstandingAmount = $totalFees - $totalPaid;
+                    // Use the model's getBalanceAmount() method which correctly handles discounts
+                    // Formula: (amount + fine + late_fee - discount_applied) - total_paid
+                    $outstandingAmount = $allGeneratedFees->sum(function($fee) {
+                        return $fee->getBalanceAmount();
+                    });
 
-                    $row->outstanding_amount = max(0, $outstandingAmount); // Ensure non-negative
+                    $row->outstanding_amount = $outstandingAmount; // Already non-negative from getBalanceAmount()
                 } else {
                     // No active services or fallback
                     $row->outstanding_amount = 0;

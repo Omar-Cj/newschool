@@ -540,6 +540,8 @@ class FeesCollectController extends Controller
             'sibling_payments.*.fee_ids.*' => 'exists:fees_collects,id',
             'payment_date' => 'required|date',
             'payment_notes' => 'nullable|string|max:500',
+            'discount_type' => 'nullable|in:fixed,percentage',
+            'discount_amount' => 'nullable|numeric|min:0',
         ];
 
         // Add validation for direct payment mode

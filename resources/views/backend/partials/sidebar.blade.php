@@ -736,10 +736,9 @@
                             <span class="on-half-expanded">{{ ___('settings.Report') }}</span>
                         </a>
                         <ul class="child-menu-list">
-                            @if (hasPermission('report_marksheet_read'))
-                                <li class="sidebar-menu-item {{ set_menu(['report-marksheet*']) }}">
-                                    <a
-                                        href="{{ route('report-marksheet.index') }}">{{ ___('settings.exam_report') }}</a>
+                            @if (hasPermission('report_marksheet_read') || hasPermission('report_progress_card_read'))
+                                <li class="sidebar-menu-item {{ set_menu(['report-examination*']) }}">
+                                    <a href="{{ route('report-examination.index') }}">{{ ___('settings.examination') }}</a>
                                 </li>
                             @endif
                             @if (hasPermission('student_reports_read'))
@@ -748,16 +747,16 @@
                                         href="{{ route('report-student.index') }}">{{ ___('settings.student_report') }}</a>
                                 </li>
                             @endif
+                            @if (hasPermission('billing_reports_read'))
+                                <li class="sidebar-menu-item {{ set_menu(['report-billing*']) }}">
+                                    <a
+                                        href="{{ route('report-billing.index') }}">{{ ___('settings.billing_report') }}</a>
+                                </li>
+                            @endif
                             @if (hasPermission('report_merit_list_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['report-merit-list*']) }}">
                                     <a
                                         href="{{ route('report-merit-list.index') }}">{{ ___('settings.merit_list') }}</a>
-                                </li>
-                            @endif
-                            @if (hasPermission('report_progress_card_read'))
-                                <li class="sidebar-menu-item {{ set_menu(['report-progress-card*']) }}">
-                                    <a
-                                        href="{{ route('report-progress-card.index') }}">{{ ___('settings.progress_card') }}</a>
                                 </li>
                             @endif
                             @if (hasPermission('report_due_fees_read'))

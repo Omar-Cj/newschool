@@ -878,11 +878,13 @@ class StudentRepository implements StudentInterface
                         ->where('academic_year_id', $academicYearId)
                         ->get();
 
-                    $totalFees = $allGeneratedFees->sum('amount');
-                    $totalPaid = $allGeneratedFees->sum('total_paid');
-                    $outstandingAmount = $totalFees - $totalPaid;
+                    // Use the model's getBalanceAmount() method which correctly handles discounts
+                    // Formula: (amount + fine + late_fee - discount_applied) - total_paid
+                    $outstandingAmount = $allGeneratedFees->sum(function($fee) {
+                        return $fee->getBalanceAmount();
+                    });
 
-                    $row->outstanding_amount = max(0, $outstandingAmount);
+                    $row->outstanding_amount = $outstandingAmount; // Already non-negative from getBalanceAmount()
                 } else {
                     $row->outstanding_amount = 0;
                 }
