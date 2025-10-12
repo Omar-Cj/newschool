@@ -795,6 +795,11 @@
                                         href="{{ route('report-attendance.report') }}">{{ ___('settings.Attendance') }}</a>
                                 </li>
                             @endif
+                            @if (hasPermission('report_center_read'))
+                                <li class="sidebar-menu-item {{ set_menu(['report-center*']) }}">
+                                    <a href="{{ route('report-center.index') }}">{{ ___('settings.report_center') }}</a>
+                                </li>
+                            @endif
                         </ul>
                     </li>
                 @endif

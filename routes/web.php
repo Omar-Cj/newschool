@@ -382,3 +382,7 @@ Route::middleware(saasMiddleware())->group(function () {
 
 // Include parent deposits routes
 require __DIR__ . '/parent_deposits.php';
+
+// Include report routes
+require __DIR__ . '/report.php';
+require __DIR__ . '/reports.php';

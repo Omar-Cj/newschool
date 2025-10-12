@@ -34,6 +34,7 @@ use App\Http\Controllers\Api\Teacher\TeacherStudentInfoController;
 use App\Http\Controllers\Api\Teacher\TeacherLiveClassApiController;
 use App\Http\Controllers\Api\Instructor\InstructorLivechatAPIController;
 use App\Http\Controllers\Api\Parent\HomeworkAPIController as ParentHomeworkAPIController;
+use App\Http\Controllers\ReportController;
 
 
 Route::middleware(saasApiMiddleware())->group(function () {
@@ -180,7 +181,32 @@ Route::middleware(saasApiMiddleware())->group(function () {
 
             });
 
+            // Report Center API Routes
+            Route::group(['prefix' => 'reports'], function () {
+                // List all reports grouped by category
+                Route::get('/', [ReportController::class, 'index']);
 
+                // Get all report categories
+                Route::get('/categories', [ReportController::class, 'categories']);
+
+                // Get specific report details with parameters
+                Route::get('/{reportId}', [ReportController::class, 'show']);
+
+                // Get parameters for a specific report
+                Route::get('/{reportId}/parameters', [ReportController::class, 'getParameters']);
+
+                // Get dependent parameter values
+                Route::get('/parameters/{parameterId}/dependent-values', [ReportController::class, 'getDependentValues']);
+
+                // Execute report with parameters
+                Route::post('/{reportId}/execute', [ReportController::class, 'execute']);
+
+                // Export report in specified format
+                Route::post('/{reportId}/export/{format}', [ReportController::class, 'export']);
+
+                // Get report execution statistics
+                Route::get('/{reportId}/statistics', [ReportController::class, 'statistics']);
+            });
 
         });
 

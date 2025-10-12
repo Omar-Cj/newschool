@@ -117,6 +117,11 @@ Route::middleware(saasMiddleware())->group(function () {
                     Route::post('/', 'approveOrReject')->name('report-marksheet.approve-or-reject');
                 });
 
+                // Report Center - Metadata-Driven Dynamic Reporting System
+                Route::controller(\App\Http\Controllers\ReportController::class)->prefix('report-center')->group(function () {
+                    Route::get('/', 'indexWeb')->name('report-center.index')->middleware('PermissionCheck:report_center_read');
+                });
+
             });
         });
     });

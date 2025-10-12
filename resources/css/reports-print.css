@@ -1,0 +1,511 @@
+/**
+ * Reports Print Stylesheet
+ * Optimizes report layout for printing with proper page breaks and formatting
+ */
+
+/* ============================================
+   Print Reset & Base Styles
+   ============================================ */
+
+@media print {
+    /* Reset margins and setup page */
+    @page {
+        margin: 1.5cm;
+        size: A4 portrait;
+    }
+
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+    }
+
+    body {
+        font-size: 10pt;
+        line-height: 1.4;
+        background: white !important;
+        color: black !important;
+    }
+
+    /* ============================================
+       Hide Non-Printable Elements
+       ============================================ */
+
+    /* Bootstrap and UI elements to hide */
+    .d-print-none,
+    .sidebar,
+    .navbar,
+    .nav,
+    .breadcrumb,
+    .btn,
+    button,
+    .dropdown,
+    .modal,
+    .toast,
+    .alert-dismissible .btn-close,
+    .pagination,
+    .export-buttons,
+    .print-actions,
+    .data-table-search,
+    .form-control,
+    input,
+    select,
+    textarea,
+    .spinner-border,
+    .loading-state,
+    .empty-state,
+    .error-state {
+        display: none !important;
+    }
+
+    /* Hide navigation and interactive elements */
+    a[href]:after {
+        content: none !important;
+    }
+
+    nav,
+    footer,
+    aside {
+        display: none !important;
+    }
+
+    /* ============================================
+       Report Header
+       ============================================ */
+
+    .report-header {
+        margin-bottom: 20pt;
+        padding-bottom: 10pt;
+        border-bottom: 2pt solid #333;
+        page-break-after: avoid;
+    }
+
+    .report-header h3 {
+        font-size: 16pt;
+        font-weight: bold;
+        margin-bottom: 5pt;
+        color: #000;
+    }
+
+    .report-header p {
+        font-size: 9pt;
+        color: #333;
+        margin: 0;
+    }
+
+    .report-meta {
+        font-size: 8pt;
+        color: #666;
+    }
+
+    /* ============================================
+       Table Styles
+       ============================================ */
+
+    .table-responsive {
+        overflow: visible !important;
+    }
+
+    table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        page-break-inside: auto;
+        font-size: 9pt;
+    }
+
+    /* Table headers */
+    thead {
+        display: table-header-group;
+        page-break-inside: avoid;
+        page-break-after: avoid;
+    }
+
+    thead th {
+        background-color: #f8f9fa !important;
+        color: #000 !important;
+        font-weight: bold;
+        padding: 8pt 6pt !important;
+        border: 1pt solid #dee2e6 !important;
+        text-align: left;
+        vertical-align: middle;
+    }
+
+    /* Remove sort indicators */
+    thead th .sort-indicator {
+        display: none !important;
+    }
+
+    /* Table body */
+    tbody {
+        display: table-row-group;
+    }
+
+    tbody tr {
+        page-break-inside: avoid;
+        page-break-after: auto;
+    }
+
+    tbody td {
+        padding: 6pt 6pt !important;
+        border: 1pt solid #dee2e6 !important;
+        color: #000 !important;
+        vertical-align: top;
+    }
+
+    /* Alternate row colors for better readability */
+    tbody tr:nth-child(even) {
+        background-color: #f8f9fa !important;
+    }
+
+    tbody tr:nth-child(odd) {
+        background-color: #ffffff !important;
+    }
+
+    /* Table footer */
+    tfoot {
+        display: table-footer-group;
+        page-break-inside: avoid;
+        font-weight: bold;
+        background-color: #e9ecef !important;
+    }
+
+    tfoot td {
+        padding: 8pt 6pt !important;
+        border: 1pt solid #dee2e6 !important;
+    }
+
+    /* ============================================
+       Badge and Status Formatting
+       ============================================ */
+
+    .badge {
+        padding: 2pt 6pt !important;
+        border-radius: 3pt;
+        font-size: 8pt;
+        font-weight: normal;
+        border: 1pt solid #333;
+        color: #000 !important;
+        background: #fff !important;
+    }
+
+    .badge.bg-success {
+        background: #d4edda !important;
+        border-color: #28a745 !important;
+    }
+
+    .badge.bg-warning {
+        background: #fff3cd !important;
+        border-color: #ffc107 !important;
+    }
+
+    .badge.bg-danger {
+        background: #f8d7da !important;
+        border-color: #dc3545 !important;
+    }
+
+    .badge.bg-info {
+        background: #d1ecf1 !important;
+        border-color: #17a2b8 !important;
+    }
+
+    .badge.bg-secondary {
+        background: #e2e3e5 !important;
+        border-color: #6c757d !important;
+    }
+
+    /* ============================================
+       Number and Currency Formatting
+       ============================================ */
+
+    /* Right-align numeric columns */
+    td[class*="number"],
+    td[class*="currency"],
+    td[class*="percentage"] {
+        text-align: right !important;
+        font-family: 'Courier New', monospace;
+    }
+
+    /* Bold currency values */
+    td[class*="currency"] {
+        font-weight: 500;
+    }
+
+    /* ============================================
+       Page Breaks
+       ============================================ */
+
+    /* Avoid breaking inside these elements */
+    .report-viewer-wrapper,
+    .report-header,
+    .summary-view,
+    .card {
+        page-break-inside: avoid;
+    }
+
+    /* Force page break before major sections */
+    .page-break-before {
+        page-break-before: always;
+    }
+
+    /* Prevent orphaned rows */
+    tr {
+        page-break-inside: avoid;
+    }
+
+    /* Keep at least 3 rows together */
+    tbody tr:nth-child(3n) {
+        page-break-after: avoid;
+    }
+
+    /* ============================================
+       Summary Cards (for summary reports)
+       ============================================ */
+
+    .summary-view .card {
+        border: 1pt solid #dee2e6 !important;
+        margin-bottom: 10pt;
+        page-break-inside: avoid;
+    }
+
+    .summary-view .card-body {
+        padding: 10pt !important;
+    }
+
+    .summary-view .card-title {
+        font-size: 10pt;
+        font-weight: bold;
+        margin-bottom: 5pt;
+        color: #000;
+    }
+
+    .summary-view h2 {
+        font-size: 18pt;
+        font-weight: bold;
+        margin: 0;
+        color: #000;
+    }
+
+    /* ============================================
+       Typography
+       ============================================ */
+
+    h1, h2, h3, h4, h5, h6 {
+        page-break-after: avoid;
+        color: #000;
+    }
+
+    h1 {
+        font-size: 18pt;
+    }
+
+    h2 {
+        font-size: 16pt;
+    }
+
+    h3 {
+        font-size: 14pt;
+    }
+
+    h4 {
+        font-size: 12pt;
+    }
+
+    h5, h6 {
+        font-size: 10pt;
+    }
+
+    p {
+        orphans: 3;
+        widows: 3;
+    }
+
+    /* ============================================
+       Links
+       ============================================ */
+
+    a {
+        text-decoration: none !important;
+        color: #000 !important;
+    }
+
+    /* ============================================
+       Images and Charts
+       ============================================ */
+
+    img,
+    svg {
+        max-width: 100% !important;
+        page-break-inside: avoid;
+    }
+
+    /* Hide decorative SVG icons */
+    svg[width="16"],
+    svg[width="20"],
+    svg[width="24"] {
+        display: none !important;
+    }
+
+    /* Keep charts visible */
+    .chart-container svg,
+    canvas {
+        display: block !important;
+        max-width: 100%;
+        height: auto !important;
+    }
+
+    /* ============================================
+       Empty/Null Values
+       ============================================ */
+
+    .text-muted {
+        color: #999 !important;
+        font-style: italic;
+    }
+
+    /* ============================================
+       Header and Footer (Auto-generated)
+       ============================================ */
+
+    @page {
+        @top-right {
+            content: "Page " counter(page) " of " counter(pages);
+            font-size: 8pt;
+            color: #666;
+        }
+
+        @bottom-left {
+            content: "Generated: " attr(data-generated-date);
+            font-size: 8pt;
+            color: #666;
+        }
+
+        @bottom-right {
+            content: attr(data-report-name);
+            font-size: 8pt;
+            color: #666;
+        }
+    }
+
+    /* ============================================
+       Utility Classes
+       ============================================ */
+
+    .print-only {
+        display: block !important;
+    }
+
+    .print-page-break {
+        page-break-after: always;
+    }
+
+    .print-no-break {
+        page-break-inside: avoid;
+    }
+
+    /* ============================================
+       Specific Column Width Optimizations
+       ============================================ */
+
+    /* ID columns */
+    th[data-column="id"],
+    td[data-column="id"] {
+        width: 5%;
+        text-align: center;
+    }
+
+    /* Date columns */
+    th[data-column*="date"],
+    td[data-column*="date"] {
+        width: 10%;
+        white-space: nowrap;
+    }
+
+    /* Status columns */
+    th[data-column="status"],
+    td[data-column="status"] {
+        width: 8%;
+        text-align: center;
+    }
+
+    /* Amount/Currency columns */
+    th[data-column*="amount"],
+    th[data-column*="price"],
+    th[data-column*="total"],
+    td[data-column*="amount"],
+    td[data-column*="price"],
+    td[data-column*="total"] {
+        width: 12%;
+        text-align: right;
+    }
+
+    /* ============================================
+       Landscape Orientation (for wide tables)
+       ============================================ */
+
+    @page landscape {
+        size: A4 landscape;
+    }
+
+    .print-landscape {
+        page: landscape;
+    }
+
+    /* ============================================
+       Accessibility
+       ============================================ */
+
+    /* Ensure sufficient contrast */
+    .text-light,
+    .text-white {
+        color: #333 !important;
+    }
+
+    /* Make focus indicators visible */
+    *:focus {
+        outline: none !important;
+    }
+
+    /* ============================================
+       Print-Specific Additions
+       ============================================ */
+
+    /* Add generated timestamp */
+    .report-results-container::before {
+        content: "Generated on " attr(data-generated) " at " attr(data-time);
+        display: block;
+        font-size: 8pt;
+        color: #666;
+        margin-bottom: 10pt;
+        text-align: right;
+    }
+
+    /* Confidentiality notice */
+    .report-results-container::after {
+        content: "This report is confidential and intended for authorized personnel only.";
+        display: block;
+        font-size: 7pt;
+        color: #999;
+        margin-top: 20pt;
+        padding-top: 10pt;
+        border-top: 1pt solid #dee2e6;
+        text-align: center;
+        page-break-inside: avoid;
+    }
+}
+
+/* ============================================
+   Print Preview Mode (optional)
+   ============================================ */
+
+.print-preview {
+    background: #f5f5f5;
+    padding: 20px;
+}
+
+.print-preview .report-results-container {
+    background: white;
+    padding: 1.5cm;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    max-width: 21cm;
+    margin: 0 auto;
+}
