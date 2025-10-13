@@ -74,6 +74,12 @@ class ReportExecutionService
             // Transform results based on report type
             $transformedResults = $this->transformResults($results, $report->report_type);
 
+            // Add exam gradebook summary if applicable
+            $transformedResults = $this->addExamGradebookSummary(
+                $transformedResults,
+                $report->procedure_name
+            );
+
             Log::info('Report executed successfully', [
                 'report_id' => $reportId,
                 'report_name' => $report->name,
@@ -392,5 +398,108 @@ class ReportExecutionService
         }
 
         return true;
+    }
+
+    /**
+     * Add exam gradebook summary calculations
+     *
+     * Calculates per-column totals and grand total for GetStudentGradebook procedure
+     * Only applies to gradebook report type
+     *
+     * @param array $data Transformed report data with columns and rows
+     * @param string $procedureName Stored procedure name
+     * @return array Enhanced data with summary metadata
+     */
+    private function addExamGradebookSummary(array $data, string $procedureName): array
+    {
+        // Only apply summary to GetStudentGradebook procedure
+        if ($procedureName !== 'GetStudentGradebook') {
+            return $data;
+        }
+
+        // Ensure data structure contains rows and columns
+        if (!isset($data['rows']) || !isset($data['columns']) || empty($data['rows'])) {
+            return $data;
+        }
+
+        try {
+            $rows = $data['rows'];
+            $columns = $data['columns'];
+
+            // Initialize totals array
+            $totals = [];
+            $columnLabels = [];
+
+            // Identify numeric columns (all except first column "Subject Name")
+            $numericColumns = [];
+            foreach ($columns as $index => $column) {
+                // Skip first column (Subject Name)
+                if ($index === 0) {
+                    continue;
+                }
+
+                $field = $column['field'] ?? null;
+                if ($field) {
+                    $numericColumns[] = $field;
+                    $columnLabels[] = $column['label'] ?? $field;
+                    $totals[$field] = 0;
+                }
+            }
+
+            // Calculate sum for each numeric column
+            foreach ($rows as $row) {
+                foreach ($numericColumns as $field) {
+                    $value = $row[$field] ?? 0;
+
+                    // Convert to numeric, handling null and non-numeric values
+                    if (is_numeric($value)) {
+                        $totals[$field] += (float) $value;
+                    }
+                }
+            }
+
+            // Calculate grand total (sum of all column totals)
+            $grandTotal = array_sum($totals);
+
+            // Restructure summary data to row-based format for easier PDF rendering
+            $summaryRows = [];
+            foreach ($columnLabels as $index => $label) {
+                // Clean exam name - remove any " Total" suffix if present to avoid duplicates
+                $cleanLabel = preg_replace('/\s+Total$/i', '', trim($label));
+
+                $summaryRows[] = [
+                    'exam_name' => $cleanLabel,
+                    'total_marks' => $totals[$numericColumns[$index]] ?? 0
+                ];
+            }
+
+            // Add "Total All Exams" as final row instead of separate grandTotal field
+            $summaryRows[] = [
+                'exam_name' => 'Total All Exams',
+                'total_marks' => $grandTotal
+            ];
+
+            // Add summary to data structure in new format (no separate grandTotal)
+            $data['summary'] = [
+                'rows' => $summaryRows,
+            ];
+
+            Log::debug('Gradebook summary calculated', [
+                'procedure' => $procedureName,
+                'total_columns' => count($numericColumns),
+                'grand_total' => $grandTotal,
+                'summary_rows' => count($summaryRows),
+                'includes_total_row' => true,
+            ]);
+
+        } catch (\Exception $e) {
+            // Log error but don't fail the report
+            Log::warning('Failed to calculate gradebook summary', [
+                'procedure' => $procedureName,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return $data;
     }
 }

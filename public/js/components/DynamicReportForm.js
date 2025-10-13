@@ -694,7 +694,7 @@ export class DynamicReportForm {
 
     /**
      * Render tabular report (columns and rows structure)
-     * @param {Object} data - Report data with {columns, rows}
+     * @param {Object} data - Report data with {columns, rows, summary}
      * @returns {string} HTML string
      */
     renderTabularReport(data) {
@@ -713,9 +713,11 @@ export class DynamicReportForm {
 
         const rows = data?.rows;
         const columns = data?.columns;
+        const summary = data?.summary;
 
         console.log('📋 Tabular rows:', rows);
         console.log('🔧 Tabular columns:', columns);
+        console.log('📊 Summary data:', summary);
 
         // Validate rows
         if (!rows || !Array.isArray(rows)) {
@@ -744,8 +746,206 @@ export class DynamicReportForm {
             return this.generateResultsTable(rows, []);
         }
 
-        // Use existing table generation method
-        return this.generateResultsTable(rows, columns);
+        // Generate main data table
+        let tableHtml = this.generateResultsTable(rows, columns);
+
+        // Append summary table if summary data exists
+        if (summary && typeof summary === 'object') {
+            console.log('✅ Summary data detected, rendering summary table');
+            const summaryHtml = this.renderSummaryTable(summary, columns);
+            tableHtml = `
+                ${tableHtml}
+                ${summaryHtml}
+            `;
+        } else {
+            console.log('ℹ️ No summary data available');
+        }
+
+        return tableHtml;
+    }
+
+    /**
+     * Render summary totals table
+     * @param {Object} summary - Summary data object with exam type totals and rows
+     * @param {Array} columns - Column definitions from main report
+     * @returns {string} HTML string for summary section
+     */
+    renderSummaryTable(summary, columns) {
+        console.log('📊 renderSummaryTable called with:', { summary, columns });
+
+        // Validate summary data
+        if (!summary || typeof summary !== 'object') {
+            console.warn('⚠️ Invalid summary data:', summary);
+            return '';
+        }
+
+        // Check for new structure with rows array
+        if (summary.rows && Array.isArray(summary.rows) && summary.rows.length > 0) {
+            console.log('✅ New summary structure detected with rows array');
+
+            // Build exam rows from summary.rows (only Exam Name and Total Mark columns)
+            const examRows = summary.rows.map((row, index) => {
+                // Check if this is the last row (Total All Exams)
+                const isTotal = index === summary.rows.length - 1;
+                const rowClass = isTotal ? 'total-all-exams-row' : 'exam-row';
+
+                return `
+                    <tr class="${rowClass}">
+                        <td class="exam-name">${this.escapeHtml(row.exam_name || 'Unknown Exam')}</td>
+                        <td class="exam-total">${this.escapeHtml(row.total_marks || 0)}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            return `
+                <div class="summary-section mt-4">
+                    <h5 class="mb-3">
+                        <i class="bi bi-calculator me-2"></i>Exam Summary
+                    </h5>
+                    <div class="table-responsive">
+                        <table class="table gradebook-summary-table">
+                            <thead>
+                                <tr>
+                                    <th>Exam Name</th>
+                                    <th>Total Mark</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${examRows}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <style>
+                    .gradebook-summary-table {
+                        border-radius: 8px;
+                        overflow: hidden;
+                        border: 1px solid #dee2e6;
+                    }
+
+                    .gradebook-summary-table thead {
+                        background: #e8e8e8;
+                    }
+
+                    .gradebook-summary-table thead th {
+                        padding: 12px 16px;
+                        font-weight: 600;
+                        font-size: 15px;
+                        border: none;
+                        color: #000;
+                    }
+
+                    .gradebook-summary-table thead th:last-child {
+                        text-align: right;
+                    }
+
+                    .gradebook-summary-table tbody tr.exam-row {
+                        background: #ffffff;
+                    }
+
+                    .gradebook-summary-table tbody tr.exam-row:nth-child(even) {
+                        background: #f8f9fa;
+                    }
+
+                    .gradebook-summary-table tbody td {
+                        padding: 12px 16px;
+                        border: 1px solid #dee2e6;
+                    }
+
+                    .gradebook-summary-table .exam-name {
+                        font-weight: 500;
+                    }
+
+                    .gradebook-summary-table .exam-total {
+                        text-align: right;
+                        font-weight: 600;
+                        font-size: 16px;
+                    }
+
+                    /* Total All Exams row styling */
+                    .gradebook-summary-table .total-all-exams-row {
+                        background: #f5f5f5 !important;
+                        border-top: 2px solid #333;
+                    }
+
+                    .gradebook-summary-table .total-all-exams-row td {
+                        font-size: 17px;
+                        font-weight: 700;
+                        padding: 14px 16px;
+                    }
+                </style>
+            `;
+        }
+
+        // Fallback to legacy structure (original implementation)
+        console.log('ℹ️ Using legacy summary structure');
+
+        // Extract summary keys (exam types) - exclude grand_total initially
+        const summaryKeys = Object.keys(summary).filter(key => key !== 'grand_total');
+
+        if (summaryKeys.length === 0) {
+            console.log('ℹ️ No summary keys found');
+            return '';
+        }
+
+        console.log('📋 Summary keys:', summaryKeys);
+        console.log('🔢 Grand total:', summary.grand_total);
+
+        // Generate table headers for summary
+        const summaryHeaders = summaryKeys.map(key => {
+            // Format the key: convert snake_case to Title Case
+            const label = key.split('_').map(word =>
+                word.charAt(0).toUpperCase() + word.slice(1)
+            ).join(' ');
+            return `<th>${this.escapeHtml(label)}</th>`;
+        }).join('');
+
+        // Add grand total header if it exists
+        const grandTotalHeader = summary.grand_total !== undefined
+            ? `<th>Grand Total</th>`
+            : '';
+
+        // Generate summary row cells
+        const summaryCells = summaryKeys.map(key => {
+            const value = summary[key] ?? 0;
+            return `<td class="summary-cell"><strong>${this.escapeHtml(value)}</strong></td>`;
+        }).join('');
+
+        // Add grand total cell if it exists
+        const grandTotalCell = summary.grand_total !== undefined
+            ? `<td class="summary-cell"><strong>${this.escapeHtml(summary.grand_total)}</strong></td>`
+            : '';
+
+        // Build complete summary HTML (legacy format)
+        const summaryHtml = `
+            <div class="summary-section mt-4">
+                <h5 class="mb-3">
+                    <i class="bi bi-calculator me-2"></i>Summary Totals
+                </h5>
+                <div class="table-responsive">
+                    <table class="table table-bordered summary-table">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Summary</th>
+                                ${summaryHeaders}
+                                ${grandTotalHeader}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="summary-row">
+                                <td style="background-color: #e9ecef;"><strong>Total Marks</strong></td>
+                                ${summaryCells}
+                                ${grandTotalCell}
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+
+        console.log('✅ Summary table rendered successfully');
+        return summaryHtml;
     }
 
     /**

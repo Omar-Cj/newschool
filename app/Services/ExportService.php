@@ -112,6 +112,16 @@ class ExportService
      * @param array $results Query results
      * @param array $columns Column definitions
      * @param array $metadata Report metadata
+     *                        Expected summary structure:
+     *                        [
+     *                          'summary' => [
+     *                            'rows' => [
+     *                              ['exam_name' => 'Exam 1', 'total_marks' => 95.5],
+     *                              ['exam_name' => 'Exam 2', 'total_marks' => 88.0],
+     *                              ['exam_name' => 'Total All Exams', 'total_marks' => 183.5]
+     *                            ]
+     *                          ]
+     *                        ]
      * @return \Illuminate\Http\Response
      */
     public function exportPdf(
@@ -131,14 +141,55 @@ class ExportService
             // Format data for PDF display
             $formattedResults = $this->formatDataForDisplay($results, $columns);
 
+            // Extract summary data if available from metadata
+            $summaryData = $metadata['summary'] ?? null;
+
+            // Log summary data presence for debugging
+            if ($summaryData !== null) {
+                // Calculate grand total from last row (Total All Exams)
+                $grandTotal = null;
+                $summaryRows = $summaryData['rows'] ?? [];
+                if (!empty($summaryRows)) {
+                    $lastRow = end($summaryRows);
+                    if (isset($lastRow['exam_name']) && $lastRow['exam_name'] === 'Total All Exams') {
+                        $grandTotal = $lastRow['total_marks'];
+                    }
+                }
+
+                Log::debug('PDF export with summary data', [
+                    'report_id' => $reportId,
+                    'summary_rows' => count($summaryRows),
+                    'grand_total' => $grandTotal,
+                ]);
+            }
+
+            // Resolve student name if p_student_id parameter exists
+            $studentName = null;
+            if (isset($metadata['parameters']['p_student_id'])) {
+                $studentName = $this->resolveStudentName((int) $metadata['parameters']['p_student_id']);
+            }
+
+            // Extract procedure name for conditional rendering
+            $procedureName = $metadata['procedure_name'] ?? '';
+
+            // Resolve parameter metadata to human-readable format
+            $resolvedParameters = $this->resolveParameterMetadata(
+                $metadata['parameters'] ?? [],
+                $metadata['name'] ?? '',
+                $procedureName
+            );
+
             // Generate PDF using view template
             $pdf = Pdf::loadView('reports.pdf.template', [
                 'reportName' => $metadata['name'] ?? 'Dynamic Report',
                 'generatedAt' => now()->format('Y-m-d H:i:s'),
-                'parameters' => $metadata['parameters'] ?? [],
+                'parameters' => $resolvedParameters,
                 'columns' => $columns,
                 'results' => $formattedResults,
                 'totalRows' => count($formattedResults),
+                'studentName' => $studentName,
+                'summaryData' => $summaryData,
+                'procedureName' => $procedureName,
             ]);
 
             // Configure PDF settings
@@ -262,7 +313,7 @@ class ExportService
         return array_map(function ($row) use ($columns) {
             $formatted = [];
             foreach ($columns as $column) {
-                $key = $column['key'];
+                $key = $column['field'];
                 $value = $row[$key] ?? null;
                 $formatted[$key] = $this->formatValue($value, $column);
             }
@@ -281,7 +332,7 @@ class ExportService
     {
         $formatted = [];
         foreach ($columns as $column) {
-            $key = $column['key'];
+            $key = $column['field'];
             $value = $row[$key] ?? null;
 
             // Sanitize for CSV injection prevention
@@ -436,5 +487,190 @@ class ExportService
         } else {
             return "5-10 minutes";
         }
+    }
+
+    /**
+     * Resolve student name from student ID
+     *
+     * Queries the students table to retrieve the full name for the given student ID
+     * Used for personalizing PDF exports with student information
+     *
+     * @param int $studentId Student identifier
+     * @return string|null Student full name or null if not found
+     */
+    protected function resolveStudentName(int $studentId): ?string
+    {
+        try {
+            // Query students table for student name
+            $student = \DB::table('students')
+                ->select('first_name', 'last_name')
+                ->where('id', $studentId)
+                ->first();
+
+            if (!$student) {
+                Log::warning('Student not found for PDF export', [
+                    'student_id' => $studentId,
+                ]);
+                return null;
+            }
+
+            // Combine first and last name
+            $fullName = trim(($student->first_name ?? '') . ' ' . ($student->last_name ?? ''));
+
+            return !empty($fullName) ? $fullName : null;
+
+        } catch (\Exception $e) {
+            // Log error but don't fail the export
+            Log::error('Failed to resolve student name for PDF export', [
+                'student_id' => $studentId,
+                'error' => $e->getMessage(),
+            ]);
+            return null;
+        }
+    }
+
+    /**
+     * Resolve parameter metadata to human-readable format
+     *
+     * Converts parameter IDs to display names and handles null values gracefully
+     * Example: p_session_id: 1 → Academic Year: 2025
+     *          p_grade: null → Grade: All Grades
+     *
+     * @param array $parameters Raw parameter values from report execution
+     * @param string $reportName Report name for context
+     * @param string $procedureName Stored procedure name for report-specific filtering
+     * @return array Resolved parameters with display labels and values
+     */
+    protected function resolveParameterMetadata(
+        array $parameters,
+        string $reportName = '',
+        string $procedureName = ''
+    ): array
+    {
+        // Parameter mapping configuration
+        $parameterMap = [
+            'p_session_id' => [
+                'label' => 'Academic Year',
+                'table' => 'sessions',
+                'value_field' => 'id',
+                'label_field' => 'name',
+                'null_display' => 'All Academic Years',
+            ],
+            'p_grade' => [
+                'label' => 'Grade',
+                'table' => null, // Direct value, no lookup needed
+                'null_display' => 'All Grades',
+            ],
+            'p_class_id' => [
+                'label' => 'Class',
+                'table' => 'classes',
+                'value_field' => 'id',
+                'label_field' => 'name',
+                'null_display' => 'All Classes',
+            ],
+            'p_section_id' => [
+                'label' => 'Section',
+                'table' => 'sections',
+                'value_field' => 'id',
+                'label_field' => 'name',
+                'null_display' => 'All Sections',
+            ],
+            'p_shift_id' => [
+                'label' => 'Shift',
+                'table' => 'shifts',
+                'value_field' => 'id',
+                'label_field' => 'name',
+                'null_display' => 'All Shifts',
+            ],
+            'p_category_id' => [
+                'label' => 'Category',
+                'table' => 'student_categories',
+                'value_field' => 'id',
+                'label_field' => 'name',
+                'null_display' => 'All Categories',
+            ],
+            'p_gender_id' => [
+                'label' => 'Gender',
+                'table' => 'genders',
+                'value_field' => 'id',
+                'label_field' => 'name',
+                'null_display' => 'All Genders',
+            ],
+            'p_status' => [
+                'label' => 'Status',
+                'values' => [0 => 'Inactive', 1 => 'Active'],
+                'null_display' => 'All Statuses',
+            ],
+            'p_term_id' => [
+                'label' => 'Term',
+                'table' => 'terms',
+                'value_field' => 'id',
+                'label_field' => 'name',
+                'null_display' => 'All Terms',
+            ],
+            'p_student_id' => [
+                'label' => 'Student',
+                'skip' => true, // Skip as it's handled separately via resolveStudentName
+            ],
+        ];
+
+        $resolved = [];
+
+        foreach ($parameters as $paramName => $paramValue) {
+            // Skip if not in mapping or marked to skip
+            if (!isset($parameterMap[$paramName]) || ($parameterMap[$paramName]['skip'] ?? false)) {
+                continue;
+            }
+
+            $config = $parameterMap[$paramName];
+            $label = $config['label'];
+
+            // Handle null or empty values
+            if ($paramValue === null || $paramValue === '') {
+                $resolved[$label] = $config['null_display'];
+                continue;
+            }
+
+            // Handle static value mappings (like status)
+            if (isset($config['values'])) {
+                $resolved[$label] = $config['values'][$paramValue] ?? $paramValue;
+                continue;
+            }
+
+            // Handle direct values (like grade - no lookup needed)
+            if ($config['table'] === null) {
+                $resolved[$label] = $paramValue;
+                continue;
+            }
+
+            // Perform database lookup for ID-to-name resolution
+            try {
+                $result = \DB::table($config['table'])
+                    ->where($config['value_field'], $paramValue)
+                    ->value($config['label_field']);
+
+                $resolved[$label] = $result ?? $paramValue;
+            } catch (\Exception $e) {
+                // If lookup fails, use raw value
+                Log::warning('Parameter metadata resolution failed', [
+                    'parameter' => $paramName,
+                    'value' => $paramValue,
+                    'table' => $config['table'],
+                    'error' => $e->getMessage(),
+                ]);
+                $resolved[$label] = $paramValue;
+            }
+        }
+
+        // Report-specific parameter filtering
+        // Remove certain metadata fields from Student List Report for cleaner display
+        if ($procedureName === 'GetStudentListReport') {
+            $excludeParams = ['Section', 'Shift', 'Category', 'Status', 'Gender'];
+            foreach ($excludeParams as $param) {
+                unset($resolved[$param]);
+            }
+        }
+
+        return $resolved;
     }
 }

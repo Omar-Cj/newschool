@@ -56,6 +56,10 @@ class DynamicReportController extends Controller
                 'metadata' => 'nullable|array',
                 'metadata.name' => 'nullable|string',
                 'metadata.parameters' => 'nullable|array',
+                'metadata.summary' => 'nullable|array',
+                'metadata.summary.rows' => 'nullable|array',
+                'metadata.summary.rows.*.exam_name' => 'nullable|string',
+                'metadata.summary.rows.*.total_marks' => 'nullable|numeric',
                 'force_async' => 'nullable|boolean',
             ]);
 

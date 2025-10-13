@@ -7,6 +7,7 @@ namespace App\Http\Controllers;
 use App\Repositories\Report\ReportRepository;
 use App\Services\Report\ReportExecutionService;
 use App\Services\Report\DependentParameterService;
+use App\Services\ExportService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
@@ -29,11 +30,13 @@ class ReportController extends Controller
      * @param ReportRepository $reportRepository
      * @param ReportExecutionService $executionService
      * @param DependentParameterService $dependentParameterService
+     * @param ExportService $exportService
      */
     public function __construct(
         private ReportRepository $reportRepository,
         private ReportExecutionService $executionService,
-        private DependentParameterService $dependentParameterService
+        private DependentParameterService $dependentParameterService,
+        private ExportService $exportService
     ) {
         // Apply authentication middleware based on route type
         // Web routes use 'auth', API routes use 'auth:sanctum'
@@ -474,22 +477,57 @@ class ReportController extends Controller
     }
 
     /**
-     * Export to PDF format
+     * Export to PDF format using ExportService
      *
-     * @param array $result
-     * @param \App\Models\ReportCenter $report
-     * @param string $filename
+     * This method delegates to ExportService which:
+     * - Resolves student name from p_student_id parameter
+     * - Uses correct template (reports.pdf.template)
+     * - Includes summary data for exam gradebooks
+     * - Formats data properly for display
+     *
+     * @param array $result Report execution result from ReportExecutionService
+     * @param \App\Models\ReportCenter $report Report model instance
+     * @param string $filename Generated filename for download
      * @return \Illuminate\Http\Response
      */
     private function exportToPdf(array $result, $report, string $filename)
     {
-        $pdf = Pdf::loadView('reports.pdf-export', [
-            'report' => $report,
-            'result' => $result,
-            'generated_at' => now()->format('d M Y H:i:s')
-        ]);
+        // Extract data components from result structure
+        // Result structure: ['success' => true, 'report' => [...], 'data' => [...], 'meta' => [...]]
+        $data = $result['data'] ?? [];
+        $rows = $data['rows'] ?? [];
+        $columns = $data['columns'] ?? [];
 
-        return $pdf->download($filename);
+        // Extract parameters from meta for student name resolution
+        $parameters = $result['meta']['parameters_used'] ?? [];
+
+        // Build metadata structure expected by ExportService
+        $metadata = [
+            'name' => $report->name,
+            'parameters' => $parameters,
+            'procedure_name' => $report->procedure_name, // Add procedure name for conditional rendering
+        ];
+
+        // Include summary data if available (for exam gradebooks)
+        if (isset($data['summary'])) {
+            $metadata['summary'] = $data['summary'];
+
+            Log::debug('PDF export with summary', [
+                'report_name' => $report->name,
+                'procedure_name' => $report->procedure_name,
+                'has_summary' => true,
+                'summary_row_count' => count($data['summary']['rows'] ?? []),
+                'student_id' => $parameters['p_student_id'] ?? 'not set',
+            ]);
+        }
+
+        // Use ExportService for consistent PDF generation with student name resolution
+        return $this->exportService->exportPdf(
+            $report->id,
+            $rows,
+            $columns,
+            $metadata
+        );
     }
 
     /**
