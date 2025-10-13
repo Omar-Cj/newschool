@@ -110,7 +110,7 @@ export class ReportApiService {
             const response = await fetch(`${this.baseUrl}/${reportId}/execute`, {
                 method: 'POST',
                 headers: this._getHeaders(),
-                body: JSON.stringify(formData)
+                body: JSON.stringify({ parameters: formData })
             });
 
             if (!response.ok) {
@@ -138,7 +138,7 @@ export class ReportApiService {
             const response = await fetch(`${this.baseUrl}/${reportId}/export/${format}`, {
                 method: 'POST',
                 headers: this._getHeaders(),
-                body: JSON.stringify(formData)
+                body: JSON.stringify({ parameters: formData })
             });
 
             if (!response.ok) {
