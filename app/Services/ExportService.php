@@ -471,6 +471,65 @@ class ExportService
     }
 
     /**
+     * Generate print-optimized view with identical layout to PDF
+     *
+     * @param int $reportId Report identifier
+     * @param array $results Query results
+     * @param array $columns Column definitions
+     * @param array $metadata Report metadata
+     * @return \Illuminate\View\View
+     */
+    public function exportPrint(
+        int $reportId,
+        array $results,
+        array $columns,
+        array $metadata = []
+    ) {
+        try {
+            // Format data for display (same as PDF)
+            $formattedResults = $this->formatDataForDisplay($results, $columns);
+
+            // Extract summary data if available from metadata
+            $summaryData = $metadata['summary'] ?? null;
+
+            // Resolve student name if p_student_id parameter exists
+            $studentName = null;
+            if (isset($metadata['parameters']['p_student_id'])) {
+                $studentName = $this->resolveStudentName((int) $metadata['parameters']['p_student_id']);
+            }
+
+            // Extract procedure name for conditional rendering
+            $procedureName = $metadata['procedure_name'] ?? '';
+
+            // Resolve parameter metadata to human-readable format
+            $resolvedParameters = $this->resolveParameterMetadata(
+                $metadata['parameters'] ?? [],
+                $metadata['name'] ?? '',
+                $procedureName
+            );
+
+            // Return print view with same data structure as PDF
+            return view('reports.print-wrapper', [
+                'reportName' => $metadata['name'] ?? 'Dynamic Report',
+                'generatedAt' => now()->format('Y-m-d H:i:s'),
+                'parameters' => $resolvedParameters,
+                'columns' => $columns,
+                'results' => $formattedResults,
+                'totalRows' => count($formattedResults),
+                'studentName' => $studentName,
+                'summaryData' => $summaryData,
+                'procedureName' => $procedureName,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Print export failed', [
+                'report_id' => $reportId,
+                'error' => $e->getMessage(),
+            ]);
+            throw new \RuntimeException("Print export failed: " . $e->getMessage());
+        }
+    }
+
+    /**
      * Estimate processing time for async jobs
      *
      * @param int $rowCount Number of rows

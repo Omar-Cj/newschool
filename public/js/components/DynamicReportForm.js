@@ -38,7 +38,8 @@ export class DynamicReportForm {
             resetBtn: document.getElementById(this.config.resetBtnId),
             reportDescription: document.getElementById(this.config.reportDescriptionId),
             reportDescriptionText: document.getElementById(this.config.reportDescriptionTextId),
-            exportButtons: document.querySelectorAll('.export-btn')
+            exportButtons: document.querySelectorAll('.export-btn'),
+            printBtn: document.getElementById('printReportBtn')
         };
     }
 
@@ -74,6 +75,13 @@ export class DynamicReportForm {
                 this.handleExportReport(format);
             });
         });
+
+        // Print button
+        if (this.elements.printBtn) {
+            this.elements.printBtn.addEventListener('click', () => {
+                this.handlePrintReport();
+            });
+        }
     }
 
     /**
@@ -1305,6 +1313,51 @@ export class DynamicReportForm {
 
             if (btn) {
                 this.setButtonLoading(btn, false);
+            }
+        }
+    }
+
+    /**
+     * Handle print report - Opens print view in new tab with identical PDF layout
+     */
+    async handlePrintReport() {
+        if (!this.currentReport || !this.formData) {
+            this.showError('Please generate the report first.');
+            return;
+        }
+
+        try {
+            // Set button loading state
+            if (this.elements.printBtn) {
+                this.setButtonLoading(this.elements.printBtn, true);
+            }
+
+            // Get HTML content from API (uses session authentication like exports)
+            const htmlContent = await this.apiService.printReport(
+                this.currentReport.id,
+                this.formData
+            );
+
+            // Open new window and write HTML
+            const printWindow = window.open('', '_blank');
+
+            if (!printWindow) {
+                throw new Error('Pop-up blocked. Please allow pop-ups for this site.');
+            }
+
+            printWindow.document.open();
+            printWindow.document.write(htmlContent);
+            printWindow.document.close();
+
+            this.showSuccess('Print preview opened in new tab. Print dialog will appear automatically.');
+
+        } catch (error) {
+            console.error('Print error:', error);
+            this.showError(error.message || 'Failed to open print view. Please try again.');
+        } finally {
+            // Reset button state
+            if (this.elements.printBtn) {
+                this.setButtonLoading(this.elements.printBtn, false);
             }
         }
     }

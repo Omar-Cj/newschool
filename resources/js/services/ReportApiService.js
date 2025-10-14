@@ -166,6 +166,35 @@ export class ReportApiService {
     }
 
     /**
+     * Print report - returns HTML for browser printing
+     * @param {number} reportId - The report ID
+     * @param {Object} formData - Form data with parameter values
+     * @returns {Promise<string>} HTML content for printing
+     */
+    async printReport(reportId, formData) {
+        try {
+            const response = await fetch(`${this.baseUrl}/${reportId}/print`, {
+                method: 'POST',
+                headers: this._getHeaders(),
+                body: JSON.stringify({ parameters: formData }),
+                credentials: 'same-origin' // Send session cookies for authentication
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+            }
+
+            // Return HTML content
+            const htmlContent = await response.text();
+            return htmlContent;
+        } catch (error) {
+            console.error('Error printing report:', error);
+            throw error;
+        }
+    }
+
+    /**
      * Get common headers for API requests
      * @private
      * @returns {Object} Request headers

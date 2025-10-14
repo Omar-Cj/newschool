@@ -417,6 +417,77 @@ class ReportController extends Controller
     }
 
     /**
+     * Print report with identical layout to PDF export
+     *
+     * @param int $reportId
+     * @param Request $request
+     * @return \Illuminate\View\View|\Illuminate\Http\JsonResponse
+     */
+    public function print(int $reportId, Request $request)
+    {
+        try {
+            $report = $this->reportRepository->getReportById($reportId);
+
+            if (!$report) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Report not found'
+                ], 404);
+            }
+
+            // Check if export is enabled (print uses same permission as export)
+            if ($report->export_enabled !== 1) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Print is not enabled for this report'
+                ], 403);
+            }
+
+            // Check user permission - handle User model has role() (BelongsTo), not roles()
+            $userRoles = Auth::user()->role ? [Auth::user()->role->name] : [];
+            $this->executionService->checkUserPermission($report, $userRoles);
+
+            // Get parameters and execute report
+            $parameters = $request->input('parameters', []);
+            $result = $this->executionService->executeReport($reportId, $parameters);
+
+            // Extract columns and results from execution result
+            $columns = $result['data']['columns'] ?? [];
+            $rows = $result['data']['rows'] ?? $result['data'] ?? [];
+
+            // Prepare metadata for print view (same as PDF)
+            $metadata = [
+                'name' => $report->name,
+                'procedure_name' => $report->procedure_name,
+                'parameters' => $parameters,
+                'summary' => $result['summary'] ?? null,
+            ];
+
+            // Call export service print method
+            return $this->exportService->exportPrint(
+                $reportId,
+                $rows,
+                $columns,
+                $metadata
+            );
+
+        } catch (\Exception $e) {
+            Log::error('Failed to generate print view', [
+                'report_id' => $reportId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'user_id' => Auth::id()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to generate print view',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Generate export filename
      *
      * @param string $reportName

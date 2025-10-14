@@ -242,6 +242,10 @@
                                 <i class="bi bi-file-earmark-text me-1"></i>
                                 {{ ___('reports.export_csv') }}
                             </button>
+                            <button type="button" id="printReportBtn" class="btn btn-sm btn-secondary">
+                                <i class="bi bi-printer me-1"></i>
+                                {{ ___('reports.print') }}
+                            </button>
                         </div>
                     </div>
                 </div>

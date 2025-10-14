@@ -204,6 +204,9 @@ Route::middleware(saasApiMiddleware())->group(function () {
                 // Export report in specified format
                 Route::post('/{reportId}/export/{format}', [ReportController::class, 'export']);
 
+                // Print report (identical layout to PDF)
+                Route::post('/{reportId}/print', [ReportController::class, 'print']);
+
                 // Get report execution statistics
                 Route::get('/{reportId}/statistics', [ReportController::class, 'statistics']);
             });
