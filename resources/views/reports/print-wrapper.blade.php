@@ -449,8 +449,8 @@
         </div>
         @endif
 
-        {{-- Financial Summary Table - Only for Paid Students Report --}}
-        @if(isset($summaryData) && !empty($summaryData) && isset($summaryData['type']) && $summaryData['type'] === 'financial' && isset($summaryData['rows']) && $procedureName === 'GetPaidStudentsReport')
+        {{-- Financial Summary Table - For Paid Students Report and Fee Generation Report --}}
+        @if(isset($summaryData) && !empty($summaryData) && isset($summaryData['type']) && $summaryData['type'] === 'financial' && isset($summaryData['rows']) && in_array($procedureName, ['GetPaidStudentsReport', 'GetFeeGenerationReport']))
         <div class="summary-section">
             <h5>Financial Summary</h5>
             <table class="summary-table">

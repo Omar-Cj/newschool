@@ -86,6 +86,12 @@ class ReportExecutionService
                 $report->procedure_name
             );
 
+            // Add fee generation summary if applicable
+            $transformedResults = $this->addFeeGenerationSummary(
+                $transformedResults,
+                $report->procedure_name
+            );
+
             Log::info('Report executed successfully', [
                 'report_id' => $reportId,
                 'report_name' => $report->name,
@@ -591,6 +597,79 @@ class ReportExecutionService
         } catch (\Exception $e) {
             // Log error but don't fail the report
             Log::warning('Failed to calculate paid students summary', [
+                'procedure' => $procedureName,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return $data;
+    }
+
+    /**
+     * Add fee generation financial summary calculations
+     *
+     * Calculates total invoices sum for GetFeeGenerationReport procedure
+     * Only applies to fee generation report type
+     *
+     * @param array $data Transformed report data with columns and rows
+     * @param string $procedureName Stored procedure name
+     * @return array Enhanced data with financial summary
+     */
+    private function addFeeGenerationSummary(array $data, string $procedureName): array
+    {
+        // Only apply summary to GetFeeGenerationReport procedure
+        if ($procedureName !== 'GetFeeGenerationReport') {
+            return $data;
+        }
+
+        // Ensure data structure contains rows
+        if (!isset($data['rows']) || empty($data['rows'])) {
+            return $data;
+        }
+
+        try {
+            $rows = $data['rows'];
+
+            // Initialize total invoices counter
+            $totalInvoices = 0;
+
+            // Sum total_invoice column from all rows
+            foreach ($rows as $row) {
+                // Handle both possible column naming conventions
+                $value = $row['total_invoice'] ?? $row['total_invoices'] ?? 0;
+
+                // Strip currency formatting (e.g., "$1,500.00" → "1500.00")
+                // Remove all non-numeric characters except decimal point
+                if (is_string($value)) {
+                    $value = preg_replace('/[^0-9.]/', '', $value);
+                }
+
+                $totalInvoices += (float) $value;
+            }
+
+            // Create summary row structure (similar to paid students report)
+            $summaryRows = [
+                [
+                    'metric' => 'Total Invoices',
+                    'value' => $totalInvoices
+                ]
+            ];
+
+            // Add summary to data structure with financial type
+            $data['summary'] = [
+                'rows' => $summaryRows,
+                'type' => 'financial' // Use financial type for consistent styling
+            ];
+
+            Log::debug('Fee generation summary calculated', [
+                'procedure' => $procedureName,
+                'total_invoices' => $totalInvoices,
+                'row_count' => count($rows),
+            ]);
+
+        } catch (\Exception $e) {
+            // Log error but don't fail the report
+            Log::warning('Failed to calculate fee generation summary', [
                 'procedure' => $procedureName,
                 'error' => $e->getMessage(),
             ]);
