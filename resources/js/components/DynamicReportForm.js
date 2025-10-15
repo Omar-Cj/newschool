@@ -791,6 +791,110 @@ export class DynamicReportForm {
         if (summary.rows && Array.isArray(summary.rows) && summary.rows.length > 0) {
             console.log('✅ New summary structure detected with rows array');
 
+            // Check summary type to determine which template to use
+            const isFinancialSummary = summary.type === 'financial';
+
+            if (isFinancialSummary) {
+                // Render Financial Summary (for Paid Students Report)
+                console.log('💰 Rendering financial summary');
+
+                const financialRows = summary.rows.map((row, index) => {
+                    // Check if this is the Grand Total row
+                    const isGrandTotal = (row.metric === 'Grand Total');
+                    const rowClass = isGrandTotal ? 'total-all-exams-row' : 'exam-row';
+
+                    return `
+                        <tr class="${rowClass}">
+                            <td class="exam-name">${this.escapeHtml(row.metric || 'Unknown Metric')}</td>
+                            <td class="exam-total">$${this.formatNumber(row.value || 0, 2)}</td>
+                        </tr>
+                    `;
+                }).join('');
+
+                return `
+                    <div class="summary-section mt-4">
+                        <h5 class="mb-3">
+                            <i class="bi bi-cash-stack me-2"></i>Financial Summary
+                        </h5>
+                        <div class="table-responsive">
+                            <table class="table gradebook-summary-table">
+                                <thead>
+                                    <tr>
+                                        <th>Metric</th>
+                                        <th>Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${financialRows}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <style>
+                        .gradebook-summary-table {
+                            border-radius: 8px;
+                            overflow: hidden;
+                            border: 1px solid #dee2e6;
+                        }
+
+                        .gradebook-summary-table thead {
+                            background: #e8e8e8;
+                        }
+
+                        .gradebook-summary-table thead th {
+                            padding: 12px 16px;
+                            font-weight: 600;
+                            font-size: 15px;
+                            border: none;
+                            color: #000;
+                        }
+
+                        .gradebook-summary-table thead th:last-child {
+                            text-align: right;
+                        }
+
+                        .gradebook-summary-table tbody tr.exam-row {
+                            background: #ffffff;
+                        }
+
+                        .gradebook-summary-table tbody tr.exam-row:nth-child(even) {
+                            background: #f8f9fa;
+                        }
+
+                        .gradebook-summary-table tbody td {
+                            padding: 12px 16px;
+                            border: 1px solid #dee2e6;
+                        }
+
+                        .gradebook-summary-table .exam-name {
+                            font-weight: 500;
+                        }
+
+                        .gradebook-summary-table .exam-total {
+                            text-align: right;
+                            font-weight: 600;
+                            font-size: 16px;
+                        }
+
+                        /* Grand Total row styling */
+                        .gradebook-summary-table .total-all-exams-row {
+                            background: #f5f5f5 !important;
+                            border-top: 2px solid #333;
+                        }
+
+                        .gradebook-summary-table .total-all-exams-row td {
+                            font-size: 17px;
+                            font-weight: 700;
+                            padding: 14px 16px;
+                        }
+                    </style>
+                `;
+            }
+
+            // Render Exam Summary (for Gradebook Reports)
+            console.log('📚 Rendering gradebook summary');
+
             // Build exam rows from summary.rows (only Exam Name and Total Mark columns)
             const examRows = summary.rows.map((row, index) => {
                 // Check if this is the last row (Total All Exams)
@@ -1482,6 +1586,22 @@ export class DynamicReportForm {
         } else {
             alert(message);
         }
+    }
+
+    /**
+     * Format number with decimal places and thousand separators
+     * @param {number} value - Number to format
+     * @param {number} decimals - Number of decimal places (default 2)
+     * @returns {string} Formatted number
+     */
+    formatNumber(value, decimals = 2) {
+        if (value === null || value === undefined || isNaN(value)) {
+            return '0.00';
+        }
+        return Number(value).toLocaleString('en-US', {
+            minimumFractionDigits: decimals,
+            maximumFractionDigits: decimals
+        });
     }
 
     /**

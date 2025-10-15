@@ -460,7 +460,7 @@ class ReportController extends Controller
                 'name' => $report->name,
                 'procedure_name' => $report->procedure_name,
                 'parameters' => $parameters,
-                'summary' => $result['summary'] ?? null,
+                'summary' => $result['data']['summary'] ?? null,
             ];
 
             // Call export service print method
@@ -499,7 +499,16 @@ class ReportController extends Controller
         $sanitizedName = preg_replace('/[^A-Za-z0-9_\-]/', '_', $reportName);
         $timestamp = now()->format('Y-m-d_His');
 
-        return "{$sanitizedName}_{$timestamp}.{$format}";
+        // Map format names to proper file extensions for PhpSpreadsheet compatibility
+        $extensionMap = [
+            'excel' => 'xlsx',
+            'pdf' => 'pdf',
+            'csv' => 'csv',
+        ];
+
+        $extension = $extensionMap[$format] ?? $format;
+
+        return "{$sanitizedName}_{$timestamp}.{$extension}";
     }
 
     /**

@@ -448,6 +448,34 @@
             </table>
         </div>
         @endif
+
+        {{-- Financial Summary Table - Only for Paid Students Report --}}
+        @if(isset($summaryData) && !empty($summaryData) && isset($summaryData['type']) && $summaryData['type'] === 'financial' && isset($summaryData['rows']) && $procedureName === 'GetPaidStudentsReport')
+        <div class="summary-section">
+            <h5>Financial Summary</h5>
+            <table class="summary-table">
+                <thead>
+                    <tr>
+                        <th>Metric</th>
+                        <th>Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($summaryData['rows'] as $index => $row)
+                        @php
+                            // Grand Total row gets special styling
+                            $isGrandTotal = ($row['metric'] === 'Grand Total');
+                            $rowClass = $isGrandTotal ? 'total-all-exams-row' : 'exam-row';
+                        @endphp
+                        <tr class="{{ $rowClass }}">
+                            <td>{{ $row['metric'] }}</td>
+                            <td>${{ number_format($row['value'], 2) }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+        @endif
         @else
         <div class="empty-state">
             <p>No data available for the selected criteria.</p>

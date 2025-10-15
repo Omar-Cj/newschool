@@ -80,6 +80,12 @@ class ReportExecutionService
                 $report->procedure_name
             );
 
+            // Add paid students summary if applicable
+            $transformedResults = $this->addPaidStudentsSummary(
+                $transformedResults,
+                $report->procedure_name
+            );
+
             Log::info('Report executed successfully', [
                 'report_id' => $reportId,
                 'report_name' => $report->name,
@@ -495,6 +501,96 @@ class ReportExecutionService
         } catch (\Exception $e) {
             // Log error but don't fail the report
             Log::warning('Failed to calculate gradebook summary', [
+                'procedure' => $procedureName,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return $data;
+    }
+
+    /**
+     * Add paid students financial summary calculations
+     *
+     * Calculates financial totals: paid amount, deposit used, discount, and grand total
+     * Only applies to GetPaidStudentsReport procedure
+     *
+     * @param array $data Transformed report data with columns and rows
+     * @param string $procedureName Stored procedure name
+     * @return array Enhanced data with financial summary
+     */
+    private function addPaidStudentsSummary(array $data, string $procedureName): array
+    {
+        // Only apply summary to GetPaidStudentsReport procedure
+        if ($procedureName !== 'GetPaidStudentsReport') {
+            return $data;
+        }
+
+        // Ensure data structure contains rows
+        if (!isset($data['rows']) || empty($data['rows'])) {
+            return $data;
+        }
+
+        try {
+            $rows = $data['rows'];
+
+            // Initialize financial totals
+            $paidAmount = 0;
+            $depositUsed = 0;
+            $discount = 0;
+
+            // Sum financial columns from all rows
+            foreach ($rows as $row) {
+                // Add paid amount (check multiple possible column names)
+                $paidAmount += (float) ($row['paid_amount'] ?? $row['amount_paid'] ?? 0);
+
+                // Add deposit used
+                $depositUsed += (float) ($row['deposit_used'] ?? $row['deposit'] ?? 0);
+
+                // Add discount
+                $discount += (float) ($row['discount'] ?? $row['discount_amount'] ?? 0);
+            }
+
+            // Calculate grand total (paid amount + deposit used)
+            $grandTotal = $paidAmount + $depositUsed;
+
+            // Create summary rows (similar to gradebook structure)
+            $summaryRows = [
+                [
+                    'metric' => 'Paid Amount',
+                    'value' => $paidAmount
+                ],
+                [
+                    'metric' => 'Deposit Used',
+                    'value' => $depositUsed
+                ],
+                [
+                    'metric' => 'Discount',
+                    'value' => $discount
+                ],
+                [
+                    'metric' => 'Grand Total',
+                    'value' => $grandTotal
+                ]
+            ];
+
+            // Add summary to data structure
+            $data['summary'] = [
+                'rows' => $summaryRows,
+                'type' => 'financial' // Distinguish from gradebook summary
+            ];
+
+            Log::debug('Paid students summary calculated', [
+                'procedure' => $procedureName,
+                'paid_amount' => $paidAmount,
+                'deposit_used' => $depositUsed,
+                'discount' => $discount,
+                'grand_total' => $grandTotal,
+            ]);
+
+        } catch (\Exception $e) {
+            // Log error but don't fail the report
+            Log::warning('Failed to calculate paid students summary', [
                 'procedure' => $procedureName,
                 'error' => $e->getMessage(),
             ]);
