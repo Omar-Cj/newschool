@@ -67,6 +67,9 @@
         </div>
     </div>
 
+    {{-- Summary Tables Section - Hidden in web view, shown only in print/PDF --}}
+    {{-- Summary is automatically included in print-wrapper.blade.php and pdf/template.blade.php --}}
+
     {{-- Additional Actions --}}
     <div class="row mt-4 d-print-none">
         <div class="col">

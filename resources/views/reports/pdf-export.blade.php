@@ -165,6 +165,11 @@
         </table>
     @endif
 
+    {{-- Include Summary Tables Partial --}}
+    @if(isset($result['data']['summary']))
+        @include('reports.partials.summary-tables', ['summary' => $result['data']['summary']])
+    @endif
+
     <div class="footer">
         <p>This report was generated automatically by the School Management System</p>
         <p>&copy; {{ date('Y') }} - Confidential</p>

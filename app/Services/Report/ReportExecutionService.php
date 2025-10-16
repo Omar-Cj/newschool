@@ -92,6 +92,12 @@ class ReportExecutionService
                 $report->procedure_name
             );
 
+            // Add fee generation & collection summary if applicable
+            $transformedResults = $this->addFeeGenerationCollectionSummary(
+                $transformedResults,
+                $report->procedure_name
+            );
+
             Log::info('Report executed successfully', [
                 'report_id' => $reportId,
                 'report_name' => $report->name,
@@ -676,5 +682,189 @@ class ReportExecutionService
         }
 
         return $data;
+    }
+
+    /**
+     * Add fee generation & collection comprehensive summary calculations
+     *
+     * Calculates three summary sections: Invoice Generation, Unpaid Generation, and Collection
+     * Only applies to GetFeeGenerationCollectionReport procedure
+     *
+     * @param array $data Transformed report data with columns and rows
+     * @param string $procedureName Stored procedure name
+     * @return array Enhanced data with comprehensive financial summary
+     */
+    private function addFeeGenerationCollectionSummary(array $data, string $procedureName): array
+    {
+        // Only apply summary to GetFeeGenerationCollectionReport procedure
+        if ($procedureName !== 'GetFeeGenerationCollectionReport') {
+            return $data;
+        }
+
+        // Ensure data structure contains rows
+        if (!isset($data['rows']) || empty($data['rows'])) {
+            return $data;
+        }
+
+        try {
+            $rows = $data['rows'];
+
+            // Initialize financial totals for all sections
+            $previousInvoice = 0;
+            $currentInvoice = 0;
+            $unpaidTotal = 0;
+            $totalPaid = 0;
+            $totalDiscount = 0;
+            $advancePayment = 0;
+
+            // Sum financial columns from all rows
+            foreach ($rows as $row) {
+                // Invoice Generation Section
+                $previousInvoice += $this->cleanCurrencyValue($row['previous_invoice'] ?? $row['previous_invoices'] ?? 0);
+                $currentInvoice += $this->cleanCurrencyValue($row['current_invoice'] ?? $row['current_invoices'] ?? 0);
+
+                // Unpaid Generation Section
+                $unpaidTotal += $this->cleanCurrencyValue($row['unpaid_total'] ?? $row['unpaid_amount'] ?? $row['unpaid'] ?? 0);
+
+                // Collection Section
+                $totalPaid += $this->cleanCurrencyValue($row['total_paid'] ?? $row['paid_amount'] ?? $row['amount_paid'] ?? 0);
+                $totalDiscount += $this->cleanCurrencyValue($row['total_discount'] ?? $row['discount'] ?? $row['discount_amount'] ?? 0);
+                $advancePayment += $this->cleanCurrencyValue($row['deposit'] ?? $row['advance_payment'] ?? $row['advance'] ?? $row['advance_amount'] ?? 0);
+            }
+
+            // Calculate derived totals
+            $totalInvoice = $previousInvoice + $currentInvoice;
+            $subTotal = $totalPaid + $totalDiscount;
+            $grandTotal = $subTotal + $advancePayment;
+
+            // Create summary sections structure matching screenshot design
+            $summarySections = [
+                [
+                    'title' => 'Invoice Generation',
+                    'rows' => [
+                        [
+                            'label' => 'PREVIOUS INVOICE',
+                            'value' => $previousInvoice,
+                            'is_total' => false
+                        ],
+                        [
+                            'label' => 'CURRENT INVOICE',
+                            'value' => $currentInvoice,
+                            'is_total' => false
+                        ],
+                        [
+                            'label' => 'TOTAL INVOICE',
+                            'value' => $totalInvoice,
+                            'is_total' => true
+                        ]
+                    ]
+                ],
+                [
+                    'title' => 'Unpaid Generation',
+                    'rows' => [
+                        [
+                            'label' => 'UNPAID TOTAL',
+                            'value' => $unpaidTotal,
+                            'is_total' => true
+                        ]
+                    ]
+                ],
+                [
+                    'title' => 'Collection',
+                    'rows' => [
+                        [
+                            'label' => 'TOTAL PAID',
+                            'value' => $totalPaid,
+                            'is_total' => false
+                        ],
+                        [
+                            'label' => 'TOTAL DISCOUNT',
+                            'value' => $totalDiscount,
+                            'is_total' => false
+                        ],
+                        [
+                            'label' => 'SUB TOTAL',
+                            'value' => $subTotal,
+                            'is_total' => false
+                        ],
+                        [
+                            'label' => 'DEPOSIT',
+                            'value' => $advancePayment,
+                            'is_total' => false
+                        ],
+                        [
+                            'label' => 'GRAND TOTAL',
+                            'value' => $grandTotal,
+                            'is_total' => true
+                        ]
+                    ]
+                ]
+            ];
+
+            // Add summary to data structure with specific type
+            $data['summary'] = [
+                'sections' => $summarySections,
+                'type' => 'fee_generation_collection'
+            ];
+
+            Log::debug('Fee generation & collection summary calculated', [
+                'procedure' => $procedureName,
+                'row_count' => count($rows),
+                'sample_row' => !empty($rows) ? $rows[0] : null,
+                'column_names' => !empty($rows) ? array_keys($rows[0]) : [],
+                'calculations' => [
+                    'previous_invoice' => $previousInvoice,
+                    'current_invoice' => $currentInvoice,
+                    'total_invoice' => $totalInvoice,
+                    'unpaid_total' => $unpaidTotal,
+                    'total_paid' => $totalPaid,
+                    'total_discount' => $totalDiscount,
+                    'sub_total' => $subTotal,
+                    'advance_payment' => $advancePayment,
+                    'grand_total' => $grandTotal,
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            // Log error but don't fail the report
+            Log::warning('Failed to calculate fee generation & collection summary', [
+                'procedure' => $procedureName,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return $data;
+    }
+
+    /**
+     * Clean currency value by removing currency symbols and formatting
+     *
+     * Handles various currency formats:
+     * - "$1,234.56" → 1234.56
+     * - "1,234.56" → 1234.56
+     * - "$1234.56" → 1234.56
+     * - "1234" → 1234.00
+     *
+     * @param mixed $value Raw value that may contain currency formatting
+     * @return float Cleaned numeric value
+     */
+    private function cleanCurrencyValue($value): float
+    {
+        // Handle null or empty values
+        if ($value === null || $value === '') {
+            return 0.0;
+        }
+
+        // Convert to string for processing
+        $stringValue = (string) $value;
+
+        // Remove all characters except digits, decimal point, and minus sign
+        // This handles: $, €, £, commas, spaces, etc.
+        $cleaned = preg_replace('/[^0-9.\-]/', '', $stringValue);
+
+        // Convert to float
+        $numericValue = (float) $cleaned;
+
+        return $numericValue;
     }
 }

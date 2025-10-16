@@ -102,6 +102,15 @@ class ReportViewer {
             wrapper.appendChild(pagination);
         }
 
+        // Summary tables hidden in web view
+        // They will appear only in print and PDF exports via print-wrapper.blade.php and pdf/template.blade.php
+        // if (data.data && data.data.summary) {
+        //     const summarySection = this.renderSummaryTables(data.data.summary);
+        //     if (summarySection) {
+        //         wrapper.appendChild(summarySection);
+        //     }
+        // }
+
         // Add to container
         this.container.appendChild(wrapper);
     }
@@ -499,6 +508,156 @@ class ReportViewer {
         return Object.entries(filters)
             .map(([key, value]) => `${key}: ${value}`)
             .join(', ');
+    }
+
+    /**
+     * Render summary tables for Fee Generation & Collection and other report types
+     * @param {Object} summary - Summary data structure
+     * @returns {HTMLElement|null}
+     */
+    renderSummaryTables(summary) {
+        if (!summary || !summary.type) {
+            return null;
+        }
+
+        const container = document.createElement('div');
+        container.className = 'summary-container mt-4 mb-4';
+
+        // Handle Fee Generation & Collection Summary (three-column layout)
+        if (summary.type === 'fee_generation_collection' && summary.sections) {
+            const title = document.createElement('h5');
+            title.className = 'mb-3 text-center fw-bold';
+            title.textContent = 'Summary Report';
+            container.appendChild(title);
+
+            const row = document.createElement('div');
+            row.className = 'row';
+
+            summary.sections.forEach(section => {
+                const col = document.createElement('div');
+                col.className = 'col-md-4 mb-3';
+
+                const card = document.createElement('div');
+                card.className = 'card border';
+
+                const cardHeader = document.createElement('div');
+                cardHeader.className = 'card-header bg-light text-center py-2';
+                cardHeader.innerHTML = `<h6 class="mb-0 fw-bold">${this.escapeHtml(section.title)}</h6>`;
+                card.appendChild(cardHeader);
+
+                const cardBody = document.createElement('div');
+                cardBody.className = 'card-body p-0';
+
+                const table = document.createElement('table');
+                table.className = 'table table-bordered mb-0';
+
+                const tbody = document.createElement('tbody');
+                section.rows.forEach(row => {
+                    const tr = document.createElement('tr');
+                    if (row.is_total) {
+                        tr.className = 'table-active fw-bold';
+                    }
+                    tr.innerHTML = `
+                        <td class="py-2 px-3" style="width: 60%;">${this.escapeHtml(row.label)}</td>
+                        <td class="text-end py-2 px-3" style="width: 40%;">$${this.formatNumber(row.value)}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+                table.appendChild(tbody);
+                cardBody.appendChild(table);
+                card.appendChild(cardBody);
+
+                col.appendChild(card);
+                row.appendChild(col);
+            });
+
+            container.appendChild(row);
+            return container;
+        }
+
+        // Handle Financial Summary (Paid Students, Fee Generation)
+        if (summary.type === 'financial' && summary.rows) {
+            const title = document.createElement('h5');
+            title.className = 'mb-3';
+            title.textContent = 'Financial Summary';
+            container.appendChild(title);
+
+            const row = document.createElement('div');
+            row.className = 'row';
+            const col = document.createElement('div');
+            col.className = 'col-md-6 offset-md-6';
+
+            const table = document.createElement('table');
+            table.className = 'table table-bordered';
+            const tbody = document.createElement('tbody');
+
+            summary.rows.forEach(row => {
+                const isGrandTotal = row.metric === 'Grand Total' || row.metric === 'Total Invoices';
+                const tr = document.createElement('tr');
+                if (isGrandTotal) {
+                    tr.className = 'table-success fw-bold';
+                }
+                tr.innerHTML = `
+                    <th class="text-end py-2 px-3" style="width: 50%;">${this.escapeHtml(row.metric)}:</th>
+                    <td class="text-end py-2 px-3" style="width: 50%;">$${this.formatNumber(row.value)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            table.appendChild(tbody);
+            col.appendChild(table);
+            row.appendChild(col);
+            container.appendChild(row);
+            return container;
+        }
+
+        // Handle Exam Gradebook Summary
+        if (summary.type === 'exam_gradebook' && summary.rows) {
+            const title = document.createElement('h5');
+            title.className = 'mb-3';
+            title.textContent = 'Summary - Total Marks by Exam';
+            container.appendChild(title);
+
+            const row = document.createElement('div');
+            row.className = 'row';
+            const col = document.createElement('div');
+            col.className = 'col-md-6 offset-md-6';
+
+            const table = document.createElement('table');
+            table.className = 'table table-bordered';
+
+            const thead = document.createElement('thead');
+            thead.className = 'table-light';
+            thead.innerHTML = `
+                <tr>
+                    <th>Exam Name</th>
+                    <th class="text-end">Total Marks</th>
+                </tr>
+            `;
+            table.appendChild(thead);
+
+            const tbody = document.createElement('tbody');
+            summary.rows.forEach(row => {
+                const isTotalRow = row.exam_name === 'Total All Exams';
+                const tr = document.createElement('tr');
+                if (isTotalRow) {
+                    tr.className = 'table-success fw-bold';
+                }
+                tr.innerHTML = `
+                    <td>${this.escapeHtml(row.exam_name || '-')}</td>
+                    <td class="text-end">${this.formatNumber(row.total_marks || 0)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+            table.appendChild(tbody);
+
+            col.appendChild(table);
+            row.appendChild(col);
+            container.appendChild(row);
+            return container;
+        }
+
+        return null;
     }
 
     /**

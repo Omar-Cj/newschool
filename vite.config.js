@@ -5,10 +5,12 @@ export default defineConfig({
     plugins: [
         laravel({
             input: [
-                'resources/sass/app.scss',
+                'resources/css/app.css',
                 'resources/js/app.js',
                 'resources/js/components/DynamicReportForm.js',
                 'resources/js/components/DependencyHandler.js',
+                'resources/js/components/ReportViewer.js',
+                'resources/js/components/ExportButtons.js',
                 'resources/js/services/ReportApiService.js',
                 'resources/js/utils/FormValidation.js',
             ],
@@ -22,6 +24,8 @@ export default defineConfig({
                     'report-components': [
                         'resources/js/components/DynamicReportForm.js',
                         'resources/js/components/DependencyHandler.js',
+                        'resources/js/components/ReportViewer.js',
+                        'resources/js/components/ExportButtons.js',
                     ],
                     'report-services': [
                         'resources/js/services/ReportApiService.js',

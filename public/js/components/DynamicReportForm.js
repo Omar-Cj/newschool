@@ -758,13 +758,20 @@ export class DynamicReportForm {
         let tableHtml = this.generateResultsTable(rows, columns);
 
         // Append summary table if summary data exists
+        // Hide fee_generation_collection summary in webview (shown only in print/PDF)
         if (summary && typeof summary === 'object') {
-            console.log('✅ Summary data detected, rendering summary table');
-            const summaryHtml = this.renderSummaryTable(summary, columns);
-            tableHtml = `
-                ${tableHtml}
-                ${summaryHtml}
-            `;
+            const summaryType = summary.type;
+
+            if (summaryType === 'fee_generation_collection') {
+                console.log('ℹ️ Fee Generation & Collection summary hidden in webview (visible in print/PDF)');
+            } else {
+                console.log('✅ Summary data detected, rendering summary table');
+                const summaryHtml = this.renderSummaryTable(summary, columns);
+                tableHtml = `
+                    ${tableHtml}
+                    ${summaryHtml}
+                `;
+            }
         } else {
             console.log('ℹ️ No summary data available');
         }

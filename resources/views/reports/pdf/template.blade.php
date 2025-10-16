@@ -425,6 +425,36 @@
         </table>
     </div>
     @endif
+
+    {{-- Fee Generation & Collection Summary - Three Column Layout --}}
+    @if(isset($summaryData) && !empty($summaryData) && isset($summaryData['type']) && $summaryData['type'] === 'fee_generation_collection' && isset($summaryData['sections']) && $procedureName === 'GetFeeGenerationCollectionReport')
+    <div class="summary-section">
+        <h5 style="text-align: center; margin-bottom: 20px;">Summary Report</h5>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; width: 100%;">
+            @foreach($summaryData['sections'] as $section)
+                <div style="border: 2px solid #2c3e50; border-radius: 6px; overflow: hidden;">
+                    <div style="background-color: #2c3e50; color: white; padding: 10px; text-align: center; font-weight: bold; font-size: 11pt;">
+                        {{ $section['title'] }}
+                    </div>
+                    <table style="width: 100%; border-collapse: collapse; margin: 0;">
+                        <tbody>
+                            @foreach($section['rows'] as $row)
+                                <tr style="{{ $row['is_total'] ? 'background-color: #2980b9; color: white; font-weight: bold;' : 'background-color: white;' }}">
+                                    <td style="padding: 10px; border: 1px solid #7f8c8d; font-size: 9pt; width: 60%;">
+                                        {{ $row['label'] }}
+                                    </td>
+                                    <td style="padding: 10px; border: 1px solid #7f8c8d; text-align: right; font-size: 9pt; width: 40%;">
+                                        ${{ number_format($row['value'], 2) }}
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endforeach
+        </div>
+    </div>
+    @endif
     @else
     <div class="empty-state">
         <p>No data available for the selected criteria.</p>
