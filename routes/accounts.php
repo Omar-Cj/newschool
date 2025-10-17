@@ -33,12 +33,12 @@ Route::middleware(saasMiddleware())->group(function () {
 
                 // Expense Category Routes
                 Route::controller(\App\Http\Controllers\Accounts\ExpenseCategoryController::class)->prefix('expense-category')->group(function () {
-                    Route::get('/',                 'index')->name('expense-category.index')->middleware('PermissionCheck:expense_read');
-                    Route::get('/create',           'create')->name('expense-category.create')->middleware('PermissionCheck:expense_create');
-                    Route::post('/store',           'store')->name('expense-category.store')->middleware('PermissionCheck:expense_create', 'DemoCheck');
-                    Route::get('/edit/{id}',        'edit')->name('expense-category.edit')->middleware('PermissionCheck:expense_update');
-                    Route::put('/update/{id}',      'update')->name('expense-category.update')->middleware('PermissionCheck:expense_update', 'DemoCheck');
-                    Route::delete('/delete/{id}',   'delete')->name('expense-category.delete')->middleware('PermissionCheck:expense_delete', 'DemoCheck');
+                    Route::get('/',                 'index')->name('expense-category.index')->middleware('PermissionCheck:expense_category_read');
+                    Route::get('/create',           'create')->name('expense-category.create')->middleware('PermissionCheck:expense_category_create');
+                    Route::post('/store',           'store')->name('expense-category.store')->middleware('PermissionCheck:expense_category_create', 'DemoCheck');
+                    Route::get('/edit/{id}',        'edit')->name('expense-category.edit')->middleware('PermissionCheck:expense_category_update');
+                    Route::put('/update/{id}',      'update')->name('expense-category.update')->middleware('PermissionCheck:expense_category_update', 'DemoCheck');
+                    Route::delete('/delete/{id}',   'delete')->name('expense-category.delete')->middleware('PermissionCheck:expense_category_delete', 'DemoCheck');
                 });
 
                 // Expense Routes

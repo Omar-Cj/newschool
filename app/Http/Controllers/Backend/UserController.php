@@ -162,7 +162,10 @@ class UserController extends Controller
         $data['role'] = $staff->user->role;
         $data['title']       = ___('common.Change Permission');
         $data['user_permissions'] = $staff->user->permissions;
-        $data['permissions'] = $this->permission->all();
+        // Filter out permissions with null or empty keywords for data integrity
+        $data['permissions'] = $this->permission->all()->filter(function($permission) {
+            return !is_null($permission->keywords) && is_array($permission->keywords) && !empty($permission->keywords);
+        });
         $data['staff'] = $staff;
         return view('backend.users.change_permission', compact('data'));
     }
