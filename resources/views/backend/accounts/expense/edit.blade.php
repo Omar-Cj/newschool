@@ -45,18 +45,18 @@
                                 </div>
 
                                 <div class="col-md-6">
-                                    <label for="validationServer04" class="form-label">{{ ___('account.expense_head') }} <span
+                                    <label for="validationServer04" class="form-label">{{ ___('account.expense_category') }} <span
                                         class="fillable">*</span></label>
 
-                                    <select class="nice-select niceSelect bordered_style wide @error('expense_head') is-invalid @enderror"
-                                    name="expense_head" id="validationServer04"
+                                    <select class="nice-select niceSelect bordered_style wide @error('expense_category_id') is-invalid @enderror"
+                                    name="expense_category_id" id="validationServer04"
                                     aria-describedby="validationServer04Feedback">
-                                        @foreach ($data['heads'] as $item)
-                                            <option value="{{ $item->id }}" {{ old('expense_head',@$data['expense']->expense_head) == $item->id ? 'selected' : '' }}>{{ $item->name }}</option>
+                                        @foreach ($data['categories'] as $item)
+                                            <option value="{{ $item->id }}" {{ old('expense_category_id',@$data['expense']->expense_category_id) == $item->id ? 'selected' : '' }}>{{ $item->name }}</option>
                                         @endforeach
                                     </select>
                                 </div>
-                                @error('expense_head')
+                                @error('expense_category_id')
                                     <div id="validationServer04Feedback" class="invalid-feedback">
                                         {{ $message }}
                                     </div>

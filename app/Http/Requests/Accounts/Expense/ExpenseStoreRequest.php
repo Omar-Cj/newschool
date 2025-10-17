@@ -24,10 +24,13 @@ class ExpenseStoreRequest extends FormRequest
     public function rules()
     {
         return [
-            'name'           => 'required|max:255|unique:expenses',
-            'expense_head'   => 'required',
-            'date'           => 'required',
-            'amount'         => 'required|max:10'
+            'name' => 'required|string|max:255',
+            'expense_category_id' => 'required|exists:expense_categories,id',
+            'date' => 'required|date',
+            'amount' => 'required|numeric|min:0',
+            'invoice_number' => 'nullable|string|max:100',
+            'document' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'description' => 'nullable|string|max:1000',
         ];
     }
 }

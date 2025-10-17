@@ -34,21 +34,26 @@ class ExpenseRepository implements ExpenseInterface
     {
         DB::beginTransaction();
         try {
-            $expenseStore                   = new $this->expense;
-            $expenseStore->session_id       = setting('session'); 
-            $expenseStore->name             = $request->name;
-            $expenseStore->expense_head     = $request->expense_head;
-            $expenseStore->date             = $request->date;
-            $expenseStore->amount           = $request->amount;
-            $expenseStore->invoice_number   = $request->invoice_number;
-            $expenseStore->upload_id        = $this->UploadImageCreate($request->document, 'backend/uploads/expenses');
-            $expenseStore->description      = $request->description;
+            $expenseStore                      = new $this->expense;
+            $expenseStore->session_id          = setting('session');
+            $expenseStore->name                = $request->name;
+            $expenseStore->expense_category_id = $request->expense_category_id;
+            $expenseStore->date                = $request->date;
+            $expenseStore->amount              = $request->amount;
+            $expenseStore->invoice_number      = $request->invoice_number;
+            $expenseStore->upload_id           = $this->UploadImageCreate($request->document, 'backend/uploads/expenses');
+            $expenseStore->description         = $request->description;
             $expenseStore->save();
 
             DB::commit();
             return $this->responseWithSuccess(___('alert.created_successfully'), []);
         } catch (\Throwable $th) {
             DB::rollBack();
+            \Log::error('Expense creation failed: ' . $th->getMessage(), [
+                'request_data' => $request->all(),
+                'user_id' => auth()->id(),
+                'exception' => $th->getTraceAsString()
+            ]);
             return $this->responseWithError(___('alert.something_went_wrong_please_try_again'), []);
         }
     }
@@ -62,15 +67,15 @@ class ExpenseRepository implements ExpenseInterface
     {
         DB::beginTransaction();
         try {
-            $expenseUpdate                   = $this->expense->findOrfail($id);
-            $expenseUpdate->session_id       = setting('session'); 
-            $expenseUpdate->name             = $request->name;
-            $expenseUpdate->expense_head     = $request->expense_head;
-            $expenseUpdate->date             = $request->date;
-            $expenseUpdate->amount           = $request->amount;
-            $expenseUpdate->invoice_number   = $request->invoice_number;
-            $expenseUpdate->upload_id        = $this->UploadImageUpdate($request->document, 'backend/uploads/expenses', $expenseUpdate->upload_id);
-            $expenseUpdate->description      = $request->description;
+            $expenseUpdate                      = $this->expense->findOrfail($id);
+            $expenseUpdate->session_id          = setting('session');
+            $expenseUpdate->name                = $request->name;
+            $expenseUpdate->expense_category_id = $request->expense_category_id;
+            $expenseUpdate->date                = $request->date;
+            $expenseUpdate->amount              = $request->amount;
+            $expenseUpdate->invoice_number      = $request->invoice_number;
+            $expenseUpdate->upload_id           = $this->UploadImageUpdate($request->document, 'backend/uploads/expenses', $expenseUpdate->upload_id);
+            $expenseUpdate->description         = $request->description;
             $expenseUpdate->save();
 
             DB::commit();

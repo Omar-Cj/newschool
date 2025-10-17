@@ -25,7 +25,7 @@
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h4 class="mb-0">{{ $data['title'] }}</h4>
                     @if (hasPermission('expense_create'))
-                        <a href="{{ route('expense.create') }}" class="btn btn-lg ot-btn-primary">
+                        <a href="{{ route('expense-category.create') }}" class="btn btn-lg ot-btn-primary">
                             <span><i class="fa-solid fa-plus"></i> </span>
                             <span class="">{{ ___('common.add') }}</span>
                         </a>
@@ -38,30 +38,30 @@
                                 <tr>
                                     <th class="serial">{{ ___('common.sr_no') }}</th>
                                     <th class="purchase">{{ ___('common.name') }}</th>
-                                    <th class="purchase">{{ ___('account.expense_category') }}</th>
-                                    <th class="purchase">{{ ___('account.date') }}</th>
-                                    <th class="purchase">{{ ___('account.invoice_number') }}</th>
-                                    <th class="purchase">{{ ___('account.amount') }} ({{ Setting('currency_symbol') }})</th>
-                                    <th class="purchase">{{ ___('common.document') }}</th>
+                                    <th class="purchase">{{ ___('account.category_code') }}</th>
+                                    <th class="purchase">{{ ___('account.description') }}</th>
+                                    <th class="purchase">{{ ___('common.status') }}</th>
+                                    <th class="purchase">{{ ___('common.expenses_count') }}</th>
                                     @if (hasPermission('expense_update') || hasPermission('expense_delete'))
                                         <th class="action">{{ ___('common.action') }}</th>
                                     @endif
                                 </tr>
                             </thead>
                             <tbody class="tbody">
-                                @forelse ($data['expense'] as $key => $row)
+                                @forelse ($data['categories'] as $key => $row)
                                 <tr id="row_{{ $row->id }}">
                                     <td class="serial">{{ ++$key }}</td>
                                     <td>{{ @$row->name }}</td>
-                                    <td>{{ @$row->category->name ?? @$row->head->name }}</td>
-                                    <td>{{ dateFormat(@$row->date) }}</td>
-                                    <td>{{ @$row->invoice_number }}</td>
-                                    <td>{{ @$row->amount }}</td>
+                                    <td>{{ @$row->code }}</td>
+                                    <td>{{ Str::limit(@$row->description, 50) }}</td>
                                     <td>
-                                        @if (@$row->upload->path)
-                                            <a href="{{ @globalAsset(@$row->upload->path) }}" download>{{ ___('common.download') }}</a>
+                                        @if ($row->status == \App\Enums\Status::ACTIVE)
+                                            <span class="badge badge-success">{{ ___('common.active') }}</span>
+                                        @else
+                                            <span class="badge badge-danger">{{ ___('common.inactive') }}</span>
                                         @endif
                                     </td>
+                                    <td>{{ $row->expenses()->count() }}</td>
                                     @if (hasPermission('expense_update') || hasPermission('expense_delete'))
                                         <td class="action">
                                             <div class="dropdown dropdown-action">
@@ -73,7 +73,7 @@
                                                     @if (hasPermission('expense_update'))
                                                         <li>
                                                             <a class="dropdown-item"
-                                                                href="{{ route('expense.edit', $row->id) }}"><span
+                                                                href="{{ route('expense-category.edit', $row->id) }}"><span
                                                                     class="icon mr-8"><i
                                                                         class="fa-solid fa-pen-to-square"></i></span>
                                                                 {{ ___('common.edit') }}</a>
@@ -82,7 +82,7 @@
                                                     @if (hasPermission('expense_delete'))
                                                         <li>
                                                             <a class="dropdown-item" href="javascript:void(0);"
-                                                                onclick="delete_row('expense/delete', {{ $row->id }})">
+                                                                onclick="delete_row('expense-category/delete', {{ $row->id }})">
                                                                 <span class="icon mr-8"><i
                                                                         class="fa-solid fa-trash-can"></i></span>
                                                                 <span>{{ ___('common.delete') }}</span>
@@ -113,7 +113,7 @@
                         <div class="ot-pagination pagination-content d-flex justify-content-end align-content-center py-3">
                             <nav aria-label="Page navigation example">
                                 <ul class="pagination justify-content-between">
-                                    {!!$data['expense']->links() !!}
+                                    {!!$data['categories']->links() !!}
                                 </ul>
                             </nav>
                         </div>

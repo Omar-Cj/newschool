@@ -683,7 +683,7 @@
                     (hasPermission('account_head_read') || hasPermission('income_read') || hasPermission('expense_read') || hasPermission('journal_read')) &&
                         hasFeature('account'))
                     <li
-                        class="sidebar-menu-item {{ set_menu(['account_head.index', 'account_head.create', 'account_head.edit', 'journals*']) }}">
+                        class="sidebar-menu-item {{ set_menu(['account_head.index', 'account_head.create', 'account_head.edit', 'expense-category*', 'expense*', 'journals*']) }}">
                         <a class="parent-item-content has-arrow">
                             <i class="las la-dolly"></i>
                             <span class="on-half-expanded">{{ ___('account.Accounts') }}</span>
@@ -702,7 +702,12 @@
                                 </li>
                             @endif
                             @if (hasPermission('expense_read'))
-                                <li class="sidebar-menu-item {{ set_menu(['expense*']) }}">
+                                <li class="sidebar-menu-item {{ set_menu(['expense-category*']) }}">
+                                    <a href="{{ route('expense-category.index') }}">{{ ___('account.expense_categories') }}</a>
+                                </li>
+                            @endif
+                            @if (hasPermission('expense_read'))
+                                <li class="sidebar-menu-item {{ set_menu(['expense.index', 'expense.create', 'expense.edit']) }}">
                                     <a href="{{ route('expense.index') }}">{{ ___('account.expense') }}</a>
                                 </li>
                             @endif

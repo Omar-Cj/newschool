@@ -12,16 +12,17 @@ use Illuminate\Support\Facades\Schema;
 
 class ExpenseController extends Controller
 {
-    private $expenseRepo, $accountHeadRepository;
+    private $expenseRepo, $expenseCategoryRepo;
 
-    function __construct(ExpenseRepository $expenseRepo, AccountHeadRepository $accountHeadRepository)
-    {
-
-        if (!Schema::hasTable('settings') && !Schema::hasTable('users')  ) {
+    function __construct(
+        ExpenseRepository $expenseRepo,
+        \App\Repositories\Accounts\ExpenseCategoryRepository $expenseCategoryRepo
+    ) {
+        if (!Schema::hasTable('settings') && !Schema::hasTable('users')) {
             abort(400);
-        } 
-        $this->expenseRepo                 = $expenseRepo; 
-        $this->accountHeadRepository       = $accountHeadRepository; 
+        }
+        $this->expenseRepo = $expenseRepo;
+        $this->expenseCategoryRepo = $expenseCategoryRepo;
     }
 
     public function index()
@@ -33,8 +34,8 @@ class ExpenseController extends Controller
 
     public function create()
     {
-        $data['title']       = ___('account.create_expense');
-        $data['heads']       = $this->accountHeadRepository->getExpenseHeads();
+        $data['title'] = ___('account.create_expense');
+        $data['categories'] = $this->expenseCategoryRepo->getActiveCategories();
         return view('backend.accounts.expense.create', compact('data'));
     }
 
@@ -49,9 +50,9 @@ class ExpenseController extends Controller
 
     public function edit($id)
     {
-        $data['heads']       = $this->accountHeadRepository->getExpenseHeads();
-        $data['expense']     = $this->expenseRepo->show($id);
-        $data['title']       = ___('account.edit_expense');
+        $data['categories'] = $this->expenseCategoryRepo->getActiveCategories();
+        $data['expense'] = $this->expenseRepo->show($id);
+        $data['title'] = ___('account.edit_expense');
         return view('backend.accounts.expense.edit', compact('data'));
     }
 
