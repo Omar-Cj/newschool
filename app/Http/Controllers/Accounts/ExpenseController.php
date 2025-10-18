@@ -28,8 +28,37 @@ class ExpenseController extends Controller
     public function index()
     {
         $data['expense'] = $this->expenseRepo->getAll();
+        $data['categories'] = $this->expenseCategoryRepo->getActiveCategories();
         $data['title'] = ___('account.expense');
         return view('backend.accounts.expense.index', compact('data'));
+    }
+
+    /**
+     * Handle AJAX request for DataTables server-side processing.
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function ajaxExpenseData(Request $request)
+    {
+        try {
+            $result = $this->expenseRepo->getAjaxData($request);
+            return response()->json($result);
+        } catch (\Throwable $th) {
+            \Log::error('Expense AJAX data fetch failed: ' . $th->getMessage(), [
+                'request_data' => $request->all(),
+                'user_id' => auth()->id(),
+                'exception' => $th->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'draw' => intval($request->input('draw')),
+                'recordsTotal' => 0,
+                'recordsFiltered' => 0,
+                'data' => [],
+                'error' => ___('alert.something_went_wrong_please_try_again')
+            ], 500);
+        }
     }
 
     public function create()

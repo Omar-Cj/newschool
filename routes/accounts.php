@@ -34,6 +34,7 @@ Route::middleware(saasMiddleware())->group(function () {
                 // Expense Category Routes
                 Route::controller(\App\Http\Controllers\Accounts\ExpenseCategoryController::class)->prefix('expense-category')->group(function () {
                     Route::get('/',                 'index')->name('expense-category.index')->middleware('PermissionCheck:expense_category_read');
+                    Route::get('/ajax-data',        'ajaxCategoryData')->name('expense-category.ajaxData')->middleware('PermissionCheck:expense_category_read');
                     Route::get('/create',           'create')->name('expense-category.create')->middleware('PermissionCheck:expense_category_create');
                     Route::post('/store',           'store')->name('expense-category.store')->middleware('PermissionCheck:expense_category_create', 'DemoCheck');
                     Route::get('/edit/{id}',        'edit')->name('expense-category.edit')->middleware('PermissionCheck:expense_category_update');
@@ -44,6 +45,7 @@ Route::middleware(saasMiddleware())->group(function () {
                 // Expense Routes
                 Route::controller(ExpenseController::class)->prefix('expense')->group(function () {
                     Route::get('/',                 'index')->name('expense.index')->middleware('PermissionCheck:expense_read');
+                    Route::get('/ajax-data',        'ajaxExpenseData')->name('expense.ajaxData')->middleware('PermissionCheck:expense_read');
                     Route::get('/create',           'create')->name('expense.create')->middleware('PermissionCheck:expense_create');
                     Route::post('/store',           'store')->name('expense.store')->middleware('PermissionCheck:expense_create', 'DemoCheck');
                     Route::get('/edit/{id}',        'edit')->name('expense.edit')->middleware('PermissionCheck:expense_update');

@@ -34,6 +34,33 @@ class ExpenseCategoryController extends Controller
     }
 
     /**
+     * Get AJAX data for DataTables server-side processing.
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function ajaxCategoryData(Request $request)
+    {
+        try {
+            $result = $this->expenseCategoryRepo->getAjaxData($request);
+            return response()->json($result);
+        } catch (\Throwable $th) {
+            \Log::error('Error in ajaxCategoryData: ' . $th->getMessage(), [
+                'request' => $request->all(),
+                'error' => $th->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'draw' => intval($request->input('draw')),
+                'recordsTotal' => 0,
+                'recordsFiltered' => 0,
+                'data' => [],
+                'error' => 'An error occurred while loading data.'
+            ], 500);
+        }
+    }
+
+    /**
      * Show the form for creating a new expense category.
      *
      * @return \Illuminate\View\View
