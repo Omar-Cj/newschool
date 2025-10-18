@@ -23,9 +23,11 @@ class ReportExecutionService
      * Constructor
      *
      * @param ReportRepository $reportRepository
+     * @param BranchParameterService $branchParameterService
      */
     public function __construct(
-        private ReportRepository $reportRepository
+        private ReportRepository $reportRepository,
+        private BranchParameterService $branchParameterService
     ) {}
 
     /**
@@ -51,6 +53,19 @@ class ReportExecutionService
         if ($report->status !== 1) {
             throw new \Exception("Report is not active and cannot be executed");
         }
+
+        // AUTO-INJECT BRANCH PARAMETER (Global System Parameter)
+        $branchId = $this->branchParameterService->getBranchIdForExecution($parameters);
+        $parameters[BranchParameterService::BRANCH_PARAM_NAME] = $branchId;
+
+        Log::info('Branch parameter auto-injected', [
+            'report_id' => $reportId,
+            'report_name' => $report->name,
+            'branch_id' => $branchId,
+            'is_all_branches' => $branchId === null,
+            'user_id' => Auth::id(),
+            'user_branch' => Auth::user()->branch_id ?? null
+        ]);
 
         // Validate parameters
         $validationErrors = $this->validateParameters($parameters, $reportId);
@@ -179,6 +194,19 @@ class ReportExecutionService
 
             $preparedParameters[] = $value;
         }
+
+        // APPEND BRANCH PARAMETER AT THE END (as per stored procedure convention)
+        // Branch parameter is always added as the LAST parameter to all procedures
+        $branchId = $inputParameters[BranchParameterService::BRANCH_PARAM_NAME] ?? null;
+        $preparedParameters[] = $branchId;
+
+        Log::debug('Parameters prepared for stored procedure', [
+            'report_id' => $report->id,
+            'report_parameters_count' => count($reportParameters),
+            'total_parameters_count' => count($preparedParameters),
+            'branch_parameter_value' => $branchId,
+            'branch_parameter_position' => 'last'
+        ]);
 
         return $preparedParameters;
     }

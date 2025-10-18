@@ -14,10 +14,10 @@ use App\Http\Controllers\DynamicReportController;
 
 Route::middleware(['auth'])->prefix('reports')->name('reports.')->group(function () {
 
-    // Export endpoints
-    Route::post('/{reportId}/export', [DynamicReportController::class, 'export'])->name('export');
+    // Export endpoints (with branch access control)
+    Route::post('/{reportId}/export', [DynamicReportController::class, 'export'])->name('export')->middleware('branch.access');
     Route::get('/download-export', [DynamicReportController::class, 'downloadExport'])->name('download-export');
-    Route::post('/quick-export', [DynamicReportController::class, 'quickExport'])->name('quick-export');
+    Route::post('/quick-export', [DynamicReportController::class, 'quickExport'])->name('quick-export')->middleware('branch.access');
 
     // Utility endpoints
     Route::get('/export-options', [DynamicReportController::class, 'getExportOptions'])->name('export-options');

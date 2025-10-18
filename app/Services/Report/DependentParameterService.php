@@ -21,9 +21,11 @@ class DependentParameterService
      * Constructor
      *
      * @param ReportRepository $reportRepository
+     * @param BranchParameterService $branchParameterService
      */
     public function __construct(
-        private ReportRepository $reportRepository
+        private ReportRepository $reportRepository,
+        private BranchParameterService $branchParameterService
     ) {}
 
     /**
@@ -316,6 +318,43 @@ class DependentParameterService
      */
     public function getInitialParameterValues(int $reportId, array $initialValues = []): array
     {
+        // PREPEND BRANCH PARAMETER AS FIRST PARAMETER (System-level global parameter)
+        $branchParamDefinition = $this->branchParameterService->getBranchParameterDefinition();
+
+        // Get branch options from the query
+        $branchQuery = json_decode($branchParamDefinition['values'], true)['query'] ?? null;
+        $branchValues = [];
+
+        if ($branchQuery) {
+            try {
+                $branchValues = $this->reportRepository->executeDynamicQuery($branchQuery)
+                    ->map(fn($row) => [
+                        'value' => $row['value'] ?? null,
+                        'label' => $row['label'] ?? 'Unknown'
+                    ])->toArray();
+            } catch (\Exception $e) {
+                Log::error('Failed to load branch parameter values', [
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+
+        // Build branch parameter data
+        $branchParameter = [
+            'id' => 0, // System parameter (not stored in report_parameters table)
+            'name' => $branchParamDefinition['name'],
+            'label' => $branchParamDefinition['label'],
+            'type' => $branchParamDefinition['type'],
+            'placeholder' => $branchParamDefinition['placeholder'] ?? 'Select Branch',
+            'is_required' => $branchParamDefinition['is_required'],
+            'default_value' => $branchParamDefinition['default_value'],
+            'parent_id' => null,
+            'display_order' => $branchParamDefinition['display_order'],
+            'values' => $branchValues,
+            'is_system_parameter' => true, // Flag to identify system parameters
+        ];
+
+        // Get report-specific parameters
         $parameters = $this->reportRepository->getReportParameters($reportId);
         $result = [];
 
@@ -330,6 +369,7 @@ class DependentParameterService
                 'default_value' => $parameter->default_value,
                 'parent_id' => $parameter->parent_id,
                 'display_order' => $parameter->display_order,
+                'is_system_parameter' => false,
             ];
 
             // Load values for independent parameters or if parent value is provided
@@ -348,6 +388,17 @@ class DependentParameterService
 
             $result[] = $paramData;
         }
+
+        // PREPEND branch parameter as the FIRST parameter in the list
+        array_unshift($result, $branchParameter);
+
+        Log::debug('Initial parameter values loaded with branch parameter', [
+            'report_id' => $reportId,
+            'total_parameters' => count($result),
+            'branch_parameter_position' => 0,
+            'branch_default_value' => $branchParameter['default_value'],
+            'branch_values_count' => count($branchValues)
+        ]);
 
         return $result;
     }

@@ -198,14 +198,14 @@ Route::middleware(saasApiMiddleware())->group(function () {
                 // Get dependent parameter values
                 Route::get('/parameters/{parameterId}/dependent-values', [ReportController::class, 'getDependentValues']);
 
-                // Execute report with parameters
-                Route::post('/{reportId}/execute', [ReportController::class, 'execute']);
+                // Execute report with parameters (with branch access control)
+                Route::post('/{reportId}/execute', [ReportController::class, 'execute'])->middleware('branch.access');
 
-                // Export report in specified format
-                Route::post('/{reportId}/export/{format}', [ReportController::class, 'export']);
+                // Export report in specified format (with branch access control)
+                Route::post('/{reportId}/export/{format}', [ReportController::class, 'export'])->middleware('branch.access');
 
-                // Print report (identical layout to PDF)
-                Route::post('/{reportId}/print', [ReportController::class, 'print']);
+                // Print report (identical layout to PDF) (with branch access control)
+                Route::post('/{reportId}/print', [ReportController::class, 'print'])->middleware('branch.access');
 
                 // Get report execution statistics
                 Route::get('/{reportId}/statistics', [ReportController::class, 'statistics']);
