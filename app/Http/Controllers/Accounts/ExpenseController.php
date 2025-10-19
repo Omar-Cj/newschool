@@ -7,22 +7,25 @@ use App\Http\Requests\Accounts\Expense\ExpenseStoreRequest;
 use App\Http\Requests\Accounts\Expense\ExpenseUpdateRequest;
 use App\Repositories\Accounts\AccountHeadRepository;
 use App\Repositories\Accounts\ExpenseRepository;
+use Modules\Journals\Repositories\JournalRepository;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 
 class ExpenseController extends Controller
 {
-    private $expenseRepo, $expenseCategoryRepo;
+    private $expenseRepo, $expenseCategoryRepo, $journalRepo;
 
     function __construct(
         ExpenseRepository $expenseRepo,
-        \App\Repositories\Accounts\ExpenseCategoryRepository $expenseCategoryRepo
+        \App\Repositories\Accounts\ExpenseCategoryRepository $expenseCategoryRepo,
+        JournalRepository $journalRepo
     ) {
         if (!Schema::hasTable('settings') && !Schema::hasTable('users')) {
             abort(400);
         }
         $this->expenseRepo = $expenseRepo;
         $this->expenseCategoryRepo = $expenseCategoryRepo;
+        $this->journalRepo = $journalRepo;
     }
 
     public function index()
@@ -65,6 +68,7 @@ class ExpenseController extends Controller
     {
         $data['title'] = ___('account.create_expense');
         $data['categories'] = $this->expenseCategoryRepo->getActiveCategories();
+        $data['journals'] = $this->journalRepo->getJournalsForDropdown();
         return view('backend.accounts.expense.create', compact('data'));
     }
 
@@ -82,6 +86,7 @@ class ExpenseController extends Controller
         $data['categories'] = $this->expenseCategoryRepo->getActiveCategories();
         $data['expense'] = $this->expenseRepo->show($id);
         $data['title'] = ___('account.edit_expense');
+        $data['journals'] = $this->journalRepo->getJournalsForDropdown();
         return view('backend.accounts.expense.edit', compact('data'));
     }
 

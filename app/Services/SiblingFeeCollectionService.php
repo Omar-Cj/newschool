@@ -398,9 +398,15 @@ class SiblingFeeCollectionService extends EnhancedFeeCollectionService
                     // Example: $10 payment + $5 discount = $15 fee covered
                     if ($feeDiscount > 0) {
                         $feeCollect->update([
+                            'journal_id' => $journalId,
                             'discount_amount' => ($feeCollect->discount_amount ?? 0) + $feeDiscount,
                             'discount_type' => $discountType,
                             'discount_applied' => ($feeCollect->discount_applied ?? 0) + $feeDiscount, // Legacy field
+                        ]);
+                    } elseif ($journalId) {
+                        // Update journal_id even when there's no discount
+                        $feeCollect->update([
+                            'journal_id' => $journalId,
                         ]);
                     }
 

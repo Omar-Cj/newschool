@@ -40,7 +40,7 @@ class ExpenseRepository implements ExpenseInterface
     {
         try {
             // Base query with session filter and eager loading
-            $query = $this->expense->with(['category', 'upload'])
+            $query = $this->expense->with(['category', 'upload', 'journal'])
                 ->where('session_id', setting('session'));
 
             // Apply filters
@@ -217,6 +217,7 @@ class ExpenseRepository implements ExpenseInterface
             $expenseStore->invoice_number      = $request->invoice_number;
             $expenseStore->upload_id           = $this->UploadImageCreate($request->document, 'backend/uploads/expenses');
             $expenseStore->description         = $request->description;
+            $expenseStore->journal_id          = $request->journal_id;
             $expenseStore->save();
 
             DB::commit();
@@ -250,6 +251,7 @@ class ExpenseRepository implements ExpenseInterface
             $expenseUpdate->invoice_number      = $request->invoice_number;
             $expenseUpdate->upload_id           = $this->UploadImageUpdate($request->document, 'backend/uploads/expenses', $expenseUpdate->upload_id);
             $expenseUpdate->description         = $request->description;
+            $expenseUpdate->journal_id          = $request->journal_id;
             $expenseUpdate->save();
 
             DB::commit();

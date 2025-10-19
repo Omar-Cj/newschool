@@ -9,15 +9,18 @@ return new class extends Migration
     /**
      * Run the migrations.
      *
-     * Make expense_head column nullable for backward compatibility
-     * since we've transitioned to using expense_category_id instead.
-     *
      * @return void
      */
     public function up()
     {
         Schema::table('expenses', function (Blueprint $table) {
-            $table->unsignedBigInteger('expense_head')->nullable()->change();
+            $table->foreignId('journal_id')
+                  ->nullable()
+                  ->after('expense_category_id')
+                  ->constrained('journals')
+                  ->nullOnDelete();
+
+            $table->index('journal_id');
         });
     }
 
@@ -29,7 +32,9 @@ return new class extends Migration
     public function down()
     {
         Schema::table('expenses', function (Blueprint $table) {
-            $table->unsignedBigInteger('expense_head')->nullable(false)->change();
+            $table->dropForeign(['journal_id']);
+            $table->dropIndex(['journal_id']);
+            $table->dropColumn('journal_id');
         });
     }
 };

@@ -98,7 +98,6 @@
                                     <th>{{ ___('journals.name') }}</th>
                                     <th>{{ ___('journals.branch') }}</th>
                                     <th>{{ ___('journals.description') }}</th>
-                                    <th>{{ ___('common.status') }}</th>
                                     <th>{{ ___('common.created_at') }}</th>
                                     @if (hasPermission('journal_update') || hasPermission('journal_read') || hasPermission('journal_delete'))
                                         <th>{{ ___('common.action') }}</th>
@@ -119,13 +118,6 @@
                                             <span class="text-muted">
                                                 {{ Str::limit($journal->description, 50) }}
                                             </span>
-                                        </td>
-                                        <td>
-                                            @if ($journal->status == 'active')
-                                                <span class="badge badge-success">{{ ___('common.active') }}</span>
-                                            @else
-                                                <span class="badge badge-danger">{{ ___('common.inactive') }}</span>
-                                            @endif
                                         </td>
                                         <td>{{ dateFormat($journal->created_at) }}</td>
                                         @if (hasPermission('journal_update') || hasPermission('journal_read') || hasPermission('journal_delete'))
@@ -152,6 +144,26 @@
                                                                 </a>
                                                             </li>
                                                         @endif
+                                                        @if (hasPermission('journal_update') && $journal->status == 'active')
+                                                            <li>
+                                                                <a class="dropdown-item close-journal" href="javascript:void(0);"
+                                                                   data-id="{{ $journal->id }}"
+                                                                   data-name="{{ $journal->name }}">
+                                                                    <span class="icon mr-12"><i class="fa-solid fa-lock"></i></span>
+                                                                    {{ ___('journals.close_journal') }}
+                                                                </a>
+                                                            </li>
+                                                        @endif
+                                                        @if (auth()->user()->role_id === 1 && $journal->status == 'inactive')
+                                                            <li>
+                                                                <a class="dropdown-item open-journal" href="javascript:void(0);"
+                                                                   data-id="{{ $journal->id }}"
+                                                                   data-name="{{ $journal->name }}">
+                                                                    <span class="icon mr-12"><i class="fa-solid fa-lock-open"></i></span>
+                                                                    {{ ___('journals.open_journal') }}
+                                                                </a>
+                                                            </li>
+                                                        @endif
                                                         @if (hasPermission('journal_delete'))
                                                             <li>
                                                                 <a class="dropdown-item delete_data" href="javascript:void(0);"
@@ -168,7 +180,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="{{ hasPermission('journal_update') || hasPermission('journal_read') || hasPermission('journal_delete') ? '7' : '6' }}"
+                                        <td colspan="{{ hasPermission('journal_update') || hasPermission('journal_read') || hasPermission('journal_delete') ? '6' : '5' }}"
                                             class="text-center">{{ ___('common.no_data_available') }}</td>
                                     </tr>
                                 @endforelse
@@ -193,3 +205,155 @@
 
     @include('backend.partials.delete-ajax')
 @endsection
+
+@push('script')
+<script>
+$(document).ready(function() {
+    // Close journal button handler
+    $('.close-journal').on('click', function() {
+        const journalId = $(this).data('id');
+        const journalName = $(this).data('name');
+        const closeUrl = '{{ route("journals.close", ":id") }}'.replace(':id', journalId);
+
+        Swal.fire({
+            title: '{{ ___("journals.close_journal") }}',
+            text: '{{ ___("journals.close_journal_confirmation") }}' + ' "' + journalName + '"?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: '{{ ___("common.yes_close") }}',
+            cancelButtonText: '{{ ___("common.cancel") }}'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: closeUrl,
+                    type: 'POST',
+                    data: {
+                        _token: '{{ csrf_token() }}'
+                    },
+                    success: function(response) {
+                        Swal.fire({
+                            icon: response[1] || 'success',
+                            title: response[2] || '{{ ___("alert.success") }}',
+                            text: response[0] || '{{ ___("journals.journal_closed_successfully") }}',
+                            confirmButtonText: response[3] || '{{ ___("alert.OK") }}'
+                        }).then(() => {
+                            location.reload();
+                        });
+                    },
+                    error: function(xhr) {
+                        let errorMessage = '{{ ___("alert.something_went_wrong") }}';
+                        if (xhr.responseJSON) {
+                            errorMessage = xhr.responseJSON[0] || xhr.responseJSON.message || errorMessage;
+                        }
+                        Swal.fire({
+                            icon: 'error',
+                            title: '{{ ___("alert.oops") }}',
+                            text: errorMessage
+                        });
+                    }
+                });
+            }
+        });
+    });
+
+    // Open journal button handler
+    $('.open-journal').on('click', function() {
+        const journalId = $(this).data('id');
+        const journalName = $(this).data('name');
+        const openUrl = '{{ route("journals.open", ":id") }}'.replace(':id', journalId);
+
+        Swal.fire({
+            title: '{{ ___("journals.open_journal") }}',
+            text: '{{ ___("journals.open_journal_confirmation") }}' + ' "' + journalName + '"?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: '{{ ___("common.yes_open") }}',
+            cancelButtonText: '{{ ___("common.cancel") }}'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: openUrl,
+                    type: 'POST',
+                    data: {
+                        _token: '{{ csrf_token() }}'
+                    },
+                    success: function(response) {
+                        Swal.fire({
+                            icon: response[1] || 'success',
+                            title: response[2] || '{{ ___("alert.success") }}',
+                            text: response[0] || '{{ ___("journals.journal_opened_successfully") }}',
+                            confirmButtonText: response[3] || '{{ ___("alert.OK") }}'
+                        }).then(() => {
+                            location.reload();
+                        });
+                    },
+                    error: function(xhr) {
+                        let errorMessage = '{{ ___("alert.something_went_wrong") }}';
+                        if (xhr.responseJSON) {
+                            errorMessage = xhr.responseJSON[0] || xhr.responseJSON.message || errorMessage;
+                        }
+                        Swal.fire({
+                            icon: 'error',
+                            title: '{{ ___("alert.oops") }}',
+                            text: errorMessage
+                        });
+                    }
+                });
+            }
+        });
+    });
+
+    // Delete journal button handler
+    $('.delete_data').on('click', function(e) {
+        e.preventDefault();
+        const deleteUrl = $(this).data('href');
+
+        Swal.fire({
+            title: '{{ ___("alert.are_you_sure") }}',
+            text: '{{ ___("alert.you_wont_be_able_to_revert_this") }}',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: '{{ ___("alert.yes_delete_it") }}',
+            cancelButtonText: '{{ ___("common.cancel") }}'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: deleteUrl,
+                    type: 'DELETE',
+                    data: {
+                        _token: '{{ csrf_token() }}'
+                    },
+                    success: function(response) {
+                        Swal.fire({
+                            icon: response[1] || 'success',
+                            title: response[2] || '{{ ___("alert.deleted") }}',
+                            text: response[0] || '{{ ___("alert.record_deleted_successfully") }}',
+                            confirmButtonText: response[3] || '{{ ___("alert.OK") }}'
+                        }).then(() => {
+                            location.reload();
+                        });
+                    },
+                    error: function(xhr) {
+                        let errorMessage = '{{ ___("alert.something_went_wrong_please_try_again") }}';
+                        if (xhr.responseJSON) {
+                            errorMessage = xhr.responseJSON[0] || xhr.responseJSON.message || errorMessage;
+                        }
+                        Swal.fire({
+                            icon: 'error',
+                            title: '{{ ___("alert.oops") }}',
+                            text: errorMessage
+                        });
+                    }
+                });
+            }
+        });
+    });
+});
+</script>
+@endpush

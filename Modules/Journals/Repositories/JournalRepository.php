@@ -4,6 +4,7 @@ namespace Modules\Journals\Repositories;
 
 use Modules\Journals\Interfaces\JournalInterface;
 use Modules\Journals\Entities\Journal;
+use Modules\Journals\Entities\JournalAuditLog;
 use Modules\MultiBranch\Entities\Branch;
 use App\Traits\ReturnFormatTrait;
 use Illuminate\Support\Facades\Auth;
@@ -128,6 +129,11 @@ class JournalRepository implements JournalInterface
         try {
             $row = $this->model->find($id);
 
+            // Check if journal is inactive (closed)
+            if ($row->status === 'inactive') {
+                return $this->responseWithError(___('alert.cannot_delete_closed_journal'), []);
+            }
+
             // Check if journal has associated fee collections
             if ($row->feesCollects()->count() > 0) {
                 return $this->responseWithError(___('alert.cannot_delete_journal_with_transactions'), []);
@@ -135,6 +141,64 @@ class JournalRepository implements JournalInterface
 
             $row->delete();
             return $this->responseWithSuccess(___('alert.deleted_successfully'), []);
+        } catch (\Throwable $th) {
+            return $this->responseWithError(___('alert.something_went_wrong_please_try_again'), []);
+        }
+    }
+
+    public function close($id)
+    {
+        try {
+            $row = $this->model->findOrFail($id);
+
+            // Check if journal is already inactive
+            if ($row->status === 'inactive') {
+                return $this->responseWithError(___('alert.journal_already_closed'), []);
+            }
+
+            // Update status to inactive
+            $row->status = 'inactive';
+            $row->save();
+
+            // Create audit log
+            JournalAuditLog::create([
+                'journal_id' => $row->id,
+                'action' => 'closed',
+                'performed_by' => Auth::id(),
+                'performed_at' => now(),
+                'notes' => null,
+            ]);
+
+            return $this->responseWithSuccess(___('alert.journal_closed_successfully'), $row);
+        } catch (\Throwable $th) {
+            return $this->responseWithError(___('alert.something_went_wrong_please_try_again'), []);
+        }
+    }
+
+    public function open($id)
+    {
+        try {
+            $row = $this->model->findOrFail($id);
+
+            // Check if journal is already active
+            if ($row->status === 'active') {
+                return $this->responseWithError(___('alert.journal_already_open'), []);
+            }
+
+            // Update status to active
+            $row->status = 'active';
+            $row->save();
+
+            // Create audit log
+            JournalAuditLog::create([
+                'journal_id' => $row->id,
+                'action' => 'opened',
+                'performed_by' => Auth::id(),
+                'performed_at' => now(),
+                'notes' => null,
+            ]);
+
+            return $this->responseWithSuccess(___('alert.journal_opened_successfully'), $row);
         } catch (\Throwable $th) {
             return $this->responseWithError(___('alert.something_went_wrong_please_try_again'), []);
         }

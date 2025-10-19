@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Models\User;
-use App\Models\School;
+use Modules\MainApp\Entities\School;
 use App\Models\Fees\FeesCollect;
 use Modules\MultiBranch\Entities\Branch;
 
@@ -59,6 +59,14 @@ class Journal extends Model
     public function feesCollects(): HasMany
     {
         return $this->hasMany(FeesCollect::class);
+    }
+
+    /**
+     * Get all audit logs for this journal
+     */
+    public function auditLogs(): HasMany
+    {
+        return $this->hasMany(JournalAuditLog::class)->latest('performed_at');
     }
 
     /**

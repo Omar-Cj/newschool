@@ -14,6 +14,7 @@ use App\Repositories\Academic\SectionRepository;
 use App\Repositories\Fees\FeesMasterRepository;
 use App\Repositories\StudentInfo\StudentRepository;
 use App\Services\SiblingFeeCollectionService;
+use App\Services\ReceiptNumberingService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
@@ -28,6 +29,7 @@ class FeesCollectController extends Controller
     private $studentRepo;
     private $feesMasterRepo;
     private $siblingFeeService;
+    private $receiptNumberingService;
 
     function __construct(
         FeesCollectInterface   $repo,
@@ -35,15 +37,17 @@ class FeesCollectController extends Controller
         SectionRepository      $sectionRepo,
         StudentRepository      $studentRepo,
         FeesMasterRepository   $feesMasterRepo,
-        SiblingFeeCollectionService $siblingFeeService
+        SiblingFeeCollectionService $siblingFeeService,
+        ReceiptNumberingService $receiptNumberingService
         )
     {
-        $this->repo              = $repo;
-        $this->classRepo         = $classRepo;
-        $this->sectionRepo       = $sectionRepo;
-        $this->studentRepo       = $studentRepo;
-        $this->feesMasterRepo    = $feesMasterRepo;
-        $this->siblingFeeService = $siblingFeeService;
+        $this->repo                      = $repo;
+        $this->classRepo                 = $classRepo;
+        $this->sectionRepo               = $sectionRepo;
+        $this->studentRepo               = $studentRepo;
+        $this->feesMasterRepo            = $feesMasterRepo;
+        $this->siblingFeeService         = $siblingFeeService;
+        $this->receiptNumberingService   = $receiptNumberingService;
     }
 
     public function index()
@@ -606,19 +610,49 @@ class FeesCollectController extends Controller
                     'results' => $result['results']
                 ];
 
-                // Add receipt generation options if available
-                $paymentIds = [];
+                // Generate receipts for each payment transaction
+                $receipts = [];
                 foreach ($result['results'] as $siblingResult) {
                     if ($siblingResult['success'] && !empty($siblingResult['transactions'])) {
+                        $studentId = $siblingResult['student_id'];
+                        $studentName = $siblingResult['student_name'];
+
                         foreach ($siblingResult['transactions'] as $transaction) {
-                            $paymentIds[] = $transaction->id;
+                            // Generate or retrieve receipt number
+                            if (!$transaction->receipt_number) {
+                                $receiptNumber = $this->receiptNumberingService->generateReceiptNumber($transaction->payment_date);
+                                try {
+                                    $transaction->update(['receipt_number' => $receiptNumber]);
+                                    $this->receiptNumberingService->confirmReceiptNumber($receiptNumber);
+                                } catch (\Exception $e) {
+                                    Log::warning('Failed to update receipt number for family payment transaction', [
+                                        'transaction_id' => $transaction->id,
+                                        'receipt_number' => $receiptNumber,
+                                        'error' => $e->getMessage()
+                                    ]);
+                                }
+                            } else {
+                                $receiptNumber = $transaction->receipt_number;
+                            }
+
+                            // Generate receipt URLs
+                            $receipts[] = [
+                                'transaction_id' => $transaction->id,
+                                'student_id' => $studentId,
+                                'student_name' => $studentName,
+                                'receipt_number' => $receiptNumber,
+                                'amount' => $transaction->amount,
+                                'payment_date' => $transaction->payment_date->format('Y-m-d'),
+                                'receipt_url' => route('fees.receipt.individual', $transaction->id),
+                                'print_url' => route('fees.receipt.individual', $transaction->id) . '?print=1',
+                            ];
                         }
                     }
                 }
 
-                if (!empty($paymentIds)) {
-                    $responseData['payment_ids'] = $paymentIds;
-                    $responseData['receipt_options'] = 'Multiple receipts available for each student';
+                if (!empty($receipts)) {
+                    $responseData['receipts'] = $receipts;
+                    $responseData['total_receipts'] = count($receipts);
                 }
 
                 return response()->json($responseData);

@@ -366,3 +366,20 @@
     }
 }
 </style>
+
+<!-- Receipt Options Modal -->
+<div class="modal fade" id="receiptOptionsModal" tabindex="-1" aria-labelledby="receiptOptionsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="receiptOptionsModalLabel">
+                    <i class="fas fa-receipt me-2"></i>Payment Receipts
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Receipt content will be dynamically inserted here by JavaScript -->
+            </div>
+        </div>
+    </div>
+</div>

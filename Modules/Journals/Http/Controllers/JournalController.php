@@ -88,6 +88,11 @@ class JournalController extends Controller
             return redirect()->route('journals.index')->with('danger', ___('alert.data_not_found'));
         }
 
+        // Check if journal is closed (inactive)
+        if ($data['journal']->status === 'inactive') {
+            return redirect()->route('journals.index')->with('danger', ___('alert.cannot_edit_closed_journal'));
+        }
+
         $data['branches'] = $this->repo->getBranchesForDropdown();
         return view('journals::edit', compact('data'));
     }
@@ -97,6 +102,12 @@ class JournalController extends Controller
      */
     public function update(JournalUpdateRequest $request, $id)
     {
+        // Check if journal is closed (inactive) before updating
+        $journal = $this->repo->show($id);
+        if ($journal && $journal->status === 'inactive') {
+            return redirect()->route('journals.index')->with('danger', ___('alert.cannot_edit_closed_journal'));
+        }
+
         $result = $this->repo->update($request, $id);
 
         if ($result['status']) {
@@ -117,6 +128,56 @@ class JournalController extends Controller
             $success[0] = $result['message'];
             $success[1] = 'success';
             $success[2] = ___('alert.deleted');
+            $success[3] = ___('alert.OK');
+            return response()->json($success);
+        } else {
+            $success[0] = $result['message'];
+            $success[1] = 'error';
+            $success[2] = ___('alert.oops');
+            return response()->json($success);
+        }
+    }
+
+    /**
+     * Close the specified journal (set status to inactive)
+     */
+    public function close($id)
+    {
+        $result = $this->repo->close($id);
+
+        if ($result['status']) {
+            $success[0] = $result['message'];
+            $success[1] = 'success';
+            $success[2] = ___('alert.journal_closed');
+            $success[3] = ___('alert.OK');
+            return response()->json($success);
+        } else {
+            $success[0] = $result['message'];
+            $success[1] = 'error';
+            $success[2] = ___('alert.oops');
+            return response()->json($success);
+        }
+    }
+
+    /**
+     * Open the specified journal (set status to active) - Super Admin only
+     */
+    public function open($id)
+    {
+        // Check if user is super admin (role_id = 1)
+        if (auth()->user()->role_id !== 1) {
+            $success[0] = ___('alert.unauthorized_action');
+            $success[1] = 'error';
+            $success[2] = ___('alert.oops');
+            return response()->json($success, 403);
+        }
+
+        $result = $this->repo->open($id);
+
+        if ($result['status']) {
+            $success[0] = $result['message'];
+            $success[1] = 'success';
+            $success[2] = ___('alert.journal_opened');
             $success[3] = ___('alert.OK');
             return response()->json($success);
         } else {

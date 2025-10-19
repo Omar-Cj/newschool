@@ -44,7 +44,7 @@
                                     @enderror
                                 </div>
 
-                                <div class="col-md-6">
+                                <div class="col-md-6 mb-3">
                                     <label for="validationServer04" class="form-label">{{ ___('account.expense_category') }} <span
                                         class="fillable">*</span></label>
 
@@ -55,12 +55,30 @@
                                             <option value="{{ $item->id }}" {{ old('expense_category_id',@$data['expense']->expense_category_id) == $item->id ? 'selected' : '' }}>{{ $item->name }}</option>
                                         @endforeach
                                     </select>
+                                    @error('expense_category_id')
+                                        <div id="validationServer04Feedback" class="invalid-feedback">
+                                            {{ $message }}
+                                        </div>
+                                    @enderror
                                 </div>
-                                @error('expense_category_id')
-                                    <div id="validationServer04Feedback" class="invalid-feedback">
-                                        {{ $message }}
-                                    </div>
-                                @enderror
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="journal_id" class="form-label">{{ ___('journals.journal') }} <span class="fillable">*</span></label>
+                                    <select class="nice-select niceSelect bordered_style wide @error('journal_id') is-invalid @enderror"
+                                            name="journal_id" id="journal_id" required>
+                                        <option value="">{{ ___('journals.select_journal') }}</option>
+                                        @foreach($data['journals'] as $journal)
+                                            <option value="{{ $journal['id'] }}" {{ old('journal_id', @$data['expense']->journal_id) == $journal['id'] ? 'selected' : '' }}>
+                                                {{ $journal['text'] }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    @error('journal_id')
+                                        <div id="validationServer04Feedback" class="invalid-feedback">
+                                            {{ $message }}
+                                        </div>
+                                    @enderror
+                                </div>
                                 <div class="col-md-6 mb-3">
                                     <label for="exampleDataList" class="form-label ">{{ ___('account.date') }} <span
                                             class="fillable">*</span></label>

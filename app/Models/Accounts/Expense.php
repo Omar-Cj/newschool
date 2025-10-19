@@ -28,6 +28,7 @@ class Expense extends BaseModel
         'upload_id',
         'description',
         'branch_id',
+        'journal_id',
     ];
 
     /**
@@ -59,5 +60,15 @@ class Expense extends BaseModel
     public function head(): BelongsTo
     {
         return $this->belongsTo(AccountHead::class, 'expense_head', 'id');
+    }
+
+    /**
+     * Get the journal for the expense.
+     *
+     * @return BelongsTo
+     */
+    public function journal(): BelongsTo
+    {
+        return $this->belongsTo(\Modules\Journals\Entities\Journal::class);
     }
 }

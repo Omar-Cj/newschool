@@ -1179,18 +1179,199 @@ class SiblingFeeCollectionManager {
      * Show payment results
      */
     showPaymentResults(data) {
-        let message = `Payment Summary:\n`;
-        message += `- Total Processed: ${this.formatCurrency(data.summary.total_processed)}\n`;
-        message += `- Students Paid: ${data.summary.successful_payments}\n`;
+        // Show success notification
+        this.showSuccess('Family payment processed successfully!');
 
-        if (data.summary.total_deposit_used > 0) {
-            message += `- From Deposit: ${this.formatCurrency(data.summary.total_deposit_used)}\n`;
+        // If receipts are available, display them
+        if (data.receipts && data.receipts.length > 0) {
+            this.displayReceiptOptions(data);
+        } else {
+            // Fallback to simple summary if receipts not available
+            let message = `Payment Summary:\n`;
+            message += `- Total Processed: ${this.formatCurrency(data.summary.total_net_payment || data.summary.total_processed)}\n`;
+            message += `- Students Paid: ${data.summary.successful_payments}\n`;
+
+            if (data.summary.total_deposit_used > 0) {
+                message += `- From Deposit: ${this.formatCurrency(data.summary.total_deposit_used)}\n`;
+            }
+            if (data.summary.total_cash_payment > 0) {
+                message += `- Cash Payment: ${this.formatCurrency(data.summary.total_cash_payment)}\n`;
+            }
+
+            alert(message);
         }
-        if (data.summary.total_cash_payment > 0) {
-            message += `- Cash Payment: ${this.formatCurrency(data.summary.total_cash_payment)}\n`;
+    }
+
+    /**
+     * Display receipt options in a modal or panel
+     */
+    displayReceiptOptions(data) {
+        // Create receipt display HTML
+        const receiptHtml = this.generateReceiptOptionsHTML(data);
+
+        // Check if we have a custom modal for receipts
+        const existingModal = document.getElementById('receiptOptionsModal');
+
+        if (existingModal) {
+            // Use existing Bootstrap modal
+            const modalBody = existingModal.querySelector('.modal-body');
+            if (modalBody) {
+                modalBody.innerHTML = receiptHtml;
+            }
+
+            const modal = new bootstrap.Modal(existingModal);
+            modal.show();
+
+            // Add event listener to close button within the modal body
+            const closeBtn = existingModal.querySelector('.close-receipt-display');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', () => {
+                    modal.hide();
+                });
+            }
+        } else {
+            // Fallback: Create a temporary container and display
+            const container = document.createElement('div');
+            container.className = 'receipt-options-container';
+            container.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10000; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); max-width: 600px; max-height: 80vh; overflow-y: auto;';
+            container.innerHTML = receiptHtml;
+
+            // Add overlay
+            const overlay = document.createElement('div');
+            overlay.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 9999;';
+
+            document.body.appendChild(overlay);
+            document.body.appendChild(container);
+
+            // Auto-close after viewing receipts
+            const closeBtn = container.querySelector('.close-receipt-display');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', () => {
+                    document.body.removeChild(container);
+                    document.body.removeChild(overlay);
+                });
+            }
+
+            // Close on overlay click
+            overlay.addEventListener('click', () => {
+                document.body.removeChild(container);
+                document.body.removeChild(overlay);
+            });
+        }
+    }
+
+    /**
+     * Generate HTML for receipt options display
+     */
+    generateReceiptOptionsHTML(data) {
+        const summary = data.summary;
+        const receipts = data.receipts;
+
+        let html = `
+            <div class="receipt-options-content">
+                <div class="text-center mb-4">
+                    <i class="fas fa-check-circle text-success" style="font-size: 48px;"></i>
+                    <h4 class="mt-3 mb-2">Payment Successful!</h4>
+                    <p class="text-muted">Family payment has been processed successfully</p>
+                </div>
+
+                <div class="payment-summary bg-light p-3 rounded mb-4">
+                    <h5 class="mb-3"><i class="fas fa-receipt me-2"></i>Payment Summary</h5>
+                    <div class="row">
+                        <div class="col-6">
+                            <small class="text-muted">Total Paid:</small>
+                            <div class="fw-bold">${this.formatCurrency(summary.total_net_payment || summary.total_processed)}</div>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted">Students:</small>
+                            <div class="fw-bold">${summary.successful_payments}</div>
+                        </div>
+                    </div>
+                    ${summary.total_discount_applied > 0 ? `
+                        <div class="row mt-2">
+                            <div class="col-12">
+                                <small class="text-muted">Discount Applied:</small>
+                                <div class="fw-bold text-success">${this.formatCurrency(summary.total_discount_applied)}</div>
+                            </div>
+                        </div>
+                    ` : ''}
+                    ${summary.total_deposit_used > 0 ? `
+                        <div class="row mt-2">
+                            <div class="col-6">
+                                <small class="text-muted">From Deposit:</small>
+                                <div class="fw-bold">${this.formatCurrency(summary.total_deposit_used)}</div>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted">Cash Payment:</small>
+                                <div class="fw-bold">${this.formatCurrency(summary.total_cash_payment)}</div>
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+
+                <div class="receipts-list">
+                    <h5 class="mb-3"><i class="fas fa-file-invoice me-2"></i>Receipts (${receipts.length})</h5>
+
+                    ${receipts.map(receipt => `
+                        <div class="receipt-item border rounded p-3 mb-2">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="flex-grow-1">
+                                    <div class="fw-bold">${receipt.student_name}</div>
+                                    <small class="text-muted">
+                                        Receipt #${receipt.receipt_number} |
+                                        Amount: ${this.formatCurrency(receipt.amount)} |
+                                        Date: ${receipt.payment_date}
+                                    </small>
+                                </div>
+                                <div class="receipt-actions">
+                                    <a href="${receipt.receipt_url}"
+                                       target="_blank"
+                                       class="btn btn-sm btn-outline-primary me-1"
+                                       title="View Receipt">
+                                        <i class="fas fa-eye"></i> View
+                                    </a>
+                                    <a href="${receipt.print_url}"
+                                       target="_blank"
+                                       class="btn btn-sm btn-outline-secondary"
+                                       title="Print Receipt">
+                                        <i class="fas fa-print"></i> Print
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+
+                <div class="mt-4 text-center">
+                    <button type="button"
+                            class="btn btn-primary me-2"
+                            onclick="window.printAllReceipts(${JSON.stringify(receipts.map(r => r.print_url))})">
+                        <i class="fas fa-print me-2"></i>Print All Receipts
+                    </button>
+                    <button type="button" class="btn btn-secondary close-receipt-display">
+                        <i class="fas fa-times me-2"></i>Close
+                    </button>
+                </div>
+            </div>
+        `;
+
+        return html;
+    }
+
+    /**
+     * Print all receipts (opens each in new window)
+     */
+    static printAllReceipts(receiptUrls) {
+        if (!receiptUrls || receiptUrls.length === 0) {
+            alert('No receipts available to print.');
+            return;
         }
 
-        alert(message);
+        receiptUrls.forEach((url, index) => {
+            setTimeout(() => {
+                window.open(url, `receipt_${index}`, 'width=800,height=600');
+            }, index * 500); // Stagger opening by 500ms to avoid browser blocking
+        });
     }
 
     /**
@@ -1240,5 +1421,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Export for global access
 window.SiblingFeeCollectionManager = SiblingFeeCollectionManager;
+
+// Export printAllReceipts as a global function
+window.printAllReceipts = SiblingFeeCollectionManager.printAllReceipts;
 
 } // End of duplicate prevention check

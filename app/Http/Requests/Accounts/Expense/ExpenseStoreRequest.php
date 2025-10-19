@@ -31,6 +31,7 @@ class ExpenseStoreRequest extends FormRequest
             'invoice_number' => 'nullable|string|max:100',
             'document' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
             'description' => 'nullable|string|max:1000',
+            'journal_id' => ['required', 'exists:journals,id'],
         ];
     }
 }
