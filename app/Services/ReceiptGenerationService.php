@@ -38,10 +38,9 @@ class ReceiptGenerationService
         return DB::transaction(function () use ($sessionId, $transactionIds) {
             // Load all transactions for this session
             $transactions = PaymentTransaction::with([
-                'student.sessionStudentDetails.class',
-                'student.sessionStudentDetails.section',
                 'student.parent',
                 'feesCollect.feeType',
+                'feesCollect.session',
                 'collector',
                 'branch'
             ])->whereIn('id', $transactionIds)->get();
@@ -70,6 +69,12 @@ class ReceiptGenerationService
                 // Build receipt data for this student only
                 $receiptData = $this->buildStudentReceiptData($student, $studentTransactions);
 
+                // Get class/section from fees_collect session context (historical enrollment at time of payment)
+                $feeCollect = $studentTransactions->first()->feesCollect;
+                $sessionClassStudent = \App\Models\StudentInfo\SessionClassStudent::where('student_id', $student->id)
+                    ->where('session_id', $feeCollect->session_id)
+                    ->first();
+
                 // Generate unique receipt number
                 $receiptNumber = $this->receiptNumberingService->generateReceiptNumber($paymentDate);
 
@@ -79,8 +84,8 @@ class ReceiptGenerationService
                     'payment_session_id' => $sessionId,
                     'student_id' => $student->id,
                     'student_name' => $student->full_name,
-                    'class' => $student->sessionStudentDetails->first()->class->name ?? null,
-                    'section' => $student->sessionStudentDetails->first()->section->name ?? null,
+                    'class' => $sessionClassStudent->class->name ?? null,
+                    'section' => $sessionClassStudent->section->name ?? null,
                     'guardian_name' => $student->parent->guardian_name ?? $student->parent->father_name ?? null,
                     'payment_date' => $paymentDate,
                     'total_amount' => $studentAmount,
@@ -139,10 +144,9 @@ class ReceiptGenerationService
     {
         return DB::transaction(function () use ($transaction) {
             $transaction->load([
-                'student.sessionStudentDetails.class',
-                'student.sessionStudentDetails.section',
                 'student.parent',
                 'feesCollect.feeType',
+                'feesCollect.session',
                 'collector',
                 'branch'
             ]);
@@ -152,6 +156,11 @@ class ReceiptGenerationService
 
             // Calculate discount from fees_collect record
             $discount = $feeCollect->discount_amount ?? 0;
+
+            // Get class/section from fees_collect session context (historical enrollment at time of payment)
+            $sessionClassStudent = \App\Models\StudentInfo\SessionClassStudent::where('student_id', $student->id)
+                ->where('session_id', $feeCollect->session_id)
+                ->first();
 
             // Generate receipt number
             $receiptNumber = $this->receiptNumberingService->generateReceiptNumber($transaction->payment_date);
@@ -178,8 +187,8 @@ class ReceiptGenerationService
                 'receipt_number' => $receiptNumber,
                 'student_id' => $student->id,
                 'student_name' => $student->full_name,
-                'class' => $student->sessionStudentDetails->first()->class->name ?? null,
-                'section' => $student->sessionStudentDetails->first()->section->name ?? null,
+                'class' => $sessionClassStudent->class->name ?? null,
+                'section' => $sessionClassStudent->section->name ?? null,
                 'guardian_name' => $student->parent->guardian_name ?? $student->parent->father_name ?? null,
                 'payment_date' => $transaction->payment_date,
                 'total_amount' => $transaction->amount,
@@ -264,13 +273,19 @@ class ReceiptGenerationService
             $feeBreakdown[$feeName] += $transaction->amount;
         }
 
+        // Get class/section from fees_collect session context (historical enrollment at time of payment)
+        $feeCollect = $transactions->first()->feesCollect;
+        $sessionClassStudent = \App\Models\StudentInfo\SessionClassStudent::where('student_id', $student->id)
+            ->where('session_id', $feeCollect->session_id)
+            ->first();
+
         return [
             'student' => [
                 'id' => $student->id,
                 'name' => $student->full_name,
                 'admission_no' => $student->admission_no,
-                'class' => $student->sessionStudentDetails->first()->class->name ?? 'N/A',
-                'section' => $student->sessionStudentDetails->first()->section->name ?? 'N/A',
+                'class' => $sessionClassStudent->class->name ?? 'N/A',
+                'section' => $sessionClassStudent->section->name ?? 'N/A',
             ],
             'fees' => $fees,
             'fee_breakdown' => $feeBreakdown,
@@ -320,12 +335,18 @@ class ReceiptGenerationService
                 $feeBreakdown[$feeName] += $transaction->amount;
             }
 
+            // Get class/section from fees_collect session context (historical enrollment at time of payment)
+            $feeCollect = $studentTransactions->first()->feesCollect;
+            $sessionClassStudent = \App\Models\StudentInfo\SessionClassStudent::where('student_id', $student->id)
+                ->where('session_id', $feeCollect->session_id)
+                ->first();
+
             $studentData[] = [
                 'id' => $student->id,
                 'name' => $student->full_name,
                 'admission_no' => $student->admission_no,
-                'class' => $student->sessionStudentDetails->first()->class->name ?? 'N/A',
-                'section' => $student->sessionStudentDetails->first()->section->name ?? 'N/A',
+                'class' => $sessionClassStudent->class->name ?? 'N/A',
+                'section' => $sessionClassStudent->section->name ?? 'N/A',
                 'fees' => $studentFees,
                 'total_amount' => (float) $studentTotal,
                 'total_discount' => (float) $studentDiscount,
