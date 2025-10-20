@@ -137,7 +137,10 @@ Route::middleware(saasMiddleware())->group(function () {
                     // Daily collection receipt for collector
                     Route::get('/daily-collection',                    'generateDailyCollectionReceipt')->name('fees.receipt.daily-collection')->middleware('PermissionCheck:fees_collect_read');
                     Route::get('/list',                                'index')->name('fees.receipt.list')->middleware('PermissionCheck:fees_collect_read');
-                    
+
+                    // AJAX data endpoint for DataTables server-side processing
+                    Route::get('/ajax-data',                           'ajaxReceiptData')->name('fees.receipt.ajaxData')->middleware('PermissionCheck:fees_collect_read');
+
                     // Receipt options modal
                     Route::get('/options/{paymentId}',                 'showReceiptOptions')->name('fees.receipt.options')->middleware('PermissionCheck:fees_collect_read');
                     

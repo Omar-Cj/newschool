@@ -9,6 +9,7 @@ use App\Models\StudentInfo\ParentGuardian;
 use App\Models\ParentDeposit\ParentDepositTransaction;
 use App\Services\ParentDepositService;
 use App\Services\EnhancedFeeCollectionService;
+use App\Services\ReceiptGenerationService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Collection;
@@ -16,6 +17,15 @@ use Exception;
 
 class SiblingFeeCollectionService extends EnhancedFeeCollectionService
 {
+    protected $receiptGenerationService;
+
+    public function __construct(
+        ParentDepositService $depositService,           // Required by parent class
+        ReceiptGenerationService $receiptGenerationService  // Required by this class
+    ) {
+        parent::__construct($depositService);  // Pass dependency to parent
+        $this->receiptGenerationService = $receiptGenerationService;
+    }
     /**
      * Get sibling fee data for family payment
      */
@@ -178,11 +188,14 @@ class SiblingFeeCollectionService extends EnhancedFeeCollectionService
     }
 
     /**
-     * Process sibling payment transaction
+     * Process sibling payment transaction with consolidated receipt generation
      */
     public function processSiblingPayment(array $paymentData): array
     {
         return DB::transaction(function () use ($paymentData) {
+            // Generate unique payment session ID for grouping related transactions
+            $paymentSessionId = 'FAM_' . time() . '_' . uniqid();
+
             $paymentMode = $paymentData['payment_mode'] ?? 'direct'; // 'deposit' | 'direct'
             $siblingPayments = $paymentData['sibling_payments'] ?? [];
             $paymentMethod = $paymentData['payment_method'] ?? 1; // Default to cash
@@ -217,6 +230,7 @@ class SiblingFeeCollectionService extends EnhancedFeeCollectionService
             }
 
             $results = [];
+            $allTransactionIds = []; // Track all transaction IDs for receipt generation
             $totalProcessed = 0;
             $totalDepositUsed = 0;
             $totalCashPayment = 0;
@@ -257,8 +271,16 @@ class SiblingFeeCollectionService extends EnhancedFeeCollectionService
                     $notes,
                     $journalId,
                     $siblingDiscount,
-                    $discountType
+                    $discountType,
+                    $paymentSessionId // Pass session ID to link transactions
                 );
+
+                // Collect transaction IDs for receipt generation
+                if ($siblingResult['success'] && !empty($siblingResult['transactions'])) {
+                    foreach ($siblingResult['transactions'] as $transaction) {
+                        $allTransactionIds[] = $transaction->id;
+                    }
+                }
 
                 $results[] = [
                     'student_id' => $student->id,
@@ -281,6 +303,31 @@ class SiblingFeeCollectionService extends EnhancedFeeCollectionService
                 }
             }
 
+            // Generate individual receipts for each student in family payment
+            $receipts = [];
+            if (!empty($allTransactionIds)) {
+                try {
+                    $receipts = $this->receiptGenerationService->generateFamilyReceipts(
+                        $paymentSessionId,
+                        $allTransactionIds
+                    );
+
+                    Log::info('Individual receipts generated for family payment', [
+                        'receipt_numbers' => collect($receipts)->pluck('receipt_number')->toArray(),
+                        'payment_session_id' => $paymentSessionId,
+                        'receipt_count' => count($receipts),
+                        'transaction_count' => count($allTransactionIds),
+                    ]);
+                } catch (Exception $e) {
+                    Log::error('Failed to generate family receipts', [
+                        'payment_session_id' => $paymentSessionId,
+                        'error' => $e->getMessage(),
+                    ]);
+                    // Don't fail the entire payment if receipt generation fails
+                    // The transactions are already created successfully
+                }
+            }
+
             Log::info('Sibling payment processing completed', [
                 'payment_mode' => $paymentMode,
                 'total_net_payment' => $totalProcessed,         // Net amount actually paid
@@ -294,6 +341,9 @@ class SiblingFeeCollectionService extends EnhancedFeeCollectionService
 
             return [
                 'success' => true,
+                'receipts' => $receipts, // Individual receipts for each student
+                'receipt_numbers' => collect($receipts)->pluck('receipt_number')->toArray(),
+                'payment_session_id' => $paymentSessionId,
                 'results' => $results,
                 'summary' => [
                     'total_net_payment' => (float) $totalProcessed,           // Net payment (after discount)
@@ -322,7 +372,8 @@ class SiblingFeeCollectionService extends EnhancedFeeCollectionService
         string $notes,
         ?int $journalId = null,
         float $discountAmount = 0,
-        ?string $discountType = null
+        ?string $discountType = null,
+        ?string $paymentSessionId = null
     ): array {
         try {
             $parent = $student->parent;
@@ -372,7 +423,7 @@ class SiblingFeeCollectionService extends EnhancedFeeCollectionService
                         $feeDiscount = round($feeDiscount, 2);
                     }
 
-                    // Create payment transaction
+                    // Create payment transaction with session ID for grouping
                     $transaction = PaymentTransaction::create([
                         'fees_collect_id' => $feeCollect->id,
                         'student_id' => $student->id,
@@ -383,6 +434,7 @@ class SiblingFeeCollectionService extends EnhancedFeeCollectionService
                         'transaction_reference' => $paymentMode === 'deposit' ?
                             'SIBLING_DEPOSIT_' . time() :
                             ($paymentData['transaction_reference'] ?? null),
+                        'payment_session_id' => $paymentSessionId, // Link to payment session
                         'payment_notes' => $notes . ' (Sibling Payment)',
                         'journal_id' => $journalId,
                         'collected_by' => auth()->id(),

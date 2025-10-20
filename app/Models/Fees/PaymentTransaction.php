@@ -21,6 +21,8 @@ class PaymentTransaction extends BaseModel
         'payment_method',
         'payment_gateway',
         'transaction_reference',
+        'payment_session_id', // Groups related transactions
+        'receipt_id', // Links to consolidated receipt
         'payment_notes',
         'journal_id',
         'collected_by',
@@ -57,6 +59,11 @@ class PaymentTransaction extends BaseModel
     public function branch(): BelongsTo
     {
         return $this->belongsTo(\Modules\MultiBranch\Entities\Branch::class);
+    }
+
+    public function receipt(): BelongsTo
+    {
+        return $this->belongsTo(Receipt::class);
     }
 
     // Scopes

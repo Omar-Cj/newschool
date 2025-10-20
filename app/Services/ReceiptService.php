@@ -452,23 +452,29 @@ class ReceiptService
 
     /**
      * Get all collectors for filter dropdown.
+     * Optimized with caching and session scoping for better performance.
      */
     public function getCollectorsForFilter(): Collection
     {
-        // Get collectors from PaymentTransactions
-        $ptCollectors = PaymentTransaction::distinct()->pluck('collected_by')->filter();
+        // Get current session for scoping and cache key
+        $sessionId = setting('session');
+        $cacheKey = 'receipt_collectors_' . ($sessionId ?? 'all');
 
-        // Get collectors from FeesCollect (legacy)
-        $fcCollectors = FeesCollect::whereNotNull('payment_method')
-            ->distinct()
-            ->pluck('fees_collect_by')
-            ->filter();
+        // Cache for 1 hour since collectors don't change frequently
+        return \Cache::remember($cacheKey, 3600, function () use ($sessionId) {
+            // Query receipts table directly (optimized architecture)
+            // Scope to current session for relevant data only
+            $collectorIds = \App\Models\Fees\Receipt::when($sessionId, function($query) use ($sessionId) {
+                    $query->where('session_id', $sessionId);
+                })
+                ->distinct()
+                ->pluck('collected_by')
+                ->filter();
 
-        $allCollectorIds = $ptCollectors->merge($fcCollectors)->unique();
-
-        return $allCollectorIds->isEmpty()
-            ? collect()
-            : User::whereIn('id', $allCollectorIds)->orderBy('name')->get();
+            return $collectorIds->isEmpty()
+                ? collect()
+                : User::whereIn('id', $collectorIds)->orderBy('name')->get();
+        });
     }
 
     /**

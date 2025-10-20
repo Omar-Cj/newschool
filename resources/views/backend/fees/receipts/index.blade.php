@@ -4,12 +4,6 @@
     {{ ___('fees.receipts') ?? 'Receipts' }}
 @endsection
 
-{{--
-    Receipt listing with data consistency:
-    - Table data now matches exactly what appears in receipt templates
-    - Uses same data preparation logic as generateIndividualReceipt()
-    - Ensures "what you see is what you get" between listing and printed receipts
---}}
 @php($currency = $currency ?? Setting('currency_symbol'))
 
 @section('content')
@@ -29,87 +23,85 @@
     </div>
     {{-- breadcrumb Area End --}}
 
-    <div class="row">
-        <div class="col-12">
-            <div class="card ot-card mb-24 position-relative z_1">
-                <form method="GET" enctype="multipart/form-data" id="receipts-filter">
-                    <div class="card-header d-flex align-items-center gap-4 flex-wrap">
-                        <h3 class="mb-0">{{ ___('common.filtering') ?? 'Filtering' }}</h3>
+    {{-- Filtering Section Start --}}
+    <div class="col-12">
+        <div class="card ot-card mb-24 position-relative z_1">
+            <div class="card-header d-flex align-items-center gap-4 flex-wrap">
+                <h3 class="mb-0">{{ ___('common.Filtering') }}</h3>
 
-                        <div class="card_header_right d-flex align-items-center gap-3 flex-fill justify-content-end flex-wrap">
-                            <!-- Search Input -->
-                            <div class="input-group table_searchBox">
-                                <input name="q" type="text" class="form-control" value="{{ request('q') }}"
-                                       placeholder="{{ ___('common.search') }} {{ ___('fees.receipt_no') }}, {{ ___('student_info.student_name') }}, {{ ___('student_info.admission_no') }}"
-                                       aria-label="Search" aria-describedby="searchIcon">
-                                <span class="input-group-text" id="searchIcon">
-                                    <i class="fa-solid fa-magnifying-glass"></i>
-                                </span>
-                            </div>
-
-                            <!-- Date Range -->
-                            <div class="single_selectBox">
-                                <input type="date" name="from_date" class="form-control" value="{{ request('from_date') }}"
-                                       placeholder="{{ ___('fees.from_date') }}">
-                            </div>
-                            <div class="single_selectBox">
-                                <input type="date" name="to_date" class="form-control" value="{{ request('to_date') }}"
-                                       placeholder="{{ ___('fees.to_date') }}">
-                            </div>
-
-                            <!-- Payment Method Filter -->
-                            <div class="single_selectBox">
-                                <select class="nice-select niceSelect bordered_style wide" name="payment_method">
-                                    <option value="">{{ ___('fees.payment_method') }}</option>
-                                    @foreach($availableMethods as $methodValue => $methodLabel)
-                                        <option value="{{ $methodValue }}" @selected((string)request('payment_method') === (string)$methodValue)>
-                                            {{ ___($methodLabel) }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </div>
-
-                            <!-- Collector Filter -->
-                            <div class="single_selectBox">
-                                <select class="nice-select niceSelect bordered_style wide" name="collector_id">
-                                    <option value="">{{ ___('fees.collected_by') }}</option>
-                                    @foreach($collectors as $collector)
-                                        <option value="{{ $collector->id }}" @selected((string)request('collector_id') === (string)$collector->id)>
-                                            {{ $collector->name }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </div>
-
-                            <button class="btn btn-lg ot-btn-primary">
-                                {{ ___('common.filter') }}
-                            </button>
-                        </div>
+                <div class="card_header_right d-flex align-items-center gap-3 flex-fill justify-content-end flex-wrap">
+                    <!-- Student Search -->
+                    <div class="single_large_selectBox">
+                        <input class="form-control ot-input" id="studentSearchFilter"
+                               placeholder="{{ ___('common.search') }} {{ ___('student_info.student_name') }}, {{ ___('fees.receipt_no') }}">
                     </div>
-                </form>
+
+                    <!-- From Date Filter -->
+                    <div class="single_large_selectBox">
+                        <input type="date" class="form-control ot-input" id="fromDateFilter"
+                               placeholder="{{ ___('fees.from_date') }}">
+                    </div>
+
+                    <!-- To Date Filter -->
+                    <div class="single_large_selectBox">
+                        <input type="date" class="form-control ot-input" id="toDateFilter"
+                               placeholder="{{ ___('fees.to_date') }}">
+                    </div>
+
+                    <!-- Payment Method Filter -->
+                    <div class="single_large_selectBox">
+                        <select id="paymentMethodFilter" class="form-select nice-select niceSelect bordered_style wide">
+                            <option value="">{{ ___('fees.all_payment_methods') }}</option>
+                            @foreach($availableMethods as $methodValue => $methodLabel)
+                                <option value="{{ $methodValue }}">{{ ___($methodLabel) }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <!-- Collector Filter -->
+                    <div class="single_large_selectBox">
+                        <select id="collectorFilter" class="form-select nice-select niceSelect bordered_style wide">
+                            <option value="">{{ ___('fees.all_collectors') }}</option>
+                            @foreach($collectors as $collector)
+                                <option value="{{ $collector->id }}">{{ $collector->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <!-- Family Payments Only Checkbox -->
+                    <div class="single_large_selectBox d-flex align-items-center">
+                        <label class="form-check-label mb-0">
+                            <input type="checkbox" id="familyPaymentsFilter" class="form-check-input me-2">
+                            <i class="fas fa-users"></i> {{ ___('fees.family_payments_only') ?? 'Family Payments' }}
+                        </label>
+                    </div>
+
+                    <!-- Clear Filters Button -->
+                    <button class="btn btn-lg ot-btn-primary" id="clearFilters" type="button">
+                        {{ ___('common.Clear') }}
+                    </button>
+                </div>
             </div>
         </div>
     </div>
+    {{-- Filtering Section End --}}
 
     <!--  table content start -->
     <div class="table-content table-basic mt-20">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h4 class="mb-0">{{ ___('fees.receipts') ?? 'Receipts' }}</h4>
-                <div class="card_header_right">
-                    <span class="badge badge-basic-info-text">{{ $receipts->total() }} {{ ___('common.total') }}</span>
-                </div>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
-                    <table class="table table-bordered role-table">
+                    <table id="receiptsTable" class="table table-bordered receipts-table">
                         <thead class="thead">
                             <tr>
                                 <th class="serial">{{ ___('common.sr_no') }}</th>
                                 <th class="purchase">{{ ___('fees.receipt_no') }}</th>
                                 <th class="purchase">{{ ___('student_info.student_name') }}</th>
                                 <th class="purchase">{{ ___('academic.class') }} ({{ ___('academic.section') }})</th>
-                                <th class="purchase">{{ ___('fees.amount_paid') }}</th>
+                                <th class="purchase">{{ ___('fees.amount_paid') }} ({{ $currency }})</th>
                                 <th class="purchase">{{ ___('fees.payment_date') }}</th>
                                 <th class="purchase">{{ ___('fees.payment_method') }}</th>
                                 <th class="purchase">{{ ___('fees.collected_by') }}</th>
@@ -117,120 +109,367 @@
                                 <th class="action">{{ ___('common.action') }}</th>
                             </tr>
                         </thead>
-                        <tbody class="tbody">
-                            @forelse($receipts as $key => $receipt)
-                                <tr id="row_{{ $receipt->id }}">
-                                    <td class="serial">{{ $receipts->firstItem() + $key }}</td>
-                                    <td>
-                                        <div class="fw-semibold text-primary">{{ $receipt->receipt_number }}</div>
-                                        <small class="badge
-                                            @if($receipt->type === 'payment_transaction')
-                                                badge-basic-info-text
-                                            @else
-                                                badge-basic-secondary-text
-                                            @endif
-                                        ">
-                                            {{ $receipt->type === 'payment_transaction' ? ___('fees.payment_transaction') ?? 'Payment' : ___('fees.legacy_payment') ?? 'Legacy' }}
-                                        </small>
-                                    </td>
-                                    <td>
-                                        <div class="fw-semibold">{{ $receipt->student->first_name }} {{ $receipt->student->last_name }}</div>
-                                        <small class="text-muted">{{ ___('student_info.admission_no') }}: {{ $receipt->student->admission_no }}</small>
-                                    </td>
-                                    <td>
-                                        <div>
-                                            {{ $receipt->student->sessionStudentDetails->class->name ?? 'N/A' }} - {{ $receipt->student->sessionStudentDetails->section->name ?? 'N/A' }}
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="fw-semibold text-success">{{ $currency }} {{ number_format($receipt->amount_paid, 2) }}</div>
-                                        @if(count($receipt->fees_affected) > 1)
-                                            <small class="text-info">{{ count($receipt->fees_affected) }} {{ ___('fees.fees_affected') ?? 'fees affected' }}</small>
-                                        @elseif(count($receipt->fees_affected) === 1)
-                                            <small class="text-muted">{{ $receipt->fees_affected[0]['name'] ?? 'Fee Payment' }}</small>
-                                        @endif
-                                    </td>
-                                    <td>{{ dateFormat($receipt->payment_date) }}</td>
-                                    <td>
-                                        <span class="badge badge-basic-info-text">{{ $receipt->payment_method }}</span>
-                                        @if($receipt->transaction_reference)
-                                            <small class="d-block text-muted" title="{{ ___('fees.transaction_reference') }}">
-                                                {{ Str::limit($receipt->transaction_reference, 15) }}
-                                            </small>
-                                        @endif
-                                    </td>
-                                    <td>{{ $receipt->collected_by->name ?? '—' }}</td>
-                                    <td>
-                                        @if($receipt->payment_status === 'partial')
-                                            <span class="badge-basic-warning-text">{{ ___('fees.partial_payment') ?? 'Partial' }}</span>
-                                        @else
-                                            <span class="badge-basic-success-text">{{ ___('fees.full_payment') ?? 'Full' }}</span>
-                                        @endif
-                                    </td>
-                                    <td class="action">
-                                        <div class="dropdown dropdown-action">
-                                            <button type="button" class="btn-dropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                                                <i class="fa-solid fa-ellipsis"></i>
-                                            </button>
-                                            <ul class="dropdown-menu dropdown-menu-end">
-                                                <li>
-                                                    <a class="dropdown-item" href="javascript:void(0);"
-                                                       onclick="ReceiptActions.printReceipt({{ $receipt->id }})">
-                                                        <span class="icon mr-8"><i class="fa-solid fa-print"></i></span>
-                                                        {{ ___('common.print') }}
-                                                    </a>
-                                                </li>
-                                                <li>
-                                                    <a class="dropdown-item" target="_blank"
-                                                       href="{{ route('fees.receipt.individual', $receipt->id) }}">
-                                                        <span class="icon mr-8"><i class="fa-solid fa-download"></i></span>
-                                                        {{ ___('common.download') }}
-                                                    </a>
-                                                </li>
-                                                @if(count($receipt->fees_affected) > 0)
-                                                    <li>
-                                                        <a class="dropdown-item" href="javascript:void(0);"
-                                                           onclick="ReceiptActions.showAllocationDetails({{ json_encode($receipt->fees_affected) }})">
-                                                            <span class="icon mr-8"><i class="fa-solid fa-list"></i></span>
-                                                            {{ ___('fees.view_allocation') ?? 'View Allocation' }}
-                                                        </a>
-                                                    </li>
-                                                @endif
-                                            </ul>
-                                        </div>
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="10" class="text-center gray-color">
-                                        <img src="{{ asset('images/no_data.svg') }}" alt="" class="mb-primary" width="100">
-                                        <p class="mb-0 text-center">{{ ___('common.no_data_available') }}</p>
-                                        <p class="mb-0 text-center text-secondary font-size-90">
-                                            {{ ___('fees.no_receipts_found') ?? 'No receipts found. Try adjusting your search or filter criteria.' }}
-                                        </p>
-                                    </td>
-                                </tr>
-                            @endforelse
-                        </tbody>
                     </table>
                 </div>
                 <!--  table end -->
-                <!--  pagination start -->
-                <div class="ot-pagination pagination-content d-flex justify-content-end align-content-center py-3">
-                    <nav aria-label="Page navigation example">
-                        <ul class="pagination justify-content-between">
-                            {!! $receipts->links() !!}
-                        </ul>
-                    </nav>
-                </div>
-                <!--  pagination end -->
             </div>
         </div>
     </div>
     <!--  table content end -->
+
 </div>
 @endsection
 
 @push('script')
-    @include('backend.fees.receipts.partials.actions-script')
+    <!-- Include DataTables CSS and JS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+
+    <!-- Custom DataTables Theme Integration -->
+    <style>
+        /* Restore original table-content.table-basic styling */
+        .table-content.table-basic #receiptsTable {
+            font-size: 14px;
+        }
+
+        .table-content.table-basic #receiptsTable thead th {
+            background-color: var(--ot-bg-primary, #f8f9fa);
+            color: var(--ot-text-body, #1a1d1f);
+            border-bottom: 1px solid var(--ot-border-color, #eaeaea);
+            font-weight: 600;
+            font-size: 14px;
+            padding: 12px 8px;
+            vertical-align: middle;
+        }
+
+        .table-content.table-basic #receiptsTable tbody td {
+            padding: 10px 8px;
+            font-size: 13px;
+            border-bottom: 1px solid var(--ot-border-light, #f5f5f5);
+            vertical-align: middle;
+        }
+
+        .table-content.table-basic #receiptsTable tbody tr:nth-of-type(odd) {
+            background-color: var(--ot-bg-table-row, #fafafa);
+        }
+
+        /* DataTables controls styling to match theme */
+        .table-content .dataTables_wrapper .dataTables_length,
+        .table-content .dataTables_wrapper .dataTables_filter,
+        .table-content .dataTables_wrapper .dataTables_info {
+            font-size: 14px;
+            color: var(--ot-text-body, #1a1d1f);
+            margin-bottom: 15px;
+        }
+
+        .table-content .dataTables_wrapper .dataTables_length select,
+        .table-content .dataTables_wrapper .dataTables_filter input {
+            border: 1px solid var(--ot-border-color, #eaeaea);
+            border-radius: 4px;
+            padding: 6px 10px;
+            font-size: 13px;
+            background-color: var(--ot-bg-white, #ffffff);
+            color: var(--ot-text-body, #1a1d1f);
+        }
+
+        .table-content .dataTables_wrapper .dataTables_length select:focus,
+        .table-content .dataTables_wrapper .dataTables_filter input:focus {
+            border-color: var(--ot-primary-color, #5764c6);
+            box-shadow: 0 0 0 0.2rem rgba(87, 100, 198, 0.25);
+            outline: 0;
+        }
+
+        /* DataTables wrapper layout improvements */
+        .table-content .dataTables_wrapper .row {
+            margin: 0;
+        }
+
+        .table-content .dataTables_wrapper .row [class*="col-"] {
+            padding-left: 0;
+            padding-right: 15px;
+        }
+
+        .table-content .dataTables_wrapper .dataTables_filter {
+            text-align: right;
+        }
+
+        .table-content .dataTables_wrapper .dataTables_info {
+            color: var(--ot-text-muted, #9c9c9c);
+            font-size: 13px;
+            padding-top: 8px;
+        }
+
+        /* Custom pagination styling to match .ot-pagination */
+        .table-content .dataTables_wrapper .dataTables_paginate {
+            margin-top: 20px;
+        }
+
+        .table-content .dataTables_wrapper .dataTables_paginate .pagination {
+            justify-content: center;
+            margin: 0;
+        }
+
+        .table-content .dataTables_wrapper .dataTables_paginate .page-item .page-link {
+            background-color: var(--ot-bg-table-pagination, #ffffff);
+            color: var(--ot-text-table-pagination, #1a1d1f);
+            border: 1px solid var(--ot-border-table-pagination, #eaeaea);
+            padding: 8px 12px;
+            font-size: 13px;
+            border-radius: 4px;
+            margin: 0 2px;
+        }
+
+        .table-content .dataTables_wrapper .dataTables_paginate .page-item .page-link:hover {
+            background-color: var(--ot-primary-color, #5764c6);
+            color: #ffffff;
+            border-color: var(--ot-primary-color, #5764c6);
+        }
+
+        .table-content .dataTables_wrapper .dataTables_paginate .page-item.active .page-link {
+            background-color: var(--ot-primary-color, #5764c6) !important;
+            color: #ffffff !important;
+            border-color: var(--ot-primary-color, #5764c6) !important;
+            box-shadow: none;
+        }
+
+        .table-content .dataTables_wrapper .dataTables_paginate .page-item.disabled .page-link {
+            background-color: var(--ot-bg-table-pagination, #ffffff);
+            color: var(--ot-text-muted, #9c9c9c);
+            border-color: var(--ot-border-table-pagination, #eaeaea);
+        }
+
+        /* DataTables processing indicator styling */
+        .table-content .dataTables_wrapper .dataTables_processing {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid var(--ot-border-color, #eaeaea);
+            border-radius: 4px;
+            color: var(--ot-text-body, #1a1d1f);
+            font-size: 14px;
+        }
+
+        /* Custom loading spinner to match pagination color scheme */
+        .ot-loading-spinner {
+            border-color: var(--ot-primary-color, #5764c6) !important;
+            border-right-color: transparent !important;
+        }
+
+        /* Animated loading dots with pagination color */
+        .ot-loading-dots::after {
+            content: '';
+            animation: dots 1.5s steps(4, end) infinite;
+            color: var(--ot-primary-color, #5764c6);
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        @keyframes dots {
+            0%, 20% { content: ''; }
+            40% { content: '.'; }
+            60% { content: '..'; }
+            80%, 100% { content: '...'; }
+        }
+
+        /* Ensure table header sorting indicators match theme */
+        .table-content.table-basic #receiptsTable thead th.sorting,
+        .table-content.table-basic #receiptsTable thead th.sorting_asc,
+        .table-content.table-basic #receiptsTable thead th.sorting_desc {
+            cursor: pointer;
+            position: relative;
+        }
+
+        .table-content.table-basic #receiptsTable thead th.sorting:after,
+        .table-content.table-basic #receiptsTable thead th.sorting_asc:after,
+        .table-content.table-basic #receiptsTable thead th.sorting_desc:after {
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--ot-text-muted, #9c9c9c);
+            font-size: 12px;
+        }
+
+        .table-content.table-basic #receiptsTable thead th.sorting:after {
+            content: "\f0dc";
+        }
+
+        .table-content.table-basic #receiptsTable thead th.sorting_asc:after {
+            content: "\f0de";
+            color: var(--ot-primary-color, #5764c6);
+        }
+
+        .table-content.table-basic #receiptsTable thead th.sorting_desc:after {
+            content: "\f0dd";
+            color: var(--ot-primary-color, #5764c6);
+        }
+    </style>
+
+    <script>
+        let receiptsTable;
+        let ajaxUrl = '{{ route("fees.receipt.ajaxData") }}';
+
+        $(document).ready(function() {
+            // Initialize DataTables
+            initializeReceiptsTable();
+
+            // Setup filter event handlers
+            setupFilterHandlers();
+        });
+
+        /**
+         * Initialize DataTables with server-side processing
+         */
+        function initializeReceiptsTable() {
+            receiptsTable = $('#receiptsTable').DataTable({
+                processing: true,
+                serverSide: true,
+                ajax: {
+                    url: ajaxUrl,
+                    type: 'GET',
+                    data: function(d) {
+                        // Add custom filters to DataTables request
+                        d.student_search = $('#studentSearchFilter').val();
+                        d.from_date = $('#fromDateFilter').val();
+                        d.to_date = $('#toDateFilter').val();
+                        d.payment_method = $('#paymentMethodFilter').val();
+                        d.collector_id = $('#collectorFilter').val();
+                        d.family_payments_only = $('#familyPaymentsFilter').is(':checked') ? '1' : '0';
+                    },
+                    error: function(xhr, error, thrown) {
+                        console.error('DataTables AJAX error:', error, thrown);
+                        showErrorMessage('Failed to load receipt data. Please refresh the page.');
+                    }
+                },
+                // Configure DOM structure for better theme integration
+                dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>' +
+                     '<"row"<"col-sm-12"tr>>' +
+                     '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+                columns: [
+                    { data: 0, name: 'id', orderable: false, searchable: false, width: '5%' },
+                    { data: 1, name: 'receipt_number', orderable: true, searchable: true },
+                    { data: 2, name: 'student_name', orderable: true, searchable: true },
+                    { data: 3, name: 'class', orderable: true, searchable: false },
+                    { data: 4, name: 'total_amount', orderable: true, searchable: false },
+                    { data: 5, name: 'payment_date', orderable: true, searchable: false },
+                    { data: 6, name: 'payment_method', orderable: true, searchable: false },
+                    { data: 7, name: 'collected_by', orderable: false, searchable: false },
+                    { data: 8, name: 'payment_status', orderable: true, searchable: false },
+                    { data: 9, name: 'actions', orderable: false, searchable: false, width: '10%' }
+                ],
+                order: [[5, 'desc']], // Order by payment_date descending by default
+                pageLength: 10,
+                lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
+                searchDelay: 300,
+                // Enhanced language configuration
+                language: {
+                    processing: '<div class="d-flex align-items-center justify-content-center"><div class="spinner-border ot-loading-spinner me-2" role="status"><span class="visually-hidden">Loading...</span></div><span class="ot-loading-dots"></span></div>',
+                    emptyTable: '<div class="text-center gray-color p-5"><img src="{{ asset("images/no_data.svg") }}" alt="" class="mb-primary" width="100"><p class="mb-0 text-center">{{ ___("common.no_data_available") }}</p><p class="mb-0 text-center text-secondary font-size-90">{{ ___("fees.no_receipts_found") ?? "No receipts found" }}</p></div>',
+                    zeroRecords: '<div class="text-center gray-color p-5"><img src="{{ asset("images/no_data.svg") }}" alt="" class="mb-primary" width="100"><p class="mb-0 text-center">No matching receipts found</p><p class="mb-0 text-center text-secondary font-size-90">Try adjusting your search filters</p></div>',
+                    lengthMenu: 'Show _MENU_ entries',
+                    info: 'Showing _START_ to _END_ of _TOTAL_ entries',
+                    infoEmpty: 'Showing 0 to 0 of 0 entries',
+                    infoFiltered: '(filtered from _MAX_ total entries)',
+                    search: 'Search:',
+                    paginate: {
+                        first: 'First',
+                        last: 'Last',
+                        next: 'Next',
+                        previous: 'Previous'
+                    }
+                },
+                // Improve responsiveness
+                responsive: false,
+                scrollX: false,
+                autoWidth: false,
+                // Theme integration
+                stateSave: false,
+                drawCallback: function(settings) {
+                    // Re-initialize any tooltips or other UI elements after table draw
+                    $('[data-bs-toggle="tooltip"]').tooltip();
+
+                    // Apply theme classes to pagination
+                    $('.dataTables_paginate .pagination').addClass('ot-pagination');
+                }
+            });
+        }
+
+        /**
+         * Setup filter event handlers with debouncing for real-time filtering
+         */
+        function setupFilterHandlers() {
+            // Student search filter with debounce (300ms)
+            let studentSearchTimeout;
+            $('#studentSearchFilter').on('input', function() {
+                clearTimeout(studentSearchTimeout);
+                studentSearchTimeout = setTimeout(function() {
+                    receiptsTable.ajax.reload();
+                }, 300);
+            });
+
+            // Date filters change handlers
+            $('#fromDateFilter, #toDateFilter').on('change', function() {
+                receiptsTable.ajax.reload();
+            });
+
+            // Payment method filter change handler
+            $('#paymentMethodFilter').on('change', function() {
+                receiptsTable.ajax.reload();
+            });
+
+            // Collector filter change handler
+            $('#collectorFilter').on('change', function() {
+                receiptsTable.ajax.reload();
+            });
+
+            // Family payments checkbox change handler
+            $('#familyPaymentsFilter').on('change', function() {
+                receiptsTable.ajax.reload();
+            });
+
+            // Clear filters button
+            $('#clearFilters').on('click', function() {
+                // Reset all filter inputs
+                $('#studentSearchFilter').val('');
+                $('#fromDateFilter').val('');
+                $('#toDateFilter').val('');
+                $('#paymentMethodFilter').val('').trigger('change');
+                $('#collectorFilter').val('').trigger('change');
+                $('#familyPaymentsFilter').prop('checked', false);
+
+                // Clear DataTables built-in search and reload
+                receiptsTable.search('').ajax.reload();
+            });
+        }
+
+        /**
+         * Display error message to user
+         */
+        function showErrorMessage(message) {
+            if (typeof Toast !== 'undefined' && Toast.fire) {
+                Toast.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: message
+                });
+            } else if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: message
+                });
+            } else {
+                alert(message);
+            }
+        }
+
+        /**
+         * Print receipt function
+         */
+        function printReceipt(receiptId) {
+            const printUrl = '{{ route("fees.receipt.individual", ":id") }}'.replace(':id', receiptId) + '?print=1';
+            window.open(printUrl, '_blank');
+        }
+    </script>
 @endpush

@@ -7,6 +7,7 @@ use App\Models\Fees\FeesCollect;
 use App\Models\Student;
 use App\Models\User;
 use App\Repositories\StudentInfo\StudentRepository;
+use App\Repositories\Fees\ReceiptRepository;
 use App\Services\ReceiptService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
@@ -17,11 +18,16 @@ class ReceiptController extends Controller
 {
     private $studentRepo;
     private $receiptService;
+    private $receiptRepo;
 
-    public function __construct(StudentRepository $studentRepo, ReceiptService $receiptService)
-    {
+    public function __construct(
+        StudentRepository $studentRepo,
+        ReceiptService $receiptService,
+        ReceiptRepository $receiptRepo
+    ) {
         $this->studentRepo = $studentRepo;
         $this->receiptService = $receiptService;
+        $this->receiptRepo = $receiptRepo;
     }
 
     /**
@@ -445,12 +451,12 @@ class ReceiptController extends Controller
 
     /**
      * Display paginated list of receipts with filtering options.
-     * Now simplified to show individual payment transactions only.
+     * Uses AJAX DataTables for server-side processing - no initial data load needed.
      */
     public function index(Request $request)
     {
-        // Get transaction-centric receipt listing using the service
-        $receipts = $this->receiptService->getReceiptListing($request);
+        // DataTables will load receipt data via AJAX (ajaxReceiptData method)
+        // No need to load receipts here - significant performance improvement
 
         // Get payment methods and collectors for filters
         $paymentMethods = config('site.payment_methods');
@@ -461,12 +467,39 @@ class ReceiptController extends Controller
         $currency = $schoolInfo['currency'] ?? setting('currency_symbol');
 
         return view('backend.fees.receipts.index', [
-            'receipts' => $receipts,
             'availableMethods' => $paymentMethods,
             'collectors' => $collectors,
             'school_info' => $schoolInfo,
             'currency' => $currency,
         ]);
+    }
+
+    /**
+     * Handle AJAX request for DataTables server-side processing.
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function ajaxReceiptData(Request $request)
+    {
+        try {
+            $result = $this->receiptRepo->getAjaxData($request);
+            return response()->json($result);
+        } catch (\Throwable $th) {
+            \Log::error('Receipt AJAX data fetch failed: ' . $th->getMessage(), [
+                'request_data' => $request->all(),
+                'user_id' => auth()->id(),
+                'exception' => $th->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'draw' => intval($request->input('draw')),
+                'recordsTotal' => 0,
+                'recordsFiltered' => 0,
+                'data' => [],
+                'error' => ___('alert.something_went_wrong_please_try_again')
+            ], 500);
+        }
     }
 
     /**
