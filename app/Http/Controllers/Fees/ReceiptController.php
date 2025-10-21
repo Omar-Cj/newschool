@@ -32,36 +32,70 @@ class ReceiptController extends Controller
 
     /**
      * Generate individual student receipt for a specific payment
+     * Uses EXACT data from receipts table - no recalculation
      */
-    public function generateIndividualReceipt($paymentId)
+    public function generateIndividualReceipt($receiptId)
     {
         try {
-            // Get standardized receipt data from service
-            $receiptData = $this->receiptService->getReceiptData($paymentId);
+            // Query receipts table directly - use exact stored data
+            $receipt = \App\Models\Fees\Receipt::with([
+                'student',
+                'collector',
+                'paymentTransactions.feesCollect.feeType',
+                'branch',
+                'academicYear'
+            ])->find($receiptId);
 
-            if (!$receiptData) {
-                return back()->with('danger', ___('fees.receipt_not_found'));
+            // Fallback: If not found in receipts table, try legacy lookup
+            if (!$receipt) {
+                $receiptData = $this->receiptService->getReceiptData($receiptId);
+
+                if (!$receiptData) {
+                    return back()->with('danger', ___('fees.receipt_not_found'));
+                }
+
+                $data = [
+                    'title' => ___('fees.payment_receipt'),
+                    'receipt' => $receiptData,
+                    'school_info' => $this->receiptService->getSchoolInfo(),
+                ];
+
+                // Use legacy template for non-persisted receipts
+                $viewTemplate = 'backend.fees.receipts.enhanced-individual-transaction';
+            } else {
+                // Use EXACT receipt data - no recalculation
+                $data = [
+                    'title' => ___('fees.payment_receipt'),
+                    'receipt' => $receipt, // Raw receipt object from table
+                    'receipt_data' => $receipt->receipt_data, // Stored JSON data
+                    'school_info' => $this->receiptService->getSchoolInfo(),
+                ];
+
+                // Use new print template for persisted receipts
+                $viewTemplate = 'backend.fees.receipts.print';
             }
-
-            $data = [
-                'title' => ___('fees.payment_receipt'),
-                'receipt' => $receiptData,
-                'school_info' => $this->receiptService->getSchoolInfo(),
-            ];
 
             // Check if this is a print preview request
             if (request()->has('print') && request()->get('print') == '1') {
-                return view('backend.fees.receipts.enhanced-individual-transaction', compact('data'));
+                return view($viewTemplate, compact('data'));
             }
 
             // Generate PDF
-            $pdf = PDF::loadView('backend.fees.receipts.enhanced-individual-transaction', compact('data'));
+            $pdf = PDF::loadView($viewTemplate, compact('data'));
             $pdf->setPaper('A4', 'portrait');
 
-            $fileName = 'receipt_' . $receiptData->student->admission_no . '_' . date('Y-m-d', strtotime($receiptData->payment_date)) . '.pdf';
+            // Use receipt number for filename
+            $receiptNumber = $receipt ? $receipt->receipt_number : 'receipt_' . $receiptId;
+            $fileName = str_replace(['/', '\\', ' '], '_', $receiptNumber) . '_' . date('Y-m-d') . '.pdf';
 
             return $pdf->download($fileName);
         } catch (\Exception $e) {
+            \Log::error('Receipt generation failed', [
+                'receipt_id' => $receiptId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
             return back()->with('danger', ___('fees.receipt_generation_failed') . ': ' . $e->getMessage());
         }
     }

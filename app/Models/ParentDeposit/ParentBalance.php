@@ -46,7 +46,7 @@ class ParentBalance extends BaseModel
 
     public function academicYear(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\Academic\Session::class, 'academic_year_id');
+        return $this->belongsTo(\App\Models\Session::class, 'academic_year_id');
     }
 
     public function branch(): BelongsTo

@@ -120,7 +120,7 @@ class ReceiptRepository implements ReceiptInterface
             $recordsFiltered = $query->count();
 
             // Apply ordering
-            $orderColumnIndex = $request->input('order.0.column', 5); // Default to payment_date
+            $orderColumnIndex = $request->input('order.0.column', 6); // Default to payment_date
             $orderDirection = $request->input('order.0.dir', 'desc');
 
             $columns = [
@@ -129,11 +129,12 @@ class ReceiptRepository implements ReceiptInterface
                 'student_name',          // 2
                 'class',                 // 3
                 'total_amount',          // 4
-                'payment_date',          // 5
-                'payment_method',        // 6
-                'collected_by',          // 7
-                'payment_status',        // 8
-                'actions'                // 9
+                'discount_amount',       // 5
+                'payment_date',          // 6
+                'payment_method',        // 7
+                'collected_by',          // 8
+                'payment_status',        // 9
+                'actions'                // 10
             ];
 
             $orderColumn = $columns[$orderColumnIndex] ?? 'payment_date';
@@ -200,7 +201,9 @@ class ReceiptRepository implements ReceiptInterface
                 $row[] = $classSection;
 
                 // 4. Amount Paid with family indicator
+                // IMPORTANT: Display total_amount (before discount) in Amount Paid column
                 $currencySymbol = Setting('currency_symbol', '$');
+
                 $amountHtml = '<div class="fw-semibold text-success">' . $currencySymbol . ' ' . number_format($receipt->total_amount, 2) . '</div>';
 
                 // Add family payment indicator (using pre-fetched counts - no N+1 query)
@@ -213,26 +216,30 @@ class ReceiptRepository implements ReceiptInterface
 
                 $row[] = $amountHtml;
 
-                // 5. Payment Date
+                // 5. Discount Amount
+                $discountHtml = '<div class="text-center">';
+                if ($receipt->discount_amount > 0) {
+                    $discountHtml .= '<span class="fw-semibold text-danger">-' . $currencySymbol . ' ' . number_format($receipt->discount_amount, 2) . '</span>';
+                } else {
+                    $discountHtml .= '<span class="text-muted">' . $currencySymbol . ' 0.00</span>';
+                }
+                $discountHtml .= '</div>';
+                $row[] = $discountHtml;
+
+                // 6. Payment Date
                 $row[] = dateFormat($receipt->payment_date);
 
-                // 6. Payment Method with badge
+                // 7. Payment Method with badge
                 $paymentMethodName = $receipt->getPaymentMethodName();
                 $paymentMethodHtml = '<span class="badge badge-basic-info-text">' . e($paymentMethodName) . '</span>';
 
-                if ($receipt->transaction_reference) {
-                    $paymentMethodHtml .= '<small class="d-block text-muted" title="' . ___('fees.transaction_reference') . '">';
-                    $paymentMethodHtml .= e(\Illuminate\Support\Str::limit($receipt->transaction_reference, 15));
-                    $paymentMethodHtml .= '</small>';
-                }
-
                 $row[] = $paymentMethodHtml;
 
-                // 7. Collected By
+                // 8. Collected By
                 $collectorName = $receipt->collector ? $receipt->collector->name : '-';
                 $row[] = e($collectorName);
 
-                // 8. Payment Status
+                // 9. Payment Status
                 $statusHtml = '';
                 if ($receipt->payment_status === 'partial' || ($receipt->discount_amount > 0 && $receipt->discount_amount < $receipt->total_amount)) {
                     $statusHtml = '<span class="badge badge-basic-warning-text">' . ___('fees.partial') . '</span>';
@@ -241,7 +248,7 @@ class ReceiptRepository implements ReceiptInterface
                 }
                 $row[] = $statusHtml;
 
-                // 9. Actions dropdown
+                // 10. Actions dropdown
                 $actionsHtml = '<div class="dropdown dropdown-action">';
                 $actionsHtml .= '<button type="button" class="btn-dropdown" data-bs-toggle="dropdown" aria-expanded="false">';
                 $actionsHtml .= '<i class="fa-solid fa-ellipsis"></i>';

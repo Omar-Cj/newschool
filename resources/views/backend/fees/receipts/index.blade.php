@@ -102,6 +102,7 @@
                                 <th class="purchase">{{ ___('student_info.student_name') }}</th>
                                 <th class="purchase">{{ ___('academic.class') }} ({{ ___('academic.section') }})</th>
                                 <th class="purchase">{{ ___('fees.amount_paid') }} ({{ $currency }})</th>
+                                <th class="purchase">{{ ___('fees.discount') }} ({{ $currency }})</th>
                                 <th class="purchase">{{ ___('fees.payment_date') }}</th>
                                 <th class="purchase">{{ ___('fees.payment_method') }}</th>
                                 <th class="purchase">{{ ___('fees.collected_by') }}</th>
@@ -311,15 +312,23 @@
         let ajaxUrl = '{{ route("fees.receipt.ajaxData") }}';
 
         $(document).ready(function() {
-            // Initialize DataTables
+            // Restore filter state from sessionStorage before initialization
+            restoreFilterState();
+
+            // Initialize DataTables with state persistence
             initializeReceiptsTable();
 
             // Setup filter event handlers
             setupFilterHandlers();
+
+            // Save state when navigating away
+            $(window).on('beforeunload', function() {
+                saveFilterState();
+            });
         });
 
         /**
-         * Initialize DataTables with server-side processing
+         * Initialize DataTables with server-side processing and state persistence
          */
         function initializeReceiptsTable() {
             receiptsTable = $('#receiptsTable').DataTable({
@@ -352,16 +361,50 @@
                     { data: 2, name: 'student_name', orderable: true, searchable: true },
                     { data: 3, name: 'class', orderable: true, searchable: false },
                     { data: 4, name: 'total_amount', orderable: true, searchable: false },
-                    { data: 5, name: 'payment_date', orderable: true, searchable: false },
-                    { data: 6, name: 'payment_method', orderable: true, searchable: false },
-                    { data: 7, name: 'collected_by', orderable: false, searchable: false },
-                    { data: 8, name: 'payment_status', orderable: true, searchable: false },
-                    { data: 9, name: 'actions', orderable: false, searchable: false, width: '10%' }
+                    { data: 5, name: 'discount_amount', orderable: true, searchable: false },
+                    { data: 6, name: 'payment_date', orderable: true, searchable: false },
+                    { data: 7, name: 'payment_method', orderable: true, searchable: false },
+                    { data: 8, name: 'collected_by', orderable: false, searchable: false },
+                    { data: 9, name: 'payment_status', orderable: true, searchable: false },
+                    { data: 10, name: 'actions', orderable: false, searchable: false, width: '10%' }
                 ],
-                order: [[5, 'desc']], // Order by payment_date descending by default
+                order: [[6, 'desc']], // Order by payment_date descending by default
                 pageLength: 10,
                 lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
                 searchDelay: 300,
+                // Enable state saving for 1 hour
+                stateSave: true,
+                stateDuration: 60 * 60, // 1 hour in seconds
+                // Restore custom filter states
+                stateLoadParams: function(settings, data) {
+                    // Restore custom filters from DataTables state
+                    if (data.customFilters) {
+                        $('#studentSearchFilter').val(data.customFilters.studentSearch || '');
+                        $('#fromDateFilter').val(data.customFilters.fromDate || '');
+                        $('#toDateFilter').val(data.customFilters.toDate || '');
+                        $('#paymentMethodFilter').val(data.customFilters.paymentMethod || '');
+                        $('#collectorFilter').val(data.customFilters.collectorId || '');
+                        $('#familyPaymentsFilter').prop('checked', data.customFilters.familyPayments || false);
+
+                        // Trigger change events to update UI components (like nice-select)
+                        setTimeout(function() {
+                            $('#paymentMethodFilter').trigger('change');
+                            $('#collectorFilter').trigger('change');
+                        }, 100);
+                    }
+                },
+                // Save custom filter states
+                stateSaveParams: function(settings, data) {
+                    // Save custom filters to DataTables state
+                    data.customFilters = {
+                        studentSearch: $('#studentSearchFilter').val(),
+                        fromDate: $('#fromDateFilter').val(),
+                        toDate: $('#toDateFilter').val(),
+                        paymentMethod: $('#paymentMethodFilter').val(),
+                        collectorId: $('#collectorFilter').val(),
+                        familyPayments: $('#familyPaymentsFilter').is(':checked')
+                    };
+                },
                 // Enhanced language configuration
                 language: {
                     processing: '<div class="d-flex align-items-center justify-content-center"><div class="spinner-border ot-loading-spinner me-2" role="status"><span class="visually-hidden">Loading...</span></div><span class="ot-loading-dots"></span></div>',
@@ -396,7 +439,7 @@
         }
 
         /**
-         * Setup filter event handlers with debouncing for real-time filtering
+         * Setup filter event handlers with debouncing and state persistence
          */
         function setupFilterHandlers() {
             // Student search filter with debounce (300ms)
@@ -404,27 +447,32 @@
             $('#studentSearchFilter').on('input', function() {
                 clearTimeout(studentSearchTimeout);
                 studentSearchTimeout = setTimeout(function() {
+                    saveFilterState(); // Save state before reload
                     receiptsTable.ajax.reload();
                 }, 300);
             });
 
             // Date filters change handlers
             $('#fromDateFilter, #toDateFilter').on('change', function() {
+                saveFilterState(); // Save state before reload
                 receiptsTable.ajax.reload();
             });
 
             // Payment method filter change handler
             $('#paymentMethodFilter').on('change', function() {
+                saveFilterState(); // Save state before reload
                 receiptsTable.ajax.reload();
             });
 
             // Collector filter change handler
             $('#collectorFilter').on('change', function() {
+                saveFilterState(); // Save state before reload
                 receiptsTable.ajax.reload();
             });
 
             // Family payments checkbox change handler
             $('#familyPaymentsFilter').on('change', function() {
+                saveFilterState(); // Save state before reload
                 receiptsTable.ajax.reload();
             });
 
@@ -437,6 +485,14 @@
                 $('#paymentMethodFilter').val('').trigger('change');
                 $('#collectorFilter').val('').trigger('change');
                 $('#familyPaymentsFilter').prop('checked', false);
+
+                // Clear saved state
+                sessionStorage.removeItem('receiptFilters');
+
+                // Clear URL parameters
+                const url = new URL(window.location);
+                url.search = '';
+                window.history.replaceState({}, '', url);
 
                 // Clear DataTables built-in search and reload
                 receiptsTable.search('').ajax.reload();
@@ -470,6 +526,121 @@
         function printReceipt(receiptId) {
             const printUrl = '{{ route("fees.receipt.individual", ":id") }}'.replace(':id', receiptId) + '?print=1';
             window.open(printUrl, '_blank');
+        }
+
+        /**
+         * Save filter state to sessionStorage (backup to DataTables state)
+         */
+        function saveFilterState() {
+            try {
+                const state = {
+                    studentSearch: $('#studentSearchFilter').val(),
+                    fromDate: $('#fromDateFilter').val(),
+                    toDate: $('#toDateFilter').val(),
+                    paymentMethod: $('#paymentMethodFilter').val(),
+                    collectorId: $('#collectorFilter').val(),
+                    familyPayments: $('#familyPaymentsFilter').is(':checked'),
+                    timestamp: Date.now()
+                };
+                sessionStorage.setItem('receiptFilters', JSON.stringify(state));
+
+                // Also save to URL parameters for sharing/bookmarking
+                updateURLParameters(state);
+            } catch (e) {
+                console.error('Failed to save filter state:', e);
+            }
+        }
+
+        /**
+         * Restore filter state from sessionStorage or URL parameters
+         */
+        function restoreFilterState() {
+            try {
+                // First try URL parameters (highest priority)
+                const urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.has('student_search') || urlParams.has('from_date')) {
+                    $('#studentSearchFilter').val(urlParams.get('student_search') || '');
+                    $('#fromDateFilter').val(urlParams.get('from_date') || '');
+                    $('#toDateFilter').val(urlParams.get('to_date') || '');
+                    $('#paymentMethodFilter').val(urlParams.get('payment_method') || '');
+                    $('#collectorFilter').val(urlParams.get('collector_id') || '');
+                    $('#familyPaymentsFilter').prop('checked', urlParams.get('family_payments') === '1');
+                    return;
+                }
+
+                // Then try sessionStorage (fallback)
+                const saved = sessionStorage.getItem('receiptFilters');
+                if (saved) {
+                    const state = JSON.parse(saved);
+
+                    // Check if state is not too old (max 1 hour)
+                    const maxAge = 60 * 60 * 1000; // 1 hour in milliseconds
+                    if (state.timestamp && (Date.now() - state.timestamp) < maxAge) {
+                        $('#studentSearchFilter').val(state.studentSearch || '');
+                        $('#fromDateFilter').val(state.fromDate || '');
+                        $('#toDateFilter').val(state.toDate || '');
+                        $('#paymentMethodFilter').val(state.paymentMethod || '');
+                        $('#collectorFilter').val(state.collectorId || '');
+                        $('#familyPaymentsFilter').prop('checked', state.familyPayments || false);
+                    } else {
+                        // Clear old state
+                        sessionStorage.removeItem('receiptFilters');
+                    }
+                }
+            } catch (e) {
+                console.error('Failed to restore filter state:', e);
+            }
+        }
+
+        /**
+         * Update URL parameters without page reload
+         */
+        function updateURLParameters(state) {
+            try {
+                const url = new URL(window.location);
+
+                // Set or remove parameters based on values
+                if (state.studentSearch) {
+                    url.searchParams.set('student_search', state.studentSearch);
+                } else {
+                    url.searchParams.delete('student_search');
+                }
+
+                if (state.fromDate) {
+                    url.searchParams.set('from_date', state.fromDate);
+                } else {
+                    url.searchParams.delete('from_date');
+                }
+
+                if (state.toDate) {
+                    url.searchParams.set('to_date', state.toDate);
+                } else {
+                    url.searchParams.delete('to_date');
+                }
+
+                if (state.paymentMethod) {
+                    url.searchParams.set('payment_method', state.paymentMethod);
+                } else {
+                    url.searchParams.delete('payment_method');
+                }
+
+                if (state.collectorId) {
+                    url.searchParams.set('collector_id', state.collectorId);
+                } else {
+                    url.searchParams.delete('collector_id');
+                }
+
+                if (state.familyPayments) {
+                    url.searchParams.set('family_payments', '1');
+                } else {
+                    url.searchParams.delete('family_payments');
+                }
+
+                // Update URL without reloading page
+                window.history.replaceState({}, '', url);
+            } catch (e) {
+                console.error('Failed to update URL parameters:', e);
+            }
         }
     </script>
 @endpush

@@ -7,7 +7,7 @@ use App\Services\BranchAwareFeesGenerationService;
 use App\Services\StudentFeesService;
 use App\Models\Fees\FeesGeneration;
 use App\Models\Fees\FeesType;
-use App\Models\Academic\Session;
+use App\Models\Session;
 use Modules\MultiBranch\Entities\Branch;
 use App\Http\Requests\Fees\Generation\FeesGenerationStoreRequest;
 use App\Http\Requests\Fees\Generation\BulkFeesGenerationRequest;
