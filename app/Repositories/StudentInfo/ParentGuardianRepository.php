@@ -42,13 +42,14 @@ class ParentGuardianRepository implements ParentGuardianInterface
     {
         // MySQL 8.0 removed query_cache - no need for cache bypass statement
         // Always fetch fresh data from database
-        return $this->model::latest()->paginate(Settings::PAGINATE);
+        return $this->model::withCount('children')->latest()->paginate(Settings::PAGINATE);
     }
 
     public function searchParent($request)
     {
         // MySQL 8.0 removed query_cache - queries are always fresh
-        return $this->model::where('guardian_name', 'LIKE', "%{$request->keyword}%")
+        return $this->model::withCount('children')
+        ->where('guardian_name', 'LIKE', "%{$request->keyword}%")
         ->orWhere('guardian_email', 'LIKE', "%{$request->keyword}%")
         ->orWhere('guardian_mobile', 'LIKE', "%{$request->keyword}%")
         ->paginate(Settings::PAGINATE);

@@ -76,6 +76,7 @@ Route::middleware(saasMiddleware())->group(function () {
                     Route::PUT('update/{id}',       'update')->name('parent.update')->middleware('PermissionCheck:parent_update', 'DemoCheck');
                     Route::delete('/delete/{id}',   'delete')->name('parent.delete')->middleware('PermissionCheck:parent_delete', 'DemoCheck');
                     Route::get('/get-parent',       'getParent');
+                    Route::get('/children-details/{id}', 'getChildrenDetails')->name('parent.children-details')->middleware('PermissionCheck:parent_read');
                 });
             });
         });

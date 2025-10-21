@@ -74,6 +74,7 @@
                                     <th class="purchase">{{ ___('common.address') }}</th>
                                     <th class="purchase">{{ ___('common.status') }}</th>
                                     <th class="purchase">{{ ___('common.balance') }}</th>
+                                    <th class="purchase">{{ ___('common.total_students') }}</th>
                                     @if (hasPermission('parent_update') || hasPermission('parent_delete') || hasPermission('parent_deposit_create') || hasPermission('parent_statement_view'))
                                         <th class="action">{{ ___('common.action') }}</th>
                                     @endif
@@ -103,6 +104,15 @@
                                         @else
                                             <small class="text-muted d-block">No Balance</small>
                                         @endif
+                                    </td>
+                                    <td>
+                                        <a href="javascript:void(0);"
+                                           onclick="openStudentsModal({{ $row->id }})"
+                                           class="text-primary fw-bold text-decoration-none">
+                                            <i class="fa-solid fa-users me-1"></i>
+                                            {{ $row->children_count }}
+                                            {{ $row->children_count == 1 ? ___('common.student') : ___('common.students') }}
+                                        </a>
                                     </td>
                                     @if (hasPermission('parent_update') || hasPermission('parent_delete') || hasPermission('parent_deposit_create') || hasPermission('parent_statement_view'))
                                         <td class="action">
@@ -204,6 +214,93 @@
             <div class="modal-content">
                 <div id="modalContent">
                     <!-- Dynamic content will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Students Details Modal -->
+    <div class="modal fade" id="studentsDetailsModal" tabindex="-1" aria-labelledby="studentsDetailsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header modal-header-image">
+                    <h5 class="modal-title" id="studentsDetailsModalLabel">
+                        <i class="fas fa-users me-2"></i>
+                        <span id="modal-parent-name">{{ ___('student_info.students') }}</span>
+                    </h5>
+                    <button type="button" class="m-0 btn-close d-flex justify-content-center align-items-center"
+                            data-bs-dismiss="modal" aria-label="Close">
+                        <i class="fa fa-times text-white" aria-hidden="true"></i>
+                    </button>
+                </div>
+
+                <div class="modal-body px-4 py-4">
+                    <!-- Loading State -->
+                    <div id="students-loading" class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">{{ ___('common.loading') }}</span>
+                        </div>
+                        <div class="mt-3">{{ ___('common.loading') }}...</div>
+                    </div>
+
+                    <!-- Error State -->
+                    <div id="students-error" class="text-center py-5" style="display: none;">
+                        <div class="mb-3">
+                            <i class="fas fa-exclamation-triangle fa-3x text-danger"></i>
+                        </div>
+                        <h5 class="text-danger">{{ ___('alert.error') }}</h5>
+                        <p class="text-muted" id="error-message"></p>
+                    </div>
+
+                    <!-- Students Table -->
+                    <div id="students-table-container" style="display: none;">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-header bg-white py-3">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-list me-2"></i>
+                                    {{ ___('student_info.student_details') }}
+                                    <span class="badge bg-primary ms-2" id="students-count-badge">0</span>
+                                </h6>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover mb-0" id="students-details-table">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th class="ps-3">{{ ___('common.sr_no') }}</th>
+                                                <th>{{ ___('common.name') }}</th>
+                                                <th class="text-center">{{ ___('common.grade') }}</th>
+                                                <th class="text-center">{{ ___('common.class') }}</th>
+                                                <th class="text-center">{{ ___('common.section') }}</th>
+                                                <th class="text-end">{{ ___('fees.fees') }}</th>
+                                                <th class="text-center">{{ ___('common.status') }}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="students-details-tbody">
+                                            <!-- Populated by JavaScript -->
+                                        </tbody>
+                                        <tfoot>
+                                            <tr class="table-light border-top border-2">
+                                                <td colspan="5" class="text-end fw-bold pe-3">
+                                                    {{ ___('fees.total_outstanding_fees') }}:
+                                                </td>
+                                                <td class="text-end">
+                                                    <span id="total-outstanding-fees" class="fw-bold fs-5">$0.00</span>
+                                                </td>
+                                                <td></td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        {{ ___('ui_element.close') }}
+                    </button>
                 </div>
             </div>
         </div>
@@ -443,6 +540,119 @@
         // Show error message
         function showError(message) {
             toastr.error(message);
+        }
+
+        // ========================================
+        // Students Details Modal Functions
+        // ========================================
+
+        /**
+         * Open students details modal
+         * @param {number} parentId - Parent Guardian ID
+         */
+        function openStudentsModal(parentId) {
+            $.ajax({
+                url: "{{ url('parent/children-details') }}/" + parentId,
+                method: 'GET',
+                beforeSend: function() {
+                    // Reset modal state
+                    $('#students-loading').show();
+                    $('#students-error').hide();
+                    $('#students-table-container').hide();
+                    $('#studentsDetailsModal').modal('show');
+                },
+                success: function(response) {
+                    if (response.success) {
+                        populateStudentsModal(response.data);
+                    } else {
+                        showStudentsError(response.message || '{{ ___('alert.failed_to_load_data') }}');
+                    }
+                },
+                error: function(xhr) {
+                    console.error('Error loading students:', xhr);
+                    let errorMsg = '{{ ___('alert.something_went_wrong_please_try_again') }}';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMsg = xhr.responseJSON.message;
+                    }
+                    showStudentsError(errorMsg);
+                }
+            });
+        }
+
+        /**
+         * Populate modal with student data
+         * @param {Object} data - Response data
+         */
+        function populateStudentsModal(data) {
+            // Update modal title
+            $('#modal-parent-name').text(data.parent_name + ' - {{ ___('student_info.students') }}');
+            $('#students-count-badge').text(data.total_children);
+
+            // Build table rows and calculate total
+            let tbody = $('#students-details-tbody');
+            tbody.empty();
+            let totalOutstanding = 0;
+
+            if (data.students && data.students.length > 0) {
+                data.students.forEach(function(student, index) {
+                    // Add to total
+                    totalOutstanding += parseFloat(student.outstanding_fees) || 0;
+
+                    let statusBadge = student.status == {{ \App\Enums\Status::ACTIVE }}
+                        ? '<span class="badge-basic-success-text">' + student.status_label + '</span>'
+                        : '<span class="badge-basic-danger-text">' + student.status_label + '</span>';
+
+                    let feeClass = student.outstanding_fees > 0 ? 'text-danger' : 'text-success';
+
+                    let row = `
+                        <tr>
+                            <td class="ps-3">${index + 1}</td>
+                            <td>
+                                <div class="fw-semibold">${student.name}</div>
+                            </td>
+                            <td class="text-center">${student.grade}</td>
+                            <td class="text-center">${student.class}</td>
+                            <td class="text-center">${student.section}</td>
+                            <td class="text-end">
+                                <span class="${feeClass} fw-bold">
+                                    ${student.formatted_outstanding}
+                                </span>
+                            </td>
+                            <td class="text-center">${statusBadge}</td>
+                        </tr>
+                    `;
+                    tbody.append(row);
+                });
+            } else {
+                tbody.append(`
+                    <tr>
+                        <td colspan="7" class="text-center gray-color py-5">
+                            <img src="{{ asset('images/no_data.svg') }}" alt="" class="mb-3" width="80">
+                            <p class="mb-0">{{ ___('common.no_students_found') }}</p>
+                        </td>
+                    </tr>
+                `);
+            }
+
+            // Update total outstanding fees in footer
+            let totalClass = totalOutstanding > 0 ? 'text-danger' : 'text-success';
+            let currencySymbol = '{{ Setting('currency_symbol') }}';
+            let formattedTotal = currencySymbol + totalOutstanding.toFixed(2);
+            $('#total-outstanding-fees').removeClass('text-danger text-success').addClass(totalClass).text(formattedTotal);
+
+            // Show table, hide loading
+            $('#students-loading').hide();
+            $('#students-table-container').show();
+        }
+
+        /**
+         * Show error state in modal
+         * @param {string} message - Error message
+         */
+        function showStudentsError(message) {
+            $('#error-message').text(message);
+            $('#students-loading').hide();
+            $('#students-error').show();
         }
     </script>
 @endpush

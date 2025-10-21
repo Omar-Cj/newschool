@@ -85,4 +85,75 @@ class ParentGuardianController extends Controller
             return response()->json($success);
         endif;
     }
+
+    /**
+     * Get children details for a parent guardian
+     *
+     * @param int $id Parent Guardian ID
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getChildrenDetails($id)
+    {
+        try {
+            $parent = $this->repo->show($id);
+
+            if (!$parent) {
+                return response()->json([
+                    'success' => false,
+                    'message' => ___('alert.parent_not_found')
+                ], 404);
+            }
+
+            // Eager load relationships to prevent N+1
+            $students = $parent->children()
+                ->with([
+                    'session_class_student.class',
+                    'session_class_student.section',
+                    'feesCollects' => function($query) {
+                        $query->where('academic_year_id', activeAcademicYear())
+                              ->whereColumn('total_paid', '<', 'amount');
+                    }
+                ])
+                ->get()
+                ->map(function($student) {
+                    $outstandingFees = $student->feesCollects->sum(function($fee) {
+                        return $fee->amount - $fee->total_paid;
+                    });
+
+                    return [
+                        'id' => $student->id,
+                        'name' => $student->full_name,
+                        'grade' => $student->grade ?? 'N/A',
+                        'class' => $student->session_class_student?->class?->name ?? 'N/A',
+                        'section' => $student->session_class_student?->section?->name ?? 'N/A',
+                        'outstanding_fees' => (float) $outstandingFees,
+                        'formatted_outstanding' => Setting('currency_symbol') . number_format($outstandingFees, 2),
+                        'status' => $student->status,
+                        'status_label' => $student->status == \App\Enums\Status::ACTIVE ?
+                                         ___('common.active') : ___('common.inactive')
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'parent_name' => $parent->guardian_name,
+                    'total_children' => $students->count(),
+                    'students' => $students
+                ]
+            ]);
+
+        } catch (\Throwable $th) {
+            \Log::error('Failed to fetch children details', [
+                'parent_id' => $id,
+                'error' => $th->getMessage(),
+                'trace' => $th->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => ___('alert.something_went_wrong_please_try_again')
+            ], 500);
+        }
+    }
 }
