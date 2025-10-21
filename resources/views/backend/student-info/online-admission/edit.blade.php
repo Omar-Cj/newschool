@@ -459,19 +459,6 @@
                                 </div>
 
                                 <div class="col-md-3 mb-3">
-                                    <label for="exampleDataList" class="form-label ">{{ ___('frontend.Father_Nationality') }} <span
-                                            class="fillable">*</span></label>
-                                    <input class="form-control ot-input @error('nationality') is-invalid @enderror"
-                                        name="father_nationality" list="datalistOptions" id="exampleDataList"
-                                        placeholder="{{ ___('frontend.Father_Nationality') }}" value="{{ old('father_nationality',@$data['student']->father_nationality) }}">
-                                    @error('father_nationality')
-                                        <div id="validationServer04Feedback" class="invalid-feedback">
-                                            {{ $message }}
-                                        </div>
-                                    @enderror
-                                </div>
-
-                                <div class="col-md-3 mb-3">
                                     <label for="exampleDataList" class="form-label ">{{ ___('frontend.Place_Of_Birth') }} <span
                                             class="fillable">*</span></label>
                                     <input class="form-control ot-input @error('place_of_birth') is-invalid @enderror"
@@ -591,110 +578,6 @@
                             {{-- Start parent information --}}
 
                             <h5>{{ ___('student_info.Parent Information') }}</h5>
-                            {{-- father --}}
-                            <div class="row">
-                                <div class="col-md-3 mb-3">
-                                    <label for="exampleDataList" class="form-label ">{{ ___('student_info.father_name') }} <span
-                                            class="fillable"></span></label>
-                                    <input class="form-control ot-input @error('father_name') is-invalid @enderror" name="father_name"
-                                        list="datalistOptions" id="exampleDataList"
-                                        placeholder="{{ ___('student_info.enter_father_name') }}" type="text" value="{{  @$data['student']->father_name ?? old('father_name') }}">
-                                    @error('father_name')
-                                        <div id="validationServer04Feedback" class="invalid-feedback">
-                                            {{ $message }}
-                                        </div>
-                                    @enderror
-                                </div>
-                                <div class="col-md-3 mb-3">
-                                    <label for="exampleDataList" class="form-label ">{{ ___('student_info.father_mobile') }} <span
-                                            class="fillable"></span></label>
-                                    <input class="form-control ot-input @error('father_mobile') is-invalid @enderror" name="father_mobile"
-                                        list="datalistOptions" id="exampleDataList"
-                                        placeholder="{{ ___('student_info.enter_father_mobile') }}" type="text" value="{{ @$data['student']->father_phone ?? old('father_mobile') }}">
-                                    @error('father_mobile')
-                                        <div id="validationServer04Feedback" class="invalid-feedback">
-                                            {{ $message }}
-                                        </div>
-                                    @enderror
-                                </div>
-                                <div class="col-md-3 mb-3">
-                                    <label for="exampleDataList" class="form-label ">{{ ___('student_info.father_profession') }} <span
-                                            class="fillable"></span></label>
-                                    <input class="form-control ot-input @error('father_profession') is-invalid @enderror" name="father_profession"
-                                        list="datalistOptions" id="exampleDataList"
-                                        placeholder="{{ ___('student_info.enter_father_profession') }}" type="text" value="{{ @$data['student']->father_profession ?? old('father_profession') }}">
-                                    @error('father_profession')
-                                        <div id="validationServer04Feedback" class="invalid-feedback">
-                                            {{ $message }}
-                                        </div>
-                                    @enderror
-                                </div>
-                                <div class="col-md-3 mb-3">
-
-                                    <label class="form-label" for="inputImage">{{ ___('student_info.father_image') }} {{ ___('common.(95 x 95 px)') }}</label>
-                                    <div class="ot_fileUploader left-side mb-3">
-                                        <input class="form-control" type="text" placeholder="{{ ___('student_info.father_image') }}" readonly="" id="placeholder2">
-                                        <button class="primary-btn-small-input" type="button">
-                                            <label class="btn btn-lg ot-btn-primary" for="fileBrouse2">{{ ___('common.browse') }}</label>
-                                            <input type="file" class="d-none form-control" name="father_image" id="fileBrouse2" accept="image/*">
-                                        </button>
-                                    </div>
-
-                                </div>
-                            </div>
-                            {{-- end father --}}
-                            {{-- mother --}}
-                            <div class="row">
-                                <div class="col-md-3 mb-3">
-                                    <label for="exampleDataList" class="form-label ">{{ ___('student_info.mother_name') }} <span
-                                            class="fillable"></span></label>
-                                    <input class="form-control ot-input @error('mother_name') is-invalid @enderror" name="mother_name"
-                                        list="datalistOptions" id="exampleDataList"
-                                        placeholder="{{ ___('student_info.enter_mother_name') }}" type="text" value="{{ @$data['student']->mother_name ?? old('mother_name') }}">
-                                    @error('mother_name')
-                                        <div id="validationServer04Feedback" class="invalid-feedback">
-                                            {{ $message }}
-                                        </div>
-                                    @enderror
-                                </div>
-                                <div class="col-md-3 mb-3">
-                                    <label for="exampleDataList" class="form-label ">{{ ___('student_info.mother_mobile') }} <span
-                                            class="fillable"></span></label>
-                                    <input class="form-control ot-input @error('mother_mobile') is-invalid @enderror" name="mother_mobile"
-                                        list="datalistOptions" id="exampleDataList"
-                                        placeholder="{{ ___('student_info.enter_mother_mobile') }}" type="text" value="{{ @$data['student']->mother_phone ?? old('mother_mobile') }}">
-                                    @error('mother_mobile')
-                                        <div id="validationServer04Feedback" class="invalid-feedback">
-                                            {{ $message }}
-                                        </div>
-                                    @enderror
-                                </div>
-                                <div class="col-md-3 mb-3">
-                                    <label for="exampleDataList" class="form-label ">{{ ___('student_info.mother_profession') }} <span
-                                            class="fillable"></span></label>
-                                    <input class="form-control ot-input @error('mother_profession') is-invalid @enderror" name="mother_profession"
-                                        list="datalistOptions" id="exampleDataList"
-                                        placeholder="{{ ___('student_info.enter_father_profession') }}" type="text" value="{{ @$data['student']->mother_profession ?? old('mother_profession') }}">
-                                    @error('mother_profession')
-                                        <div id="validationServer04Feedback" class="invalid-feedback">
-                                            {{ $message }}
-                                        </div>
-                                    @enderror
-                                </div>
-                                <div class="col-md-3 mb-3">
-
-                                    <label class="form-label" for="inputImage">{{ ___('student_info.mother_image') }} {{ ___('common.(95 x 95 px)') }}</label>
-                                    <div class="ot_fileUploader left-side mb-3">
-                                        <input class="form-control" type="text" placeholder="{{ ___('student_info.mother_image') }}" readonly="" id="placeholder3">
-                                        <button class="primary-btn-small-input" type="button">
-                                            <label class="btn btn-lg ot-btn-primary" for="fileBrouse3">{{ ___('student_info.browse') }}</label>
-                                            <input type="file" class="d-none form-control" name="mother_image" id="fileBrouse3" accept="image/*">
-                                        </button>
-                                    </div>
-
-                                </div>
-                            </div>
-                            {{-- end mother --}}
                             {{-- guardian --}}
                             <div class="row">
                                 <div class="col-md-3 mb-3">

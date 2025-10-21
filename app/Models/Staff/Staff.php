@@ -30,8 +30,6 @@ class Staff extends BaseModel
         'upload_id',
         'first_name',
         'last_name',
-        'father_name',
-        'mother_name',
         'email',
         'dob',
         'joining_date',

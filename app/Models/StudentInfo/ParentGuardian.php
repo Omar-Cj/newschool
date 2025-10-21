@@ -19,16 +19,10 @@ class ParentGuardian extends BaseModel
 
     protected $fillable = [
         'user_id',
-        'father_name',
-        'father_mobile', 
-        'father_profession',
-        'father_nationality',
-        'mother_name',
-        'mother_mobile',
-        'mother_profession',
         'guardian_name',
         'guardian_email',
         'guardian_mobile',
+        'guardian_image',
         'guardian_profession',
         'guardian_relation',
         'guardian_address',

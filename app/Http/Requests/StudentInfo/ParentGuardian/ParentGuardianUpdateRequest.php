@@ -24,20 +24,16 @@ class ParentGuardianUpdateRequest extends FormRequest
     public function rules()
     {
         return [
-            'guardian_mobile'     => 'required|max:255|unique:users,phone,'.Request()->user_id,
-            'guardian_name'       => 'required|max:255',
-            'status'              => 'required|max:255',
-            'father_name'         => 'max:255',
-            'father_mobile'       => 'max:255',
-            'father_profession'   => 'max:255',
-            'mother_name'         => 'max:255',
-            'mother_mobile'       => 'max:255',
-            'mother_profession'   => 'max:255',
-            'guardian_profession' => 'max:255',
-            'guardian_email'      => 'max:255',
-            'guardian_address'    => 'max:255',
-            'guardian_relation'   => 'max:255',
-            'username'            => 'unique:users,username,'.Request()->user_id.',id',
+            'guardian_mobile'        => 'required|max:255|unique:users,phone,'.Request()->user_id,
+            'guardian_name'          => 'required|max:255',
+            'status'                 => 'required|max:255',
+            'guardian_profession'    => 'nullable|max:255',
+            'guardian_email'         => 'nullable|max:255',
+            'guardian_address'       => 'nullable|max:255',
+            'guardian_relation'      => 'nullable|max:255',
+            'guardian_place_of_work' => 'nullable|max:255',
+            'guardian_position'      => 'nullable|max:255',
+            'username'               => 'nullable|unique:users,username,'.Request()->user_id.',id',
 
         ];
     }

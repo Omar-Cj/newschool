@@ -171,9 +171,7 @@ class SomalilandStudentSeeder extends Seeder
         $parentIds = [];
 
         for ($i = 0; $i < $parentCount; $i++) {
-            $fatherName = Arr::random($this->somaliMaleNames) . ' ' . Arr::random($this->somaliFamilyNames);
-            $motherName = Arr::random($this->somaliFemaleNames) . ' ' . Arr::random($this->somaliFamilyNames);
-            $guardianName = $fatherName; // Father is usually the guardian
+            $guardianName = Arr::random($this->somaliMaleNames) . ' ' . Arr::random($this->somaliFamilyNames);
             $city = Arr::random($this->somalilandCities);
             $district = Arr::random($this->somalilandDistricts);
 
@@ -199,13 +197,6 @@ class SomalilandStudentSeeder extends Seeder
             // Create parent guardian record
             $parent = ParentGuardian::create([
                 'user_id' => $parentUser->id,
-                'father_name' => $fatherName,
-                'father_mobile' => $this->generatePhoneNumber(),
-                'father_profession' => Arr::random($this->somaliProfessions),
-                'father_nationality' => 'Somaliland',
-                'mother_name' => $motherName,
-                'mother_mobile' => $this->generatePhoneNumber(),
-                'mother_profession' => Arr::random($this->somaliProfessions),
                 'guardian_name' => $guardianName,
                 'guardian_email' => $parentUser->email,
                 'guardian_mobile' => $parentUser->phone,

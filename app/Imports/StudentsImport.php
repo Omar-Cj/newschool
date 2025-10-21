@@ -72,21 +72,12 @@ class StudentsImport implements ToModel, WithStartRow, WithValidation
 
         $guardian                      = new ParentGuardian();
         $guardian->user_id             = $userParent->id;
-        $guardian->father_name         = $row[3]??$row[39].' guardian';
-        $guardian->father_mobile       = $row[4];
-        $guardian->father_profession   = $row[5];
-        $guardian->father_nationality  = $row[6];
-        $guardian->mother_name         = $row[7];
-        $guardian->mother_mobile       = $row[8];
-        $guardian->mother_profession   = $row[9];
         $guardian->guardian_profession = $row[10];
         $guardian->guardian_address    = $row[11];
         $guardian->guardian_relation   = $row[12];
         $guardian->guardian_name       = $row[0]??$row[39].' guardian';
         $guardian->guardian_email      = $row[1]??$row[39].'guardian@gmail.com';
         $guardian->guardian_mobile     = $row[2];
-        $guardian->father_id           = $row[36];
-        $guardian->mother_id           = $row[37];
         $guardian->status              = 1;
         $guardian->save();
 

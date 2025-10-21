@@ -31,8 +31,6 @@ class GeneralTeacherSeeder extends Seeder
         [
             'first_name' => 'Ahmed',
             'last_name' => 'Hassan',
-            'father_name' => 'Hassan Abdi',
-            'mother_name' => 'Amina Ahmed',
             'specialization' => 'English',
             'department' => 'Languages',
             'staff_id' => 1001,
@@ -45,8 +43,6 @@ class GeneralTeacherSeeder extends Seeder
         [
             'first_name' => 'Fatima',
             'last_name' => 'Osman',
-            'father_name' => 'Osman Mohamed',
-            'mother_name' => 'Khadija Ibrahim',
             'specialization' => 'Arabic',
             'department' => 'Languages',
             'staff_id' => 1002,
@@ -59,8 +55,6 @@ class GeneralTeacherSeeder extends Seeder
         [
             'first_name' => 'Ibrahim',
             'last_name' => 'Ali',
-            'father_name' => 'Ali Yusuf',
-            'mother_name' => 'Sahra Hassan',
             'specialization' => 'Islamic Studies',
             'department' => 'Religious Studies',
             'staff_id' => 1003,
@@ -73,8 +67,6 @@ class GeneralTeacherSeeder extends Seeder
         [
             'first_name' => 'Amina',
             'last_name' => 'Mohamed',
-            'father_name' => 'Mohamed Ismail',
-            'mother_name' => 'Halima Omar',
             'specialization' => 'Science',
             'department' => 'Sciences',
             'staff_id' => 1004,
@@ -87,8 +79,6 @@ class GeneralTeacherSeeder extends Seeder
         [
             'first_name' => 'Omar',
             'last_name' => 'Abdi',
-            'father_name' => 'Abdi Ahmed',
-            'mother_name' => 'Mariam Ali',
             'specialization' => 'Social Studies',
             'department' => 'Social Sciences',
             'staff_id' => 1005,
@@ -101,8 +91,6 @@ class GeneralTeacherSeeder extends Seeder
         [
             'first_name' => 'Khadija',
             'last_name' => 'Yusuf',
-            'father_name' => 'Yusuf Hassan',
-            'mother_name' => 'Habiba Mohamed',
             'specialization' => 'Mathematics',
             'department' => 'Mathematics',
             'staff_id' => 1006,
@@ -115,8 +103,6 @@ class GeneralTeacherSeeder extends Seeder
         [
             'first_name' => 'Yusuf',
             'last_name' => 'Ibrahim',
-            'father_name' => 'Ibrahim Omar',
-            'mother_name' => 'Zeinab Ali',
             'specialization' => 'Somali',
             'department' => 'Languages',
             'staff_id' => 1007,
@@ -135,8 +121,6 @@ class GeneralTeacherSeeder extends Seeder
         [
             'first_name' => 'Saeed',
             'last_name' => 'Mohamed',
-            'father_name' => 'Mohamed Hassan',
-            'mother_name' => 'Aisha Abdi',
             'specialization' => 'English',
             'department' => 'Languages',
             'staff_id' => 1008,
@@ -149,8 +133,6 @@ class GeneralTeacherSeeder extends Seeder
         [
             'first_name' => 'Hodan',
             'last_name' => 'Ahmed',
-            'father_name' => 'Ahmed Ali',
-            'mother_name' => 'Fadumo Hassan',
             'specialization' => 'Mathematics',
             'department' => 'Mathematics',
             'staff_id' => 1009,
@@ -163,8 +145,6 @@ class GeneralTeacherSeeder extends Seeder
         [
             'first_name' => 'Hassan',
             'last_name' => 'Omar',
-            'father_name' => 'Omar Ibrahim',
-            'mother_name' => 'Safia Mohamed',
             'specialization' => 'Chemistry',
             'department' => 'Sciences',
             'staff_id' => 1010,
@@ -177,8 +157,6 @@ class GeneralTeacherSeeder extends Seeder
         [
             'first_name' => 'Mariam',
             'last_name' => 'Ismail',
-            'father_name' => 'Ismail Yusuf',
-            'mother_name' => 'Naima Ahmed',
             'specialization' => 'Physics',
             'department' => 'Sciences',
             'staff_id' => 1011,
@@ -191,8 +169,6 @@ class GeneralTeacherSeeder extends Seeder
         [
             'first_name' => 'Abdi',
             'last_name' => 'Hassan',
-            'father_name' => 'Hassan Mohamed',
-            'mother_name' => 'Asha Ibrahim',
             'specialization' => 'Biology',
             'department' => 'Sciences',
             'staff_id' => 1012,
@@ -205,8 +181,6 @@ class GeneralTeacherSeeder extends Seeder
         [
             'first_name' => 'Sahra',
             'last_name' => 'Ali',
-            'father_name' => 'Ali Ahmed',
-            'mother_name' => 'Hawa Omar',
             'specialization' => 'Islamic Studies',
             'department' => 'Religious Studies',
             'staff_id' => 1013,
@@ -219,8 +193,6 @@ class GeneralTeacherSeeder extends Seeder
         [
             'first_name' => 'Ismail',
             'last_name' => 'Abdi',
-            'father_name' => 'Abdi Osman',
-            'mother_name' => 'Faduma Hassan',
             'specialization' => 'Somali',
             'department' => 'Languages',
             'staff_id' => 1014,
@@ -233,8 +205,6 @@ class GeneralTeacherSeeder extends Seeder
         [
             'first_name' => 'Habiba',
             'last_name' => 'Omar',
-            'father_name' => 'Omar Ali',
-            'mother_name' => 'Amran Mohamed',
             'specialization' => 'History',
             'department' => 'Social Sciences',
             'staff_id' => 1015,
@@ -247,8 +217,6 @@ class GeneralTeacherSeeder extends Seeder
         [
             'first_name' => 'Ali',
             'last_name' => 'Mohamed',
-            'father_name' => 'Mohamed Yusuf',
-            'mother_name' => 'Rukia Hassan',
             'specialization' => 'Geography',
             'department' => 'Social Sciences',
             'staff_id' => 1016,
@@ -261,8 +229,6 @@ class GeneralTeacherSeeder extends Seeder
         [
             'first_name' => 'Zeinab',
             'last_name' => 'Ahmed',
-            'father_name' => 'Ahmed Hassan',
-            'mother_name' => 'Cawo Ali',
             'specialization' => 'Arabic',
             'department' => 'Languages',
             'staff_id' => 1017,
@@ -281,8 +247,6 @@ class GeneralTeacherSeeder extends Seeder
         [
             'first_name' => 'Mohamed',
             'last_name' => 'Hassan',
-            'father_name' => 'Hassan Ali',
-            'mother_name' => 'Maryam Omar',
             'specialization' => 'Administration',
             'department' => 'Administration',
             'designation' => 'Head Teacher',
@@ -296,8 +260,6 @@ class GeneralTeacherSeeder extends Seeder
         [
             'first_name' => 'Halima',
             'last_name' => 'Ibrahim',
-            'father_name' => 'Ibrahim Ahmed',
-            'mother_name' => 'Shamis Hassan',
             'specialization' => 'Academic Coordination',
             'department' => 'Administration',
             'designation' => 'Deputy Head Teacher',
@@ -311,8 +273,6 @@ class GeneralTeacherSeeder extends Seeder
         [
             'first_name' => 'Abdullahi',
             'last_name' => 'Osman',
-            'father_name' => 'Osman Abdi',
-            'mother_name' => 'Hodan Mohamed',
             'specialization' => 'Academic Planning',
             'department' => 'Administration',
             'designation' => 'Academic Coordinator',
@@ -491,8 +451,6 @@ class GeneralTeacherSeeder extends Seeder
                     'department_id' => $department->id,
                     'first_name' => $teacherData['first_name'],
                     'last_name' => $teacherData['last_name'],
-                    'father_name' => $teacherData['father_name'],
-                    'mother_name' => $teacherData['mother_name'],
                     'email' => $teacherData['email'],
                     'gender_id' => $gender->id,
                     'dob' => '1985-01-01', // Default birth date
@@ -522,8 +480,6 @@ class GeneralTeacherSeeder extends Seeder
                     'department_id' => $department->id,
                     'first_name' => $teacherData['first_name'],
                     'last_name' => $teacherData['last_name'],
-                    'father_name' => $teacherData['father_name'],
-                    'mother_name' => $teacherData['mother_name'],
                     'email' => $teacherData['email'],
                     'gender_id' => $gender->id,
                     'dob' => '1985-01-01', // Default birth date

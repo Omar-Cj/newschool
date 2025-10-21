@@ -68,6 +68,8 @@ return [
             'migrations' => 'database/migrations/tenants',
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+                PDO::ATTR_EMULATE_PREPARES => true,  // Fix for MySQL 8.0 Error 1615
+                PDO::ATTR_PERSISTENT => false,        // Disable persistent connections
             ]) : [],
         ],
 

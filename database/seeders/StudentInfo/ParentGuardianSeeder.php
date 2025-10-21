@@ -30,12 +30,6 @@ class ParentGuardianSeeder extends Seeder
             ]);
             ParentGuardian::create([
                 'user_id'             => $user->id,
-                'father_name'         => 'Father'.$i,
-                'father_mobile'       => '1236585'.$i,
-                'father_profession'   => 'Teacher',
-                'mother_name'         => 'Mother',
-                'mother_mobile'       => '0147892'.$i,
-                'mother_profession'   => 'Teacher',
                 'guardian_name'       => 'Guardian'.$i,
                 'guardian_email'      => 'guardian'.$i.'@gmail.com',
                 'guardian_mobile'     => '1236585'.$i,

@@ -88,8 +88,6 @@ class StaffSeeder extends Seeder
             $staff->department_id           = 2;
             $staff->first_name              = 'Teacher';
             $staff->last_name               = $i;
-            $staff->father_name             = 'Teacher '.$i.' father';
-            $staff->mother_name             = 'Teacher '.$i.' mother';
             $staff->email                   = 'teacher'.$i.'@gmail.com';
             $staff->gender_id               = 1;
             $staff->dob                     = '1999-01-01';

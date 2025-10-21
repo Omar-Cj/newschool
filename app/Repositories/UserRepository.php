@@ -112,8 +112,6 @@ class UserRepository implements UserInterface
             $staff->department_id           = $request->department;
             $staff->first_name              = $request->first_name;
             $staff->last_name               = $request->last_name;
-            $staff->father_name             = $request->father_name;
-            $staff->mother_name             = $request->mother_name;
             $staff->email                   = $request->email;
             $staff->gender_id               = $request->gender;
             $staff->dob                     = $request->dob;
@@ -173,8 +171,6 @@ class UserRepository implements UserInterface
             $staff->department_id           = $request->department;
             $staff->first_name              = $request->first_name;
             $staff->last_name               = $request->last_name;
-            $staff->father_name             = $request->father_name;
-            $staff->mother_name             = $request->mother_name;
             $staff->email                   = $request->email;
             $staff->gender_id               = $request->gender;
             $staff->dob                     = $request->dob;

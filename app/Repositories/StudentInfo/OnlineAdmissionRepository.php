@@ -100,13 +100,6 @@ class OnlineAdmissionRepository implements OnlineAdmissionInterface
 
             $parent                      = new ParentGuardian();
             $parent->user_id             = $parent_user->id;
-            $parent->father_name         = $request->father_name;
-            $parent->father_mobile       = $request->father_mobile;
-            $parent->father_nationality = $request->father_nationality;
-            $parent->father_profession   = $request->father_profession;
-            $parent->mother_name         = $request->mother_name;
-            $parent->mother_mobile       = $request->mother_mobile;
-            $parent->mother_profession   = $request->mother_profession;
             $parent->guardian_profession = $request->guardian_profession;
             $parent->guardian_address    = $request->guardian_address;
             $parent->guardian_relation   = $request->guardian_relation;
@@ -114,8 +107,6 @@ class OnlineAdmissionRepository implements OnlineAdmissionInterface
             $parent->guardian_email      = $request->guardian_email;
             $parent->guardian_mobile     = $request->guardian_mobile;
             $parent->guardian_image      = $parent_user->upload_id;
-            $parent->father_image        = $this->UploadImageCreate($request->father_image, 'backend/uploads/users');
-            $parent->mother_image        = $this->UploadImageCreate($request->mother_image, 'backend/uploads/users');
             $parent->status              = $request->status;
 
             $parent->save();

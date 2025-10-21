@@ -47,17 +47,6 @@ class OnlineAdmission extends Model
         return $this->belongsTo(Upload::class, 'gurdian_image_id', 'id');
     }
 
-    public function father_img()
-    {
-        return $this->belongsTo(Upload::class, 'father_image_id', 'id');
-    }
-
-    public function mother_img()
-    {
-        return $this->belongsTo(Upload::class, 'mother_image_id', 'id');
-    }
-
-
     public function previous_img()
     {
         return $this->belongsTo(Upload::class, 'previous_school_image_id', 'id');

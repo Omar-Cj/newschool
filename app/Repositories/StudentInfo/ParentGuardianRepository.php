@@ -40,11 +40,14 @@ class ParentGuardianRepository implements ParentGuardianInterface
 
     public function getPaginateAll()
     {
+        // MySQL 8.0 removed query_cache - no need for cache bypass statement
+        // Always fetch fresh data from database
         return $this->model::latest()->paginate(Settings::PAGINATE);
     }
 
     public function searchParent($request)
     {
+        // MySQL 8.0 removed query_cache - queries are always fresh
         return $this->model::where('guardian_name', 'LIKE', "%{$request->keyword}%")
         ->orWhere('guardian_email', 'LIKE', "%{$request->keyword}%")
         ->orWhere('guardian_mobile', 'LIKE', "%{$request->keyword}%")
@@ -58,6 +61,10 @@ class ParentGuardianRepository implements ParentGuardianInterface
 
     public function store($request)
     {
+        // Enhanced connection reset for MySQL 8.0.42 (Error 1615 fix)
+        DB::disconnect('mysql');
+        DB::reconnect('mysql');
+
         DB::beginTransaction();
         try {
             $role                     = Role::find(7); // Guardian role id 7
@@ -77,13 +84,6 @@ class ParentGuardianRepository implements ParentGuardianInterface
 
             $row                      = new $this->model;
             $row->user_id             = $user->id;
-            $row->father_name         = $request->father_name;
-            $row->father_mobile       = $request->father_mobile;
-            $row->father_profession   = $request->father_profession;
-            $row->father_nationality   = $request->father_nationality;
-            $row->mother_name         = $request->mother_name;
-            $row->mother_mobile       = $request->mother_mobile;
-            $row->mother_profession   = $request->mother_profession;
             $row->guardian_profession = $request->guardian_profession;
             $row->guardian_address    = $request->guardian_address;
             $row->guardian_relation   = $request->guardian_relation;
@@ -91,22 +91,29 @@ class ParentGuardianRepository implements ParentGuardianInterface
             $row->guardian_email      = $request->guardian_email;
             $row->guardian_mobile     = $request->guardian_mobile;
             $row->guardian_image      = $user->upload_id;
-            $row->father_image        = $this->UploadImageCreate($request->father_image, 'backend/uploads/users');
-            $row->mother_image        = $this->UploadImageCreate($request->mother_image, 'backend/uploads/users');
             $row->status              = $request->status;
-            $row->father_id           = $request->father_id;
-            $row->mother_id           = $request->mother_id;
             $row->guardian_place_of_work = $request->guardian_place_of_work;
             $row->guardian_position      = $request->guardian_position;
 
             $row->save();
 
             DB::commit();
+
+            // Clear cached guardian listings
+            \Cache::tags(['guardians'])->flush();
+
             return $this->responseWithSuccess(___('alert.created_successfully'), []);
         } catch (\Throwable $th) {
             DB::rollback();
-            return $this->responseWithError(___('alert.something_went_wrong_please_try_again'), []);
 
+            // Add error logging for debugging
+            \Log::error('ParentGuardian Store Failed', [
+                'error_message' => $th->getMessage(),
+                'error_type' => get_class($th),
+                'request_data' => $request->except(['password', 'guardian_image']),
+            ]);
+
+            return $this->responseWithError(___('alert.something_went_wrong_please_try_again'), []);
         }
     }
 
@@ -117,13 +124,26 @@ class ParentGuardianRepository implements ParentGuardianInterface
 
     public function update($request, $id)
     {
+        // Enhanced connection reset for MySQL 8.0.42 (Error 1615 fix)
+        DB::disconnect('mysql');
+        DB::reconnect('mysql');
+
         DB::beginTransaction();
         try {
-            $row                      = $this->model->find($id);
+            // Use lockForUpdate to ensure fresh data and prevent race conditions
+            $row = $this->model->lockForUpdate()->find($id);
 
-            $user                     = User::find($row->user_id);
+            if (!$row) {
+                throw new \Exception("Guardian not found with ID: {$id}");
+            }
 
-            $role                     = Role::find($user->role_id);
+            $user = User::lockForUpdate()->find($row->user_id);
+
+            if (!$user) {
+                throw new \Exception("User not found with ID: {$row->user_id}");
+            }
+
+            $role = Role::find($user->role_id);
 
             $user->name               = $request->guardian_name;
             $user->email              = $request->guardian_email;
@@ -133,13 +153,6 @@ class ParentGuardianRepository implements ParentGuardianInterface
             $user->username           = $request->username;
             $user->save();
 
-            $row->father_name         = $request->father_name;
-            $row->father_mobile       = $request->father_mobile;
-            $row->father_profession   = $request->father_profession;
-            $row->father_nationality  = $request->father_nationality;
-            $row->mother_name         = $request->mother_name;
-            $row->mother_mobile       = $request->mother_mobile;
-            $row->mother_profession   = $request->mother_profession;
             $row->guardian_profession = $request->guardian_profession;
             $row->guardian_address    = $request->guardian_address;
             $row->guardian_relation   = $request->guardian_relation;
@@ -147,21 +160,34 @@ class ParentGuardianRepository implements ParentGuardianInterface
             $row->guardian_email      = $request->guardian_email;
             $row->guardian_mobile     = $request->guardian_mobile;
             $row->guardian_image      = $user->upload_id;
-            $row->father_image        = $this->UploadImageUpdate($request->father_image, 'backend/uploads/users',$row->father_image);
-            $row->mother_image        = $this->UploadImageUpdate($request->mother_image, 'backend/uploads/users',$row->mother_image);
             $row->status              = $request->status;
-            $row->father_id           = $request->father_id;
-            $row->mother_id           = $request->mother_id;
-
             $row->guardian_place_of_work = $request->guardian_place_of_work;
             $row->guardian_position      = $request->guardian_position;
 
             $row->save();
 
             DB::commit();
+
+            // Clear any cached data for this guardian
+            \Cache::forget("guardian_{$id}");
+            \Cache::tags(['guardians'])->flush();
+
             return $this->responseWithSuccess(___('alert.updated_successfully'), []);
         } catch (\Throwable $th) {
             DB::rollback();
+
+            // Comprehensive error logging
+            \Log::error('ParentGuardian Update Failed', [
+                'guardian_id' => $id,
+                'user_id' => $row->user_id ?? null,
+                'error_message' => $th->getMessage(),
+                'error_type' => get_class($th),
+                'error_file' => $th->getFile(),
+                'error_line' => $th->getLine(),
+                'request_data' => $request->except(['password', 'guardian_image']),
+                'stack_trace' => $th->getTraceAsString()
+            ]);
+
             return $this->responseWithError(___('alert.something_went_wrong_please_try_again'), []);
         }
     }
@@ -171,8 +197,6 @@ class ParentGuardianRepository implements ParentGuardianInterface
         DB::beginTransaction();
         try {
             $row = $this->model->find($id);
-            $this->UploadImageDelete($row->father_image);
-            $this->UploadImageDelete($row->mother_image);
             $row->delete();
 
             $user = User::find($row->user_id);

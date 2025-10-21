@@ -52,7 +52,7 @@ class AttendanceRepository implements AttendanceInterface
                     $row = $this->model::find($request->items[$key]); // already submitted
                 else
                 $row = new $this->model; // new
-                $student_details =  $this->student->with('parent:id,guardian_name,father_name,user_id')->where('id',$item)->first();
+                $student_details =  $this->student->with('parent:id,guardian_name,user_id')->where('id',$item)->first();
 
                 $row->session_id                = setting('session');
                 $row->classes_id                = $request->class;
@@ -75,7 +75,7 @@ class AttendanceRepository implements AttendanceInterface
                 $data['roll_no'] = @$row->student->roll_no;
                 $data['class'] = @$row->class->name;
                 $data['section'] = @$row->section->name;
-                $data['guardian_name'] = $this->student->parent ? ($row->student->parent->father_name ?  $row->student->parent->father_name : $row->student->parent->guardian_name) : '';
+                $data['guardian_name'] = $row->student->parent ? $row->student->parent->guardian_name : '';
                 $data['attendance_date'] = dateFormat($row->date);
                 $data['attendance_type'] = getAttendanceType(@$row->attendance);
 

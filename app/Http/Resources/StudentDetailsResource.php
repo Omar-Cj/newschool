@@ -29,14 +29,6 @@ class StudentDetailsResource extends JsonResource
             'blood'   => @$this->blood->name,
             'admission_date'   => @$this->admission_date,
             'parent_info'   => [
-                "father_name" => @$this->parent->father_name,
-                "father_mobile" =>  @$this->parent->father_mobile,
-                "father_profession" =>  @$this->parent->father_profession,
-
-                "mother_name" => @$this->parent->mother_name,
-                "mother_mobile" =>  @$this->parent->mother_mobile,
-                "mother_profession" =>  @$this->parent->mother_profession,
-
                 'guardian_name' => @$this->parent->guardian_name,
                 'guardian_mobile' => @$this->parent->guardian_mobile,
                 'guardian_email' => @$this->parent->guardian_email,

@@ -232,24 +232,13 @@ class FrontendRepository implements FrontendInterface
             $row->previous_school_info = $request->previous_school_info;
             $row->previous_school_image_id = $this->UploadImageCreate($request->previous_school_image, 'backend/uploads/students');
 
-            $row->father_name = $request->father_name;
-            $row->father_phone = $request->father_phone;
-            $row->father_profession = $request->father_profession;
-            $row->father_image_id =  $this->UploadImageCreate($request->father_image, 'backend/uploads/students');
-
-            $row->mother_name = $request->mother_name;
-            $row->mother_phone = $request->mother_phone;
-            $row->mother_profession = $request->mother_profession;
-            $row->mother_image_id = $this->UploadImageCreate($request->mother_image, 'backend/uploads/students');
             $row->payment_status = ($setting->is_show == 1) ? 2 : 0 ;
-
 
             $row->place_of_birth = $request->place_of_birth;
             $row->nationality = $request->nationality;
             $row->cpr_no = $request->cpr_no;
             $row->spoken_lang_at_home = $request->spoken_lang_at_home;
             $row->residance_address = $request->residance_address;
-            $row->father_nationality = $request->father_nationality;
             $row->save();
 
             $data = [];
