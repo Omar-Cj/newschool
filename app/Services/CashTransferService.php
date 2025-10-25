@@ -21,6 +21,7 @@ class CashTransferService
 
     /**
      * Create a new cash transfer
+     * Validates against user-specific balance (only fees THEY collected)
      */
     public function createTransfer(
         int $journalId,
@@ -37,10 +38,51 @@ class CashTransferService
             );
         }
 
-        $remainingBalance = $journal->remaining_balance;
+        // Use user-specific remaining balance instead of total journal balance
+        // This ensures users can only transfer fees THEY collected
+        $remainingBalance = $journal->getUserRemainingBalance($transferredBy);
+        $userCollected = $journal->getUserTotalCollected($transferredBy);
+        $userTransferred = $journal->approvedTransfers()
+            ->where('transferred_by', $transferredBy)
+            ->sum('amount') ?? 0;
 
-        // Check if amount exceeds available balance
+        Log::info('💰 [CASH-TRANSFER] User balance validation', [
+            'journal_id' => $journalId,
+            'user_id' => $transferredBy,
+            'user_collected' => $userCollected,
+            'user_already_transferred' => $userTransferred,
+            'user_remaining_balance' => $remainingBalance,
+            'requested_amount' => $amount
+        ]);
+
+        // Check if user has collected any fees from this journal
+        if ($userCollected == 0) {
+            throw new \Exception(
+                "You have not collected any fees from this journal ({$journal->name}). " .
+                "Only fees you personally collected can be transferred."
+            );
+        }
+
+        // Check if amount exceeds user's available balance
         if ($amount > $remainingBalance) {
+            $message = sprintf(
+                "Insufficient balance. You collected $%.2f, already transferred $%.2f. " .
+                "Remaining balance: $%.2f (Requested: $%.2f)",
+                $userCollected,
+                $userTransferred,
+                $remainingBalance,
+                $amount
+            );
+
+            Log::warning('⚠️ [CASH-TRANSFER] Insufficient user balance', [
+                'journal_id' => $journalId,
+                'user_id' => $transferredBy,
+                'collected' => $userCollected,
+                'transferred' => $userTransferred,
+                'remaining' => $remainingBalance,
+                'requested' => $amount
+            ]);
+
             throw new InsufficientBalanceException(
                 required: $amount,
                 available: $remainingBalance

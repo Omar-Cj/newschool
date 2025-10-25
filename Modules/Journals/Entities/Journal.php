@@ -279,6 +279,92 @@ class Journal extends Model
     }
 
     /**
+     * Get receipt cash collected by specific user
+     * (All payments except deposits - payment_method != 6)
+     *
+     * @param int $userId User ID to filter by
+     * @return float Total receipt cash collected by user
+     */
+    public function getUserReceiptCash(int $userId): float
+    {
+        return $this->paymentTransactions()
+            ->where('payment_method', '!=', 6)
+            ->where('collected_by', $userId)
+            ->sum('amount') ?? 0;
+    }
+
+    /**
+     * Get deposit amount collected by specific user
+     * (Only deposit payments - payment_method = 6)
+     *
+     * @param int $userId User ID to filter by
+     * @return float Total deposit amount collected by user
+     */
+    public function getUserDepositAmount(int $userId): float
+    {
+        return $this->paymentTransactions()
+            ->where('payment_method', 6)
+            ->where('collected_by', $userId)
+            ->sum('amount') ?? 0;
+    }
+
+    /**
+     * Get total collected by specific user (receipt cash + deposits)
+     *
+     * @param int $userId User ID to filter by
+     * @return float Total amount collected by user
+     */
+    public function getUserTotalCollected(int $userId): float
+    {
+        return $this->paymentTransactions()
+            ->where('collected_by', $userId)
+            ->sum('amount') ?? 0;
+    }
+
+    /**
+     * Get user's remaining balance (their collections minus their approved transfers)
+     * This represents how much the user can still transfer from this journal
+     *
+     * @param int $userId User ID to calculate balance for
+     * @return float Remaining balance available for transfer by user
+     */
+    public function getUserRemainingBalance(int $userId): float
+    {
+        // Calculate total collected by this user
+        $collected = $this->getUserTotalCollected($userId);
+
+        // Sum approved transfers made by this user from this journal
+        $transferred = $this->approvedTransfers()
+            ->where('transferred_by', $userId)
+            ->sum('amount') ?? 0;
+
+        // Remaining = Collected - Already Transferred
+        return max($collected - $transferred, 0);
+    }
+
+    /**
+     * Get user's transfer progress percentage
+     * Shows what percentage of user's collections has been transferred
+     *
+     * @param int $userId User ID to calculate progress for
+     * @return float Progress percentage (0-100)
+     */
+    public function getUserTransferProgress(int $userId): float
+    {
+        $collected = $this->getUserTotalCollected($userId);
+
+        if ($collected == 0) {
+            return 0;
+        }
+
+        $transferred = $this->approvedTransfers()
+            ->where('transferred_by', $userId)
+            ->sum('amount') ?? 0;
+
+        return min(round(($transferred / $collected) * 100, 2), 100);
+    }
+
+    /**
      * Clear all cache for this journal
      */
     public function clearCache(): void

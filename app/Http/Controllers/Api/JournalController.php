@@ -101,14 +101,16 @@ class JournalController extends Controller
     /**
      * Get individual journal details with statistics
      *
+     * @param Request $request
      * @param int $id Journal ID
      * @return \Illuminate\Http\JsonResponse
      */
-    public function show($id)
+    public function show(Request $request, $id)
     {
         \Log::info('📚 [JOURNALS-API] Show Journal Details', [
             'journal_id' => $id,
             'user_id' => auth()->id(),
+            'filter_by_collector' => $request->boolean('filter_by_collector', false),
             'timestamp' => now()->toDateTimeString()
         ]);
 
@@ -130,30 +132,75 @@ class JournalController extends Controller
                 ], 403);
             }
 
-            $response = [
-                'status' => true,
-                'data' => [
-                    'id' => $journal->id,
-                    'name' => $journal->name,
-                    'status' => $journal->status,
-                    'branch_id' => $journal->branch_id,
+            // Check if filtering by collector (for cash transfer functionality)
+            $filterByCollector = $request->boolean('filter_by_collector', false);
+            $userId = auth()->id();
+
+            if ($filterByCollector) {
+                // User-specific amounts - show only what THIS user collected
+                $userTransferred = $journal->approvedTransfers()
+                    ->where('transferred_by', $userId)
+                    ->sum('amount') ?? 0;
+
+                $userCollected = $journal->getUserTotalCollected($userId);
+
+                $response = [
+                    'status' => true,
+                    'data' => [
+                        'id' => $journal->id,
+                        'name' => $journal->name,
+                        'status' => $journal->status,
+                        'branch_id' => $journal->branch_id,
+                        'receipt_cash' => $journal->getUserReceiptCash($userId),
+                        'deposit_amount' => $journal->getUserDepositAmount($userId),
+                        'total_collected' => $userCollected,
+                        'transferred_amount' => $userTransferred,
+                        'remaining_balance' => $journal->getUserRemainingBalance($userId),
+                        'progress_percentage' => $journal->getUserTransferProgress($userId),
+                        'is_fully_transferred' => $userCollected > 0 && $userTransferred >= $userCollected,
+                        'can_be_closed' => false, // User cannot close journal
+                        'filtered_by_collector' => true,
+                        'collector_id' => $userId,
+                        'collector_name' => auth()->user()->name,
+                    ]
+                ];
+
+                \Log::info('✅ [JOURNALS-API] User-Filtered Journal Details Retrieved', [
+                    'journal_id' => $id,
+                    'user_id' => $userId,
+                    'user_receipt_cash' => $journal->getUserReceiptCash($userId),
+                    'user_deposit_amount' => $journal->getUserDepositAmount($userId),
+                    'user_remaining_balance' => $journal->getUserRemainingBalance($userId)
+                ]);
+
+            } else {
+                // Original: All amounts (total journal statistics)
+                $response = [
+                    'status' => true,
+                    'data' => [
+                        'id' => $journal->id,
+                        'name' => $journal->name,
+                        'status' => $journal->status,
+                        'branch_id' => $journal->branch_id,
+                        'receipt_cash' => $journal->receipt_cash,
+                        'deposit_amount' => $journal->deposit_amount,
+                        'total_collected' => $journal->total_collected,
+                        'transferred_amount' => $journal->transferred_amount,
+                        'remaining_balance' => $journal->remaining_balance,
+                        'progress_percentage' => $journal->progress_percentage,
+                        'is_fully_transferred' => $journal->isFullyTransferred(),
+                        'can_be_closed' => $journal->canBeClosed(),
+                        'filtered_by_collector' => false,
+                    ]
+                ];
+
+                \Log::info('✅ [JOURNALS-API] Total Journal Details Retrieved', [
+                    'journal_id' => $id,
                     'receipt_cash' => $journal->receipt_cash,
                     'deposit_amount' => $journal->deposit_amount,
-                    'total_collected' => $journal->total_collected,
-                    'transferred_amount' => $journal->transferred_amount,
-                    'remaining_balance' => $journal->remaining_balance,
-                    'progress_percentage' => $journal->progress_percentage,
-                    'is_fully_transferred' => $journal->isFullyTransferred(),
-                    'can_be_closed' => $journal->canBeClosed()
-                ]
-            ];
-
-            \Log::info('✅ [JOURNALS-API] Journal Details Retrieved', [
-                'journal_id' => $id,
-                'receipt_cash' => $journal->receipt_cash,
-                'deposit_amount' => $journal->deposit_amount,
-                'remaining_balance' => $journal->remaining_balance
-            ]);
+                    'remaining_balance' => $journal->remaining_balance
+                ]);
+            }
 
             return response()->json($response);
 

@@ -118,19 +118,30 @@
 
     /**
      * Load journal details and update preview
+     * Filters by logged-in user's collections for cash transfer
      */
     function loadJournalDetails(journalId) {
+        console.log('🔍 [CREATE-JOURNALS] Loading journal details with collector filter...');
+
         $.ajax({
             url: `${config.journalsApiUrl}/${journalId}`,
             method: 'GET',
+            data: {
+                filter_by_collector: true  // Filter by logged-in user's collections
+            },
             success: function (response) {
+                console.log('✅ [CREATE-JOURNALS] Journal details loaded:', response);
+
                 if (response.status && response.data) {
                     selectedJournal = response.data;
                     updateJournalInfo(response.data);
                     updatePreviewCards(response.data);
+
+                    // Collector filtering is active but no UI notification is shown (per user request)
                 }
             },
             error: function () {
+                console.error('❌ [CREATE-JOURNALS] Failed to load journal details');
                 showAlert('error', 'Failed to load journal details');
                 resetJournalInfo();
             }
