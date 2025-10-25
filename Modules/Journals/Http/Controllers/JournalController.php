@@ -143,6 +143,24 @@ class JournalController extends Controller
      */
     public function close($id)
     {
+        // Get journal to validate transfer status
+        $journal = $this->repo->show($id);
+
+        if (!$journal) {
+            $success[0] = ___('alert.data_not_found');
+            $success[1] = 'error';
+            $success[2] = ___('alert.oops');
+            return response()->json($success);
+        }
+
+        // Check if journal is fully transferred before closing
+        if (!$journal->isFullyTransferred()) {
+            throw new \App\Exceptions\JournalNotFullyTransferredException(
+                "Journal cannot be closed. Transfer progress: {$journal->progress_percentage}%. Please ensure all amounts are transferred before closing.",
+                $journal->progress_percentage
+            );
+        }
+
         $result = $this->repo->close($id);
 
         if ($result['status']) {

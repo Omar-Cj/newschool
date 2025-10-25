@@ -98,6 +98,7 @@
                                     <th>{{ ___('journals.name') }}</th>
                                     <th>{{ ___('journals.branch') }}</th>
                                     <th>{{ ___('journals.description') }}</th>
+                                    <th>{{ ___('journals.transfer_progress') }}</th>
                                     <th>{{ ___('common.created_at') }}</th>
                                     @if (hasPermission('journal_update') || hasPermission('journal_read') || hasPermission('journal_delete'))
                                         <th>{{ ___('common.action') }}</th>
@@ -118,6 +119,34 @@
                                             <span class="text-muted">
                                                 {{ Str::limit($journal->description, 50) }}
                                             </span>
+                                        </td>
+                                        <td>
+                                            @php
+                                                $progress = round($journal->progress_percentage);
+                                                $progressClass = 'bg-danger';
+                                                if ($progress >= 75) {
+                                                    $progressClass = 'bg-success';
+                                                } elseif ($progress >= 50) {
+                                                    $progressClass = 'bg-warning';
+                                                }
+                                            @endphp
+                                            <div class="d-flex align-items-center">
+                                                <div class="progress flex-grow-1" style="height: 20px; min-width: 100px;">
+                                                    <div class="progress-bar {{ $progressClass }}"
+                                                         role="progressbar"
+                                                         style="width: {{ $progress }}%;"
+                                                         aria-valuenow="{{ $progress }}"
+                                                         aria-valuemin="0"
+                                                         aria-valuemax="100">
+                                                        {{ $progress }}%
+                                                    </div>
+                                                </div>
+                                                @if ($journal->isFullyTransferred())
+                                                    <span class="badge badge-success ms-2">
+                                                        <i class="fa-solid fa-check-circle"></i> Complete
+                                                    </span>
+                                                @endif
+                                            </div>
                                         </td>
                                         <td>{{ dateFormat($journal->created_at) }}</td>
                                         @if (hasPermission('journal_update') || hasPermission('journal_read') || hasPermission('journal_delete'))

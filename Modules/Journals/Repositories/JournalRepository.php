@@ -208,12 +208,7 @@ class JournalRepository implements JournalInterface
     {
         $query = $this->model->active();
 
-        if ($schoolId) {
-            $query->forSchool($schoolId);
-        } else if (Auth::user() && Auth::user()->school_id) {
-            $query->forSchool(Auth::user()->school_id);
-        }
-
+        // Use branch_id for filtering (school_id is not used in this single-school system)
         $effectiveBranchId = $branchId ?? (Auth::user()->branch_id ?? null);
 
         if ($effectiveBranchId && Schema::hasColumn($this->model->getTable(), 'branch_id')) {

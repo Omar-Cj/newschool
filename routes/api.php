@@ -35,6 +35,8 @@ use App\Http\Controllers\Api\Teacher\TeacherLiveClassApiController;
 use App\Http\Controllers\Api\Instructor\InstructorLivechatAPIController;
 use App\Http\Controllers\Api\Parent\HomeworkAPIController as ParentHomeworkAPIController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\Api\CashTransferController;
+use App\Http\Controllers\Api\JournalController;
 
 
 Route::middleware(saasApiMiddleware())->group(function () {
@@ -210,8 +212,34 @@ Route::middleware(saasApiMiddleware())->group(function () {
                 // Get report execution statistics
                 Route::get('/{reportId}/statistics', [ReportController::class, 'statistics']);
             });
-
         });
+
+        // Cash Transfer Routes (MOVED OUTSIDE teacher prefix - accessible at /api/cash-transfers/*)
+        Route::prefix('cash-transfers')->group(function () {
+            // List all cash transfers with filters
+            Route::get('/', [CashTransferController::class, 'index']);
+
+            // Get statistics
+            Route::get('/statistics', [CashTransferController::class, 'statistics']);
+
+            // Create new cash transfer
+            Route::post('/', [CashTransferController::class, 'store']);
+
+            // Show specific cash transfer
+            Route::get('/{cashTransfer}', [CashTransferController::class, 'show']);
+
+            // Approve cash transfer (Super Admin only)
+            Route::put('/{cashTransfer}/approve', [CashTransferController::class, 'approve']);
+
+            // Reject cash transfer (Super Admin only)
+            Route::put('/{cashTransfer}/reject', [CashTransferController::class, 'reject']);
+
+            // Delete pending cash transfer
+            Route::delete('/{cashTransfer}', [CashTransferController::class, 'destroy']);
+        });
+
+        // NOTE: Journals route moved to routes/accounts.php as web route for session-based auth
+
 
 
     });

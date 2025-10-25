@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Accounts\IncomeController;
 use App\Http\Controllers\Accounts\ExpenseController;
 use App\Http\Controllers\Accounts\AccountHeadController;
+use App\Http\Controllers\Accounts\CashTransferController;
 use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
 use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
 
@@ -52,6 +53,25 @@ Route::middleware(saasMiddleware())->group(function () {
                     Route::put('/update/{id}',      'update')->name('expense.update')->middleware('PermissionCheck:expense_update', 'DemoCheck');
                     Route::delete('/delete/{id}',   'delete')->name('expense.delete')->middleware('PermissionCheck:expense_delete', 'DemoCheck');
                 });
+
+                // Cash Transfer Routes
+                Route::controller(CashTransferController::class)->prefix('cash-transfers')->group(function () {
+                    Route::get('/',                 'index')->name('cash-transfers.index')->middleware('PermissionCheck:cash_transfer_read');
+                    Route::get('/ajax-data',        'ajaxCashTransferData')->name('cash-transfers.ajaxData')->middleware('PermissionCheck:cash_transfer_read');
+                    Route::get('/create',           'create')->name('cash-transfers.create')->middleware('PermissionCheck:cash_transfer_create');
+                    Route::post('/',                'store')->name('cash-transfers.store')->middleware('PermissionCheck:cash_transfer_create');
+                    Route::get('/statistics',       'statistics')->name('cash-transfers.statistics')->middleware('PermissionCheck:cash_transfer_statistics');
+                    Route::get('/{id}',             'show')->name('cash-transfers.show')->middleware('PermissionCheck:cash_transfer_read');
+                });
+
+                // Journals Data Routes (for AJAX dropdowns and details)
+                Route::get('/journals-data', [\App\Http\Controllers\Api\JournalController::class, 'index'])
+                    ->name('journals.data')
+                    ->middleware('PermissionCheck:cash_transfer_read');
+
+                Route::get('/journals-data/{id}', [\App\Http\Controllers\Api\JournalController::class, 'show'])
+                    ->name('journals.data.show')
+                    ->middleware('PermissionCheck:cash_transfer_read');
             });
         });
     });

@@ -680,10 +680,10 @@
 
                 {{-- Start Accounts --}}
                 @if (
-                    (hasPermission('account_head_read') || hasPermission('income_read') || hasPermission('expense_category_read') || hasPermission('expense_read') || hasPermission('journal_read')) &&
+                    (hasPermission('account_head_read') || hasPermission('income_read') || hasPermission('expense_category_read') || hasPermission('expense_read') || hasPermission('journal_read') || hasPermission('cash_transfer_read')) &&
                         hasFeature('account'))
                     <li
-                        class="sidebar-menu-item {{ set_menu(['account_head.index', 'account_head.create', 'account_head.edit', 'expense-category*', 'expense*', 'journals*']) }}">
+                        class="sidebar-menu-item {{ set_menu(['account_head.index', 'account_head.create', 'account_head.edit', 'expense-category*', 'expense*', 'journals*', 'cash-transfers*']) }}">
                         <a class="parent-item-content has-arrow">
                             <i class="las la-dolly"></i>
                             <span class="on-half-expanded">{{ ___('account.Accounts') }}</span>
@@ -714,6 +714,11 @@
                             @if (hasPermission('journal_read') && hasModule('Journals'))
                                 <li class="sidebar-menu-item {{ set_menu(['journals*']) }}">
                                     <a href="{{ route('journals.index') }}">{{ ___('journals.journals') }}</a>
+                                </li>
+                            @endif
+                            @if (hasPermission('cash_transfer_read'))
+                                <li class="sidebar-menu-item {{ set_menu(['cash-transfers*']) }}">
+                                    <a href="{{ route('cash-transfers.index') }}">{{ ___('cash_transfer.cash_transfers') }}</a>
                                 </li>
                             @endif
                         </ul>
