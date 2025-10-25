@@ -546,12 +546,8 @@ class FeesCollectController extends Controller
             'payment_notes' => 'nullable|string|max:500',
             'discount_type' => 'nullable|in:fixed,percentage',
             'discount_amount' => 'nullable|numeric|min:0',
-        ];
-
-        // Add validation for direct payment mode
-        if ($request->payment_mode === 'direct') {
-            $validationRules['payment_method'] = 'required|in:cash,zaad,edahab';
-            $validationRules['journal_id'] = [
+            // CRITICAL FIX: journal_id is required for BOTH deposit and direct modes
+            'journal_id' => [
                 'required',
                 Rule::exists('journals', 'id')->where(function ($query) {
                     $branchId = auth()->user()->branch_id ?? null;
@@ -559,7 +555,12 @@ class FeesCollectController extends Controller
                         $query->where('branch_id', $branchId);
                     }
                 })
-            ];
+            ],
+        ];
+
+        // Add payment_method validation for direct payment mode only
+        if ($request->payment_mode === 'direct') {
+            $validationRules['payment_method'] = 'required|in:cash,zaad,edahab';
         }
 
         $validatedData = $request->validate($validationRules);

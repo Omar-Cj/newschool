@@ -983,9 +983,11 @@ class SiblingFeeCollectionManager {
             discount_amount: document.getElementById('family_discount_amount')?.value || ''
         };
 
+        // Always include journal_id (required for both direct and deposit modes)
+        paymentData.journal_id = journalIdEl ? journalIdEl.value : '';
+
         if (this.paymentMode === 'direct') {
             paymentData.payment_method = paymentMethodEl ? paymentMethodEl.value : '';
-            paymentData.journal_id = journalIdEl ? journalIdEl.value : '';
         }
 
         return paymentData;
