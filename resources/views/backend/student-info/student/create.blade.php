@@ -439,7 +439,14 @@
                                     <div class="card">
                                         <div class="card-header">
                                             <h4 class="mb-0">{{ ___('fees.optional_services') }}</h4>
-                                            <small class="text-muted">{{ ___('fees.mandatory_services_auto_assigned') }}</small>
+                                            <small class="text-muted">
+                                                <i class="fa fa-info-circle"></i>
+                                                {{ ___('fees.mandatory_services_auto_assigned') }}
+                                            </small>
+                                            <div class="alert alert-info mt-2 mb-0">
+                                                <strong>Note:</strong> Only optional services are shown below for manual selection.
+                                                Mandatory services will be automatically assigned based on the student's grade level.
+                                            </div>
                                         </div>
                                         <div class="card-body">
                                             <div id="available-services-container">
@@ -485,6 +492,9 @@
                                     <div class="d-flex align-items-center gap-4 flex-wrap">
                                         <h3 class="m-0 flex-fill">
                                             {{ ___('fees.service_subscriptions') ?? 'Fee Service Subscriptions' }}
+                                            <small class="text-muted d-block" style="font-size: 0.85rem;">
+                                                (Optional Services Only - Mandatory services are auto-assigned)
+                                            </small>
                                         </h3>
                                         <button type="button" class="btn btn-lg ot-btn-primary radius_30px small_add_btn" onclick="addNewService()">
                                             <span><i class="fa-solid fa-plus"></i> </span>
@@ -511,7 +521,7 @@
                                             <tbody id="servicesTableBody">
                                                 <tr id="no-services-row">
                                                     <td colspan="6" class="text-center text-muted">
-                                                        {{ ___('fees.no_services_assigned') ?? 'No services assigned yet. Click "Add Service" to add services manually. Mandatory services will be assigned automatically when the student is saved.' }}
+                                                        {{ ___('fees.no_services_assigned') ?? 'No optional services assigned yet. Click "Add Service" above to add optional services manually. Mandatory services will be automatically assigned based on the student\'s grade level when saved.' }}
                                                     </td>
                                                 </tr>
                                             </tbody>

@@ -107,9 +107,12 @@ class StudentController extends Controller
         $data['genders']         = $this->genderRepo->all();
         $data['categories']      = $this->categoryRepo->all();
         $data['parentGuardians'] = $this->parentGuardianRepo->get();
-        
-        // Load fee types for service management
-        $data['fee_types'] = \App\Models\Fees\FeesType::all();
+
+        // Load only optional fee types for manual selection
+        // Mandatory services are automatically assigned based on student's grade level
+        $data['fee_types'] = \App\Models\Fees\FeesType::active()
+            ->where('is_mandatory_for_level', false)
+            ->get();
 
         return view('backend.student-info.student.create', compact('data'));
     }
