@@ -175,6 +175,9 @@ Route::middleware(saasMiddleware())->group(function () {
                     Route::get('dashboard/crm',   [DashboardController::class, 'crmDashboard'])->name('crm_dashboard');
                     Route::post('searchMenuData', [DashboardController::class, 'searchMenuData'])->name('searchMenuData');
 
+                    // Branch selection for filtering
+                    Route::post('set-selected-branch', [\App\Http\Controllers\BranchController::class, 'setSelectedBranch'])->name('branch.setSelected');
+
                     Route::controller(RoleController::class)->middleware('FeatureCheck:staff_manage')->prefix('roles')->group(function () {
                         Route::get('/',                 'index')->name('roles.index')->middleware('PermissionCheck:role_read');
                         Route::get('/create',           'create')->name('roles.create')->middleware('PermissionCheck:role_create');

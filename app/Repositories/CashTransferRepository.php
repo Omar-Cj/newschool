@@ -223,26 +223,31 @@ class CashTransferRepository
             DB::enableQueryLog();
 
             // Base query with eager loading
-            $query = $this->model->with(['journal', 'transferredBy', 'approvedBy']);
+            $query = $this->model->with(['journal', 'transferredBy', 'approvedBy', 'branch']);
 
             // LOG 2: Base query setup
             \Log::info('🔍 [CASH-TRANSFER-REPO] Base Query Created with Eager Loading', [
                 'relationships' => ['journal', 'transferredBy', 'approvedBy']
             ]);
 
-            // Apply branch filter if available
-            $branchId = auth()->user()->branch_id ?? null;
-            if ($branchId) {
-                \Log::info('🏢 [CASH-TRANSFER-REPO] Applying Branch Filter', [
-                    'branch_id' => $branchId
+            // Super admins see all transfers, regular users only see their own transfers
+            if (!isSuperAdmin()) {
+                $query->where('transferred_by', auth()->id());
+                \Log::info('🔒 [CASH-TRANSFER-REPO] User Filter Applied', [
+                    'user_id' => auth()->id()
                 ]);
-                $query->whereHas('journal', function ($q) use ($branchId) {
-                    $q->where('branch_id', $branchId);
-                });
             } else {
-                \Log::info('🌐 [CASH-TRANSFER-REPO] No Branch Filter (All branches)', [
-                    'reason' => 'user branch_id is null'
-                ]);
+                // Super admin: filter by their current branch (set via global branch switching)
+                $currentBranchId = auth()->user()->branch_id;
+                if ($currentBranchId) {
+                    $query->where('branch_id', $currentBranchId);
+                    \Log::info('🏢 [CASH-TRANSFER-REPO] Super Admin Branch Filter Applied', [
+                        'branch_id' => $currentBranchId,
+                        'filter_type' => 'user_branch'
+                    ]);
+                } else {
+                    \Log::info('🌐 [CASH-TRANSFER-REPO] Super Admin - All Branches (no branch assigned)');
+                }
             }
 
             // Apply filters from request

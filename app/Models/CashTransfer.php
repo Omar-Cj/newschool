@@ -14,6 +14,7 @@ class CashTransfer extends Model
 
     protected $fillable = [
         'journal_id',
+        'branch_id',
         'amount',
         'notes',
         'transferred_by',
@@ -44,6 +45,11 @@ class CashTransfer extends Model
     public function approvedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(\Modules\MultiBranch\Entities\Branch::class);
     }
 
     // Scopes

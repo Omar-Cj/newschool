@@ -75,7 +75,7 @@
         $.ajax({
             url: journalsUrl,
             method: 'GET',
-            data: { status: 'active' },
+            data: {}, // Load all journals, not just active ones
             success: function (response) {
 
                 if (response.status && response.data) {
@@ -116,6 +116,9 @@
         dataTable = $('#cash-transfers-table').DataTable({
             processing: true,
             serverSide: true,
+            dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>' +
+                 '<"row"<"col-sm-12"tr>>' +
+                 '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
             ajax: {
                 url: config.apiBaseUrl,
                 data: function (d) {
@@ -208,7 +211,7 @@
                 }
             ],
             order: [[1, 'desc']],
-            pageLength: 25,
+            pageLength: 10,
             language: {
                 emptyTable: config.translations?.noData || 'No transfers found',
                 processing: config.translations?.loading || 'Loading...'

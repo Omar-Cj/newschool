@@ -120,6 +120,8 @@
 
     @include('pushnotification::script')
 
+    {{-- Global branch switching handler - updates user->branch_id permanently in database --}}
+    {{-- This affects ALL modules across the entire application --}}
     @if (hasModule('MultiBranch'))
         <script>
             $(document).ready(function() {

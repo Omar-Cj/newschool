@@ -338,3 +338,6 @@
 
     </div>
 </header>
+
+{{-- Branch switching handler is in master.blade.php --}}
+{{-- It updates user->branch_id permanently in database for global branch switching --}}

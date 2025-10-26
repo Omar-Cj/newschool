@@ -68,8 +68,82 @@
     </div>
 @endsection
 
-@push('style')
+@push('css')
     <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css">
+
+    <style>
+        /* Custom pagination styling to match .ot-pagination */
+        .table-content .dataTables_wrapper .dataTables_paginate {
+            margin-top: 20px;
+        }
+
+        .table-content .dataTables_wrapper .dataTables_paginate .pagination {
+            justify-content: center;
+            margin: 0;
+        }
+
+        .table-content .dataTables_wrapper .dataTables_paginate .page-item .page-link {
+            background-color: var(--ot-bg-table-pagination, #ffffff);
+            color: var(--ot-text-table-pagination, #1a1d1f);
+            border: 1px solid var(--ot-border-table-pagination, #eaeaea);
+            padding: 8px 12px;
+            font-size: 13px;
+            border-radius: 4px;
+            margin: 0 2px;
+        }
+
+        .table-content .dataTables_wrapper .dataTables_paginate .page-item .page-link:hover {
+            background-color: var(--ot-primary-color, #5764c6);
+            color: #ffffff;
+            border-color: var(--ot-primary-color, #5764c6);
+        }
+
+        .table-content .dataTables_wrapper .dataTables_paginate .page-item.active .page-link {
+            background-color: var(--ot-primary-color, #5764c6) !important;
+            color: #ffffff !important;
+            border-color: var(--ot-primary-color, #5764c6) !important;
+            box-shadow: none;
+        }
+
+        .table-content .dataTables_wrapper .dataTables_paginate .page-item.disabled .page-link {
+            background-color: var(--ot-bg-table-pagination, #ffffff);
+            color: var(--ot-text-muted, #9c9c9c);
+            border-color: var(--ot-border-table-pagination, #eaeaea);
+        }
+
+        /* DataTables search field alignment - positioned on right */
+        .table-content .dataTables_wrapper .dataTables_filter {
+            text-align: right;
+        }
+
+        .table-content .dataTables_wrapper .dataTables_filter input {
+            border: 1px solid var(--ot-border-table-pagination, #eaeaea);
+            border-radius: 4px;
+            padding: 6px 12px;
+            font-size: 13px;
+        }
+
+        .table-content .dataTables_wrapper .dataTables_filter input:focus {
+            outline: none;
+            border-color: var(--ot-primary-color, #5764c6);
+            box-shadow: 0 0 0 0.2rem rgba(87, 100, 198, 0.25);
+        }
+
+        /* DataTables processing indicator styling */
+        .dataTables_processing {
+            background-color: rgba(255, 255, 255, 0.9);
+            border: 1px solid var(--ot-primary-color, #5764c6);
+            color: var(--ot-primary-color, #5764c6);
+            padding: 1rem;
+            border-radius: 4px;
+        }
+
+        /* Table hover effects */
+        .table-content .table tbody tr:hover {
+            background-color: rgba(87, 100, 198, 0.05);
+            transition: background-color 0.3s ease;
+        }
+    </style>
 @endpush
 
 @push('script')

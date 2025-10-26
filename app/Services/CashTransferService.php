@@ -92,6 +92,7 @@ class CashTransferService
         return DB::transaction(function () use ($journalId, $amount, $transferredBy, $notes, $journal) {
             $transfer = $this->transferRepository->create([
                 'journal_id' => $journalId,
+                'branch_id' => $journal->branch_id,  // Auto-populate from journal
                 'amount' => $amount,
                 'transferred_by' => $transferredBy,
                 'notes' => $notes,
