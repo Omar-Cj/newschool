@@ -228,10 +228,22 @@ class JournalRepository implements JournalInterface
 
     /**
      * Get all active branches for dropdown
+     * Super admins see all branches, regular users see only their branch
      */
     public function getBranchesForDropdown()
     {
-        return Branch::active()->select('id', 'name')->get()->map(function ($branch) {
+        $query = Branch::active()->select('id', 'name');
+
+        // Super admins (role_id = 1) see all branches
+        // Regular users only see their own branch
+        if (!isSuperAdmin()) {
+            $userBranchId = Auth::user()->branch_id;
+            if ($userBranchId) {
+                $query->where('id', $userBranchId);
+            }
+        }
+
+        return $query->get()->map(function ($branch) {
             return [
                 'id' => $branch->id,
                 'text' => $branch->name,

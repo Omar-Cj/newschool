@@ -14,7 +14,22 @@ class JournalUpdateRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'branch' => ['nullable', 'string', 'max:255'], // Made nullable for branch_id transition
-            'branch_id' => ['nullable', 'exists:branches,id'], // New branch_id validation
+            'branch_id' => [
+                'required',
+                'exists:branches,id',
+                function ($attribute, $value, $fail) {
+                    // Super admins can update journals for any branch
+                    if (isSuperAdmin()) {
+                        return;
+                    }
+
+                    // Regular users can only update journals for their own branch
+                    $userBranchId = \Illuminate\Support\Facades\Auth::user()->branch_id;
+                    if (!$userBranchId || (int)$value !== (int)$userBranchId) {
+                        $fail(___('journals.unauthorized_branch_access') ?? 'You are not authorized to update journals for this branch.');
+                    }
+                }
+            ],
             'description' => ['nullable', 'string'],
             'status' => ['nullable', 'in:active,inactive']
         ];
