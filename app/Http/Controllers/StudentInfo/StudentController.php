@@ -7,6 +7,8 @@ use App\Models\LeaveRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use App\Imports\StudentsImport;
+use App\Imports\StudentsImportV2;
+use App\Exports\StudentTemplateExport;
 use App\Models\StudentInfo\Student;
 use App\Http\Controllers\Controller;
 use Maatwebsite\Excel\Facades\Excel;
@@ -423,21 +425,73 @@ class StudentController extends Controller
     public function importSubmit(StudentImportRequest $request)
     {
         try {
-            Excel::import(new StudentsImport($request->class, $request->section), $request->file('file'));
-            return redirect()->route('student.index')->with('success', ___('alert.Operation Successful'));
+            // Use new header-based import with grade support
+            Excel::import(
+                new StudentsImportV2($request->grade, $request->class, $request->section),
+                $request->file('file')
+            );
+
+            return redirect()->route('student.index')
+                ->with('success', ___('alert.Students imported successfully'));
         } catch (ImportValidationException $e) {
             $errors = $e->errors();
             return back()->withErrors($errors)->withInput();
+        } catch (\Exception $e) {
+            \Log::error('Student import failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return back()
+                ->with('danger', 'Import failed: ' . $e->getMessage())
+                ->withInput();
         }
     }
 
     public function sampleDownload()
     {
-        $filePath = public_path('student_bulk_import_sample.xlsx');
-        if (file_exists($filePath)) {
-            return response()->download($filePath);
-        } else {
-            return redirect()->back()->with('error', 'File not found!');
+        // Log entry with timestamp and request details
+        \Log::info('=== SAMPLE DOWNLOAD REQUEST START ===', [
+            'timestamp' => now()->toDateTimeString(),
+            'user_id' => auth()->id() ?? 'guest',
+            'ip_address' => request()->ip(),
+            'user_agent' => request()->userAgent(),
+            'referer' => request()->header('referer'),
+        ]);
+
+        \Log::info('Generating Excel template', [
+            'export_class' => StudentTemplateExport::class,
+            'filename' => 'student_import_template.xlsx',
+            'format' => 'Excel (xlsx)',
+        ]);
+
+        try {
+            // Generate and download Excel template using Export class
+            $response = Excel::download(
+                new StudentTemplateExport,
+                'student_import_template.xlsx',
+                \Maatwebsite\Excel\Excel::XLSX,
+                [
+                    'Cache-Control' => 'no-cache, no-store, must-revalidate',
+                    'Pragma' => 'no-cache',
+                    'Expires' => '0',
+                ]
+            );
+
+            \Log::info('Excel template generated successfully', [
+                'status_code' => 200,
+                'download_name' => 'student_import_template.xlsx',
+            ]);
+
+            return $response;
+
+        } catch (\Exception $e) {
+            \Log::error('Failed to generate Excel template', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return redirect()->back()->with('error', 'Failed to generate template file!');
         }
     }
 

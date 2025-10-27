@@ -43,48 +43,86 @@
 
                                 <!-- Notice Section -->
                                 <div class="d-flex justify-content-between align-items-center mb-3">
-                                    <code
-                                        class="text-danger">{{ ___('student_info.Must be follw below instructions & Before Inserting data please download sample file and fill it as required') }}</code>
+                                    <code class="text-primary fs-6 fw-bold">
+                                        Fadlan lasoo dag sample fileka kadib kusoo Buuxi Xogta ardayda
+                                    </code>
                                     <div>
                                         <a href="{{ route('student.sampleDownload') }}"
-                                            class="btn btn-sm btn-outline-primary">
+                                            class="btn btn-sm btn-primary">
                                             <i class="fa-solid fa-download"></i> {{ ___('student_info.Sample File') }}
                                         </a>
                                     </div>
                                 </div>
 
-                                <!-- Instructions List -->
+                                <!-- Instructions List (V2 Template) -->
+                                <div class="alert alert-info mb-3">
+                                    <h6 class="alert-heading"><i class="fa fa-info-circle"></i> Import Instructions (V2)</h6>
+                                    <ul class="mb-0">
+                                        <li><strong>Grade, Class, Section</strong> are selected in the form above (applies to all students in the file)</li>
+                                        <li><strong>Required columns</strong>: first_name, last_name, parent_mobile</li>
+                                        <li><strong>Optional columns</strong>: shift, gender, category, mobile, email, username, date_of_birth, admission_date, parent_name, parent_relation, fee_services</li>
+                                    </ul>
+                                </div>
 
-                                <code> {{ ___('student_info.Guardian Email must be unique') }}</code>
-
-                                <code> {{ ___('student_info.Email must be unique') }}</code>
-
-                                <code> {{ ___('student_info.Religion') }}: 1 = Islam, 2
-                                    = Hindu, 3 = Christian</code>
-
-                                <code>{{ ___('student_info.Gender') }}: 1 = Male, 2 =
-                                    Female</code>
-
-                                <code>{{ ___('student_info.Blood') }}: 1 = A+, 2 = A-,
-                                    3 = B+, 4 = B-, 5 = O+, 6 = O-, 7 = AB+, 8 = AB-</code>
-
-                                <code>
-                                    {{ ___('student_info.Student Category') }}:
-                                    @foreach ($data['categories'] as $key => $item)
-                                        {{ $item->id }} = {{ $item->name }}
-                                    @endforeach
-                                </code>
-
-                                <code>
-                                    {{ ___('student_info.Attend School Previously') }}: 1 = Yes, 0 = No
-                                </code>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <code class="d-block mb-2"><strong>Gender</strong>: 1 = Male, 2 = Female</code>
+                                        <code class="d-block mb-2"><strong>Parent Relation</strong>: Father, Mother, Guardian, Other</code>
+                                        <code class="d-block mb-2">
+                                            <strong>Student Category</strong>:
+                                            @foreach ($data['categories'] as $key => $item)
+                                                {{ $item->id }} = {{ $item->name }}{{ $loop->last ? '' : ', ' }}
+                                            @endforeach
+                                        </code>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <code class="d-block mb-2"><strong>Parent Mobile</strong>: Used to lookup/create parent (prevents duplicates)</code>
+                                        <code class="d-block mb-2"><strong>Fee Services</strong>: Comma-separated optional service IDs (e.g., 3,5,7)</code>
+                                        <code class="d-block mb-2"><strong>Note</strong>: Mandatory services auto-assigned based on grade</code>
+                                    </div>
+                                </div>
 
 
                             </div>
 
                             <div class="row mt-10">
-                                <div class="col-md-4">
+                                <!-- Grade Field - First Priority -->
+                                <div class="col-md-4 mb-3">
+                                    <label for="gradeSelect" class="form-label">{{ ___('student_info.grade') }}
+                                        <span class="fillable">*</span></label>
+                                    <select class="nice-select niceSelect bordered_style wide @error('grade') is-invalid @enderror"
+                                        name="grade" id="gradeSelect">
+                                        <option value="">{{ ___('student_info.select_grade') }}</option>
+                                        <optgroup label="Kindergarten">
+                                            <option {{ old('grade') == 'KG-1' ? 'selected' : '' }} value="KG-1">KG-1</option>
+                                            <option {{ old('grade') == 'KG-2' ? 'selected' : '' }} value="KG-2">KG-2</option>
+                                        </optgroup>
+                                        <optgroup label="Primary">
+                                            <option {{ old('grade') == 'Grade1' ? 'selected' : '' }} value="Grade1">Grade 1</option>
+                                            <option {{ old('grade') == 'Grade2' ? 'selected' : '' }} value="Grade2">Grade 2</option>
+                                            <option {{ old('grade') == 'Grade3' ? 'selected' : '' }} value="Grade3">Grade 3</option>
+                                            <option {{ old('grade') == 'Grade4' ? 'selected' : '' }} value="Grade4">Grade 4</option>
+                                            <option {{ old('grade') == 'Grade5' ? 'selected' : '' }} value="Grade5">Grade 5</option>
+                                            <option {{ old('grade') == 'Grade6' ? 'selected' : '' }} value="Grade6">Grade 6</option>
+                                            <option {{ old('grade') == 'Grade7' ? 'selected' : '' }} value="Grade7">Grade 7</option>
+                                            <option {{ old('grade') == 'Grade8' ? 'selected' : '' }} value="Grade8">Grade 8</option>
+                                        </optgroup>
+                                        <optgroup label="Secondary">
+                                            <option {{ old('grade') == 'Form1' ? 'selected' : '' }} value="Form1">Form 1</option>
+                                            <option {{ old('grade') == 'Form2' ? 'selected' : '' }} value="Form2">Form 2</option>
+                                            <option {{ old('grade') == 'Form3' ? 'selected' : '' }} value="Form3">Form 3</option>
+                                            <option {{ old('grade') == 'Form4' ? 'selected' : '' }} value="Form4">Form 4</option>
+                                        </optgroup>
+                                    </select>
+                                    @error('grade')
+                                        <div id="validationServer04Feedback" class="invalid-feedback">
+                                            {{ $message }}
+                                        </div>
+                                    @enderror
+                                </div>
 
+                                <!-- Class Field - Second Priority -->
+                                <div class="col-md-4">
                                     <label for="validationServer04" class="form-label">{{ ___('student_info.class') }}
                                         <span class="fillable">*</span></label>
                                     <select id="getSections"
