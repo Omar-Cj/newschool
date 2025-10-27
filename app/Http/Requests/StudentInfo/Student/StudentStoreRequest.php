@@ -43,7 +43,7 @@ class StudentStoreRequest extends FormRequest
             'grade' => 'required|in:KG-1,KG-2,Grade1,Grade2,Grade3,Grade4,Grade5,Grade6,Grade7,Grade8,Form1,Form2,Form3,Form4',
             'class' => ['required', 'exists:classes,id'],
             'section' => 'required|max:255',
-            'date_of_birth' => 'required|max:255',
+            'date_of_birth' => 'nullable|max:255',
             'admission_date' => 'required|max:255',
             'parent' => 'required|max:255',
             'status' => 'required|max:255',

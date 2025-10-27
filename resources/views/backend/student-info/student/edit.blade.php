@@ -206,7 +206,7 @@
 
                                 <div class="col-md-3 mb-3">
                                     <label for="exampleDataList" class="form-label ">{{ ___('common.date_of_birth') }}
-                                        <span class="fillable">*</span></label>
+                                        <span class="fillable"></span></label>
                                     <input type="date"
                                         class="form-control ot-input @error('date_of_birth') is-invalid @enderror"
                                         name="date_of_birth" list="datalistOptions" id="exampleDataList"

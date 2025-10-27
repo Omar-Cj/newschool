@@ -204,7 +204,7 @@
                                 </div>
                                 <div class="col-md-3 mb-3">
                                     <label for="exampleDataList" class="form-label ">{{ ___('common.date_of_birth') }}
-                                        <span class="fillable">*</span></label>
+                                        <span class="fillable"></span></label>
                                     <input type="date"
                                         class="form-control ot-input @error('date_of_birth') is-invalid @enderror"
                                         name="date_of_birth" list="datalistOptions" id="exampleDataList_date_of_birth"
@@ -269,7 +269,7 @@
                                         class="form-control ot-input @error('admission_date') is-invalid @enderror"
                                         name="admission_date" list="datalistOptions" id="exampleDataList_admission_date"
                                         placeholder="{{ ___('student_info.admission_date') }}"
-                                        value="{{ old('admission_date') }}">
+                                        value="{{ old('admission_date', date('Y-m-d')) }}">
                                     @error('admission_date')
                                         <div id="validationServer04Feedback" class="invalid-feedback">
                                             {{ $message }}
