@@ -44,7 +44,7 @@
                                 <!-- Notice Section -->
                                 <div class="d-flex justify-content-between align-items-center mb-3">
                                     <code class="text-primary fs-6 fw-bold">
-                                        Fadlan lasoo dag sample fileka kadib kusoo Buuxi Xogta ardayda
+                                        Fadlan Lasoo Dag Sample Fileka Kadib Kusoo Buuxi Xogta ardayda Adigoo Raacaya Tilmaamahan:-
                                     </code>
                                     <div>
                                         <a href="{{ route('student.sampleDownload') }}"
@@ -56,11 +56,10 @@
 
                                 <!-- Instructions List (V2 Template) -->
                                 <div class="alert alert-info mb-3">
-                                    <h6 class="alert-heading"><i class="fa fa-info-circle"></i> Import Instructions (V2)</h6>
+                                    <h6 class="alert-heading"><i class="fa fa-info-circle"></i> Tilmaamaha Loo Baahanyahay inaad Raacdid</h6>
                                     <ul class="mb-0">
-                                        <li><strong>Grade, Class, Section</strong> are selected in the form above (applies to all students in the file)</li>
-                                        <li><strong>Required columns</strong>: first_name, last_name, parent_mobile</li>
-                                        <li><strong>Optional columns</strong>: shift, gender, category, mobile, email, username, date_of_birth, admission_date, parent_name, parent_relation, fee_services</li>
+                                        <li><strong>Grade, Class, Section</strong> Ka dooro Saddexdan Formka Xaga Hoose Yaal</li>
+                                        <li><strong>Columnska Loo Baahanyahay</strong>: first_name, last_name,shift,gender,category,parent_mobile,parent_name,parent_relation</li>
                                     </ul>
                                 </div>
 

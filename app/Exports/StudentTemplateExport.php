@@ -7,13 +7,16 @@ use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use Maatwebsite\Excel\Concerns\WithColumnFormatting;
+use Maatwebsite\Excel\Concerns\WithEvents;
+use Maatwebsite\Excel\Events\AfterSheet;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
+use PhpOffice\PhpSpreadsheet\Style\Protection;
 use Illuminate\Support\Collection;
 
-class StudentTemplateExport implements FromCollection, WithHeadings, WithStyles, WithColumnWidths, WithColumnFormatting
+class StudentTemplateExport implements FromCollection, WithHeadings, WithStyles, WithColumnWidths, WithColumnFormatting, WithEvents
 {
     /**
      * Return empty collection for blank template
@@ -41,11 +44,6 @@ class StudentTemplateExport implements FromCollection, WithHeadings, WithStyles,
             'shift',
             'gender',
             'category',
-            'mobile',
-            'email',
-            'username',
-            'date_of_birth',
-            'admission_date',
             'parent_name',
             'parent_relation',
             'fee_services',
@@ -94,14 +92,9 @@ class StudentTemplateExport implements FromCollection, WithHeadings, WithStyles,
             'D' => 10,  // shift
             'E' => 10,  // gender
             'F' => 12,  // category
-            'G' => 18,  // mobile
-            'H' => 25,  // email
-            'I' => 18,  // username
-            'J' => 18,  // date_of_birth
-            'K' => 18,  // admission_date
-            'L' => 20,  // parent_name
-            'M' => 18,  // parent_relation
-            'N' => 20,  // fee_services
+            'G' => 20,  // parent_name
+            'H' => 18,  // parent_relation
+            'I' => 20,  // fee_services
         ];
     }
 
@@ -117,8 +110,38 @@ class StudentTemplateExport implements FromCollection, WithHeadings, WithStyles,
             'D' => NumberFormat::FORMAT_TEXT,  // shift - keep as string ID
             'E' => NumberFormat::FORMAT_TEXT,  // gender - keep as string ID
             'F' => NumberFormat::FORMAT_TEXT,  // category - keep as string ID
-            'G' => NumberFormat::FORMAT_TEXT,  // mobile - preserve leading zeros
-            'N' => NumberFormat::FORMAT_TEXT,  // fee_services - comma-separated IDs
+            'I' => NumberFormat::FORMAT_TEXT,  // fee_services - comma-separated IDs
+        ];
+    }
+
+    /**
+     * Register events to protect header row from editing
+     *
+     * @return array
+     */
+    public function registerEvents(): array
+    {
+        return [
+            AfterSheet::class => function(AfterSheet $event) {
+                $sheet = $event->sheet->getDelegate();
+
+                // Lock header row (row 1) to prevent editing
+                $sheet->getStyle('1:1')
+                      ->getProtection()
+                      ->setLocked(Protection::PROTECTION_PROTECTED);
+
+                // Unlock data rows (rows 2-1000) for user input
+                $sheet->getStyle('2:1000')
+                      ->getProtection()
+                      ->setLocked(Protection::PROTECTION_UNPROTECTED);
+
+                // Protect the worksheet (no password required)
+                $protection = $sheet->getProtection();
+                $protection->setSheet(true);              // Enable sheet protection
+                $protection->setSort(false);              // Disable sorting
+                $protection->setInsertRows(false);        // Disable row insertion
+                $protection->setFormatCells(false);       // Disable cell formatting changes
+            },
         ];
     }
 }

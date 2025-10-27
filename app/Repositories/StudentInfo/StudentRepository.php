@@ -351,10 +351,10 @@ class StudentRepository implements StudentInterface
             $user->name               = $request->first_name . ' ' . $request->last_name;
             $user->email              = $request->email != "" ? $request->email :  NULL;
             $user->phone              = $request->mobile != "" ? $request->mobile :  NULL;
-            $user->date_of_birth      = $request->date_of_birth;
+            $user->date_of_birth      = $request->date_of_birth != "" ? $request->date_of_birth : NULL;
             $user->upload_id          = $this->UploadImageUpdate($request->image, 'backend/uploads/students', $user->upload_id);
             $user->permissions        = $role->permissions;
-            $user->username          = $request->username;
+            $user->username           = $request->username != "" ? $request->username : NULL;
             $user->save();
 
             $row->first_name           = $request->first_name;
@@ -362,9 +362,9 @@ class StudentRepository implements StudentInterface
             $row->mobile               = $request->mobile;
             $row->image_id             = $user->upload_id;
             $row->email                = $request->email;
-            $row->dob                  = $request->date_of_birth;
+            $row->dob                  = $request->date_of_birth != "" ? $request->date_of_birth : NULL;
             $row->gender_id            = $request->gender != "" ? $request->gender :  NULL;
-            $row->admission_date       = $request->admission_date;
+            $row->admission_date       = $request->admission_date != "" ? $request->admission_date : NULL;
             $row->parent_guardian_id   = $request->parent != "" ? $request->parent :  NULL;
             $row->student_category_id  = $request->category != "" ? $request->category :  NULL;
 
