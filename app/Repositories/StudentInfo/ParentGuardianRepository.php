@@ -62,11 +62,17 @@ class ParentGuardianRepository implements ParentGuardianInterface
 
     public function store($request)
     {
-        // Enhanced connection reset for MySQL 8.0.42 (Error 1615 fix)
-        DB::disconnect('mysql');
-        DB::reconnect('mysql');
+        // Check if already in a transaction to avoid nested transaction issues
+        $wasInTransaction = DB::transactionLevel() > 0;
 
-        DB::beginTransaction();
+        // Enhanced connection reset for MySQL 8.0.42 (Error 1615 fix)
+        // Only reset connection if not in a transaction
+        if (!$wasInTransaction) {
+            DB::disconnect('mysql');
+            DB::reconnect('mysql');
+            DB::beginTransaction();
+        }
+
         try {
             $role                     = Role::find(7); // Guardian role id 7
 
@@ -98,21 +104,35 @@ class ParentGuardianRepository implements ParentGuardianInterface
 
             $row->save();
 
-            DB::commit();
+            // Only commit if we started the transaction
+            if (!$wasInTransaction) {
+                DB::commit();
+            }
 
             // Clear cached guardian listings
             \Cache::tags(['guardians'])->flush();
 
             return $this->responseWithSuccess(___('alert.created_successfully'), []);
         } catch (\Throwable $th) {
-            DB::rollback();
+            // Only rollback if we started the transaction
+            if (!$wasInTransaction) {
+                DB::rollback();
+            }
 
-            // Add error logging for debugging
+            // Enhanced error logging for debugging nested transactions
             \Log::error('ParentGuardian Store Failed', [
                 'error_message' => $th->getMessage(),
                 'error_type' => get_class($th),
+                'was_nested_transaction' => $wasInTransaction,
+                'transaction_level' => DB::transactionLevel(),
                 'request_data' => $request->except(['password', 'guardian_image']),
+                'stack_trace' => $th->getTraceAsString()
             ]);
+
+            // Re-throw exception if in nested transaction so outer transaction can handle it
+            if ($wasInTransaction) {
+                throw $th;
+            }
 
             return $this->responseWithError(___('alert.something_went_wrong_please_try_again'), []);
         }
@@ -125,11 +145,17 @@ class ParentGuardianRepository implements ParentGuardianInterface
 
     public function update($request, $id)
     {
-        // Enhanced connection reset for MySQL 8.0.42 (Error 1615 fix)
-        DB::disconnect('mysql');
-        DB::reconnect('mysql');
+        // Check if already in a transaction to avoid nested transaction issues
+        $wasInTransaction = DB::transactionLevel() > 0;
 
-        DB::beginTransaction();
+        // Enhanced connection reset for MySQL 8.0.42 (Error 1615 fix)
+        // Only reset connection if not in a transaction
+        if (!$wasInTransaction) {
+            DB::disconnect('mysql');
+            DB::reconnect('mysql');
+            DB::beginTransaction();
+        }
+
         try {
             // Use lockForUpdate to ensure fresh data and prevent race conditions
             $row = $this->model->lockForUpdate()->find($id);
@@ -167,7 +193,10 @@ class ParentGuardianRepository implements ParentGuardianInterface
 
             $row->save();
 
-            DB::commit();
+            // Only commit if we started the transaction
+            if (!$wasInTransaction) {
+                DB::commit();
+            }
 
             // Clear any cached data for this guardian
             \Cache::forget("guardian_{$id}");
@@ -175,9 +204,12 @@ class ParentGuardianRepository implements ParentGuardianInterface
 
             return $this->responseWithSuccess(___('alert.updated_successfully'), []);
         } catch (\Throwable $th) {
-            DB::rollback();
+            // Only rollback if we started the transaction
+            if (!$wasInTransaction) {
+                DB::rollback();
+            }
 
-            // Comprehensive error logging
+            // Comprehensive error logging with transaction context
             \Log::error('ParentGuardian Update Failed', [
                 'guardian_id' => $id,
                 'user_id' => $row->user_id ?? null,
@@ -185,9 +217,16 @@ class ParentGuardianRepository implements ParentGuardianInterface
                 'error_type' => get_class($th),
                 'error_file' => $th->getFile(),
                 'error_line' => $th->getLine(),
+                'was_nested_transaction' => $wasInTransaction,
+                'transaction_level' => DB::transactionLevel(),
                 'request_data' => $request->except(['password', 'guardian_image']),
                 'stack_trace' => $th->getTraceAsString()
             ]);
+
+            // Re-throw exception if in nested transaction so outer transaction can handle it
+            if ($wasInTransaction) {
+                throw $th;
+            }
 
             return $this->responseWithError(___('alert.something_went_wrong_please_try_again'), []);
         }

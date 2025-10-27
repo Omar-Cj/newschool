@@ -292,27 +292,93 @@
                                 </div>
                                 <div class="col-md-3 parent mb-3">
 
+                                    <!-- Hidden input for parent creation mode -->
+                                    <input type="hidden" name="parent_creation_mode" id="parent_creation_mode" value="existing">
+
                                     <label for="validationServer04"
                                         class="form-label">{{ ___('student_info.select_parent') }}
-                                        <span class="fillable">*</span></label>
-                                    <select
-                                        class="parent nice-select niceSelect bordered_style wide @error('parent') is-invalid @enderror"
-                                        name="parent" id="validationServer04_parent"
-                                        aria-describedby="validationServer04Feedback">
-                                        <option value="">{{ ___('student_info.select_parent') }}</option>
-                                        @foreach ($data['parentGuardians'] as $parentGuardian)
-                                            <option {{ old('parent') == $parentGuardian->id ? 'selected' : '' }}
-                                                value="{{ $parentGuardian->id }}">
-                                                {{ $parentGuardian->guardian_name }}
-                                            </option>
-                                        @endforeach
-                                    </select>
+                                        <span class="fillable" id="parent_required_asterisk">*</span></label>
 
-                                    @error('parent')
-                                        <div id="validationServer04Feedback" class="invalid-feedback">
-                                            {{ $message }}
+                                    <!-- Tab-style toggle for parent selection mode -->
+                                    <div class="btn-group btn-group-sm d-flex mb-2" role="group" aria-label="Parent selection mode">
+                                        <button type="button" class="btn btn-outline-secondary flex-fill" id="tab_existing_parent">
+                                            <i class="fa fa-list"></i> {{ ___('student_info.select_existing') ?? 'Select Existing' }}
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary flex-fill" id="tab_create_parent">
+                                            <i class="fa fa-plus"></i> {{ ___('student_info.create_new') ?? 'Create New' }}
+                                        </button>
+                                    </div>
+
+                                    <!-- Existing parent dropdown (default visible) -->
+                                    <div id="existing_parent_section">
+                                        <select
+                                            class="parent nice-select niceSelect bordered_style wide @error('parent') is-invalid @enderror"
+                                            name="parent" id="validationServer04_parent"
+                                            aria-describedby="validationServer04Feedback">
+                                            <option value="">{{ ___('student_info.select_parent') }}</option>
+                                            @foreach ($data['parentGuardians'] as $parentGuardian)
+                                                <option {{ old('parent') == $parentGuardian->id ? 'selected' : '' }}
+                                                    value="{{ $parentGuardian->id }}">
+                                                    {{ $parentGuardian->guardian_name }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+
+                                        @error('parent')
+                                            <div id="validationServer04Feedback" class="invalid-feedback">
+                                                {{ $message }}
+                                            </div>
+                                        @enderror
+                                    </div>
+
+                                    <!-- Inline parent creation form (hidden by default) -->
+                                    <div id="new_parent_section" style="display: none;">
+                                        <div class="border rounded p-3" style="background-color: #f8f9fa;">
+                                            <div class="row">
+                                                <!-- Guardian Name -->
+                                                <div class="col-md-12 mb-2">
+                                                    <input type="text"
+                                                        class="form-control ot-input @error('new_parent_name') is-invalid @enderror"
+                                                        name="new_parent_name"
+                                                        id="new_parent_name"
+                                                        placeholder="{{ ___('student_info.guardian_name') }} *"
+                                                        value="{{ old('new_parent_name') }}">
+                                                    @error('new_parent_name')
+                                                        <div class="invalid-feedback">{{ $message }}</div>
+                                                    @enderror
+                                                </div>
+
+                                                <!-- Guardian Mobile -->
+                                                <div class="col-md-12 mb-2">
+                                                    <input type="text"
+                                                        class="form-control ot-input @error('new_parent_mobile') is-invalid @enderror"
+                                                        name="new_parent_mobile"
+                                                        id="new_parent_mobile"
+                                                        placeholder="{{ ___('student_info.guardian_mobile') }} *"
+                                                        value="{{ old('new_parent_mobile') }}">
+                                                    @error('new_parent_mobile')
+                                                        <div class="invalid-feedback">{{ $message }}</div>
+                                                    @enderror
+                                                </div>
+
+                                                <!-- Guardian Relation -->
+                                                <div class="col-md-12 mb-2">
+                                                    <select class="nice-select niceSelect bordered_style wide @error('new_parent_relation') is-invalid @enderror"
+                                                        name="new_parent_relation"
+                                                        id="new_parent_relation">
+                                                        <option value="">{{ ___('student_info.guardian_relation') }} *</option>
+                                                        <option value="Father" {{ old('new_parent_relation') == 'Father' ? 'selected' : '' }}>{{ ___('student_info.father') }}</option>
+                                                        <option value="Mother" {{ old('new_parent_relation') == 'Mother' ? 'selected' : '' }}>{{ ___('student_info.mother') }}</option>
+                                                        <option value="Guardian" {{ old('new_parent_relation') == 'Guardian' ? 'selected' : '' }}>{{ ___('student_info.guardian') }}</option>
+                                                        <option value="Other" {{ old('new_parent_relation') == 'Other' ? 'selected' : '' }}>{{ ___('common.other') }}</option>
+                                                    </select>
+                                                    @error('new_parent_relation')
+                                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                                    @enderror
+                                                </div>
+                                            </div>
                                         </div>
-                                    @enderror
+                                    </div>
 
                                 </div>
 
@@ -1219,6 +1285,68 @@
                     $('#child-info').html('');
                 }
             });
+        });
+
+        // =====================================================================
+        // PARENT CREATION MODE TOGGLE - Inline Parent/Guardian Creation
+        // =====================================================================
+
+        $(document).ready(function() {
+            // Initialize: Set default active tab
+            $('#tab_existing_parent').removeClass('btn-outline-secondary').addClass('btn-primary');
+
+            // Tab: Switch to "Create New Parent" mode
+            $('#tab_create_parent').on('click', function() {
+                // Update tab styling
+                $(this).removeClass('btn-outline-secondary').addClass('btn-primary');
+                $('#tab_existing_parent').removeClass('btn-primary').addClass('btn-outline-secondary');
+
+                // Smooth transition between sections
+                $('#existing_parent_section').slideUp(200, function() {
+                    $('#new_parent_section').slideDown(200);
+                });
+
+                // Update hidden mode field
+                $('#parent_creation_mode').val('new');
+
+                // Clear parent dropdown selection
+                $('#validationServer04_parent').val('').trigger('change');
+
+                // Clear child info when switching modes
+                $('#child-info').html('');
+                $('#discount-alert').text('');
+            });
+
+            // Tab: Switch back to "Select Existing Parent" mode
+            $('#tab_existing_parent').on('click', function() {
+                // Update tab styling
+                $(this).removeClass('btn-outline-secondary').addClass('btn-primary');
+                $('#tab_create_parent').removeClass('btn-primary').addClass('btn-outline-secondary');
+
+                // Smooth transition between sections
+                $('#new_parent_section').slideUp(200, function() {
+                    $('#existing_parent_section').slideDown(200);
+                });
+
+                // Update hidden mode field
+                $('#parent_creation_mode').val('existing');
+
+                // Clear new parent fields
+                $('#new_parent_name').val('');
+                $('#new_parent_mobile').val('');
+                $('#new_parent_relation').val('').trigger('change');
+
+                // Reinitialize nice-select for relation dropdown
+                if (typeof $.fn.niceSelect !== 'undefined') {
+                    $('#new_parent_relation').niceSelect('update');
+                }
+            });
+
+            // Handle form validation errors - if new parent errors exist, show that section
+            @if($errors->has('new_parent_name') || $errors->has('new_parent_mobile') || $errors->has('new_parent_relation'))
+                // Validation errors exist for new parent fields, show the creation form
+                $('#tab_create_parent').trigger('click');
+            @endif
         });
 
     </script>

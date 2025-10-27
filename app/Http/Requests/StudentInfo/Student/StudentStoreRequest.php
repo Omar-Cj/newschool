@@ -35,7 +35,29 @@ class StudentStoreRequest extends FormRequest
             $email = 'max:255|unique:users,email';
         }
 
-        return [
+        // Conditional validation based on parent creation mode
+        $parentCreationMode = $this->input('parent_creation_mode', 'existing');
+
+        $parentRules = [];
+        if ($parentCreationMode === 'new') {
+            // Validate new parent fields when creating inline
+            $parentRules = [
+                'new_parent_name' => 'required|max:255',
+                'new_parent_mobile' => 'required|max:255|unique:users,phone',
+                'new_parent_relation' => 'required|max:255',
+                'parent' => 'nullable', // Parent dropdown is optional when creating new
+            ];
+        } else {
+            // Validate existing parent selection
+            $parentRules = [
+                'parent' => 'required|exists:parent_guardians,id',
+                'new_parent_name' => 'nullable',
+                'new_parent_mobile' => 'nullable',
+                'new_parent_relation' => 'nullable',
+            ];
+        }
+
+        return array_merge([
             'mobile' => $mobile,
             'email' => $email,
             'first_name' => 'required|max:255',
@@ -45,7 +67,6 @@ class StudentStoreRequest extends FormRequest
             'section' => 'required|max:255',
             'date_of_birth' => 'nullable|max:255',
             'admission_date' => 'required|max:255',
-            'parent' => 'required|max:255',
             'status' => 'required|max:255',
             'siblings_discount' => 'nullable',
             'username' => 'unique:users,username',
@@ -60,6 +81,23 @@ class StudentStoreRequest extends FormRequest
             'services.*.discount_type' => 'required_with:services.*|in:none,percentage,fixed',
             'services.*.discount_value' => 'nullable|numeric|min:0',
             'services.*.is_active' => 'required_with:services.*|boolean'
+        ], $parentRules);
+    }
+
+    /**
+     * Custom error messages for validation
+     *
+     * @return array
+     */
+    public function messages()
+    {
+        return [
+            'new_parent_name.required' => 'Guardian name is required when creating a new parent.',
+            'new_parent_mobile.required' => 'Guardian mobile number is required when creating a new parent.',
+            'new_parent_mobile.unique' => 'A parent with this mobile number already exists. Please select from existing parents or use a different mobile number.',
+            'new_parent_relation.required' => 'Guardian relation is required when creating a new parent.',
+            'parent.required' => 'Please select a parent/guardian from the list.',
+            'parent.exists' => 'The selected parent/guardian does not exist.',
         ];
     }
 

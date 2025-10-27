@@ -27,11 +27,16 @@ class StudentRepository implements StudentInterface
 
     private $model;
     private $serviceManager;
+    private $parentGuardianRepository;
 
-    public function __construct(Student $model, StudentServiceManager $serviceManager)
-    {
+    public function __construct(
+        Student $model,
+        StudentServiceManager $serviceManager,
+        ParentGuardianRepository $parentGuardianRepository
+    ) {
         $this->model = $model;
         $this->serviceManager = $serviceManager;
+        $this->parentGuardianRepository = $parentGuardianRepository;
     }
 
     public function all()
@@ -93,6 +98,78 @@ class StudentRepository implements StudentInterface
             if ($this->model->count() >= activeSubscriptionStudentLimit() && env('APP_SAAS'))
                 return $this->responseWithError(___('alert.Student limit is over.'), []);
 
+            // Handle parent creation if creating inline
+            $parentGuardianId = null;
+            $parentCreationMode = $request->input('parent_creation_mode', 'existing');
+
+            if ($parentCreationMode === 'new') {
+                // LOG CHECKPOINT: Starting inline parent creation
+                Log::info('CHECKPOINT: Starting inline parent creation', [
+                    'parent_name' => $request->new_parent_name,
+                    'parent_mobile' => $request->new_parent_mobile,
+                    'parent_relation' => $request->new_parent_relation,
+                    'student_name' => $request->first_name . ' ' . $request->last_name
+                ]);
+
+                // Create new parent guardian within the same transaction
+                $parentData = new \Illuminate\Http\Request([
+                    'guardian_name' => $request->new_parent_name,
+                    'guardian_mobile' => $request->new_parent_mobile,
+                    'guardian_relation' => $request->new_parent_relation,
+                    'guardian_email' => null,
+                    'guardian_profession' => null,
+                    'guardian_address' => null,
+                    'guardian_place_of_work' => null,
+                    'guardian_position' => null,
+                    'status' => 1, // Active status
+                    'username' => null,
+                    'password_type' => 'default',
+                    'password' => null,
+                    'guardian_image' => null,
+                ]);
+
+                $parentResult = $this->parentGuardianRepository->store($parentData);
+
+                if (!$parentResult['status']) {
+                    throw new \Exception($parentResult['message']);
+                }
+
+                // Get the newly created parent ID
+                // The store method returns success but doesn't include the ID in response
+                // We need to fetch the last created parent for this mobile
+                $newParent = \App\Models\StudentInfo\ParentGuardian::where('guardian_mobile', $request->new_parent_mobile)
+                    ->orderBy('id', 'desc')
+                    ->first();
+
+                if (!$newParent) {
+                    throw new \Exception('Failed to retrieve newly created parent guardian.');
+                }
+
+                $parentGuardianId = $newParent->id;
+
+                // LOG CHECKPOINT: Parent created successfully
+                Log::info('CHECKPOINT: Parent created successfully', [
+                    'parent_id' => $parentGuardianId,
+                    'parent_name' => $request->new_parent_name,
+                    'parent_mobile' => $request->new_parent_mobile,
+                ]);
+            } else {
+                // Use existing parent
+                $parentGuardianId = $request->parent != "" ? $request->parent : NULL;
+
+                Log::info('CHECKPOINT: Using existing parent', [
+                    'parent_id' => $parentGuardianId
+                ]);
+            }
+
+            // LOG CHECKPOINT: Starting student user creation
+            Log::info('CHECKPOINT: Creating student user', [
+                'student_name' => $request->first_name . ' ' . $request->last_name,
+                'parent_id' => $parentGuardianId,
+                'grade' => $request->grade,
+                'class' => $request->class
+            ]);
+
             $role                     = Role::find(6); // student role id 6
 
             $user                    = new User();
@@ -103,11 +180,17 @@ class StudentRepository implements StudentInterface
             $user->email_verified_at = now();
             $user->role_id           = $role->id;
             $user->permissions       = $role->permissions;
-            $user->date_of_birth     = $request->date_of_birth;
+            $user->date_of_birth     = $request->date_of_birth != "" ? $request->date_of_birth : NULL;
             $user->username          = $request->username;
             $user->upload_id         = $this->UploadImageCreate($request->image, 'backend/uploads/students');
             $user->uuid              = Str::uuid();
             $user->save();
+
+            // LOG CHECKPOINT: Student user created successfully
+            Log::info('CHECKPOINT: Student user created', [
+                'user_id' => $user->id,
+                'user_name' => $user->name
+            ]);
 
             $row                       = new $this->model;
             $row->user_id              = $user->id;
@@ -116,10 +199,10 @@ class StudentRepository implements StudentInterface
             $row->mobile               = $request->mobile;
             $row->image_id             = $user->upload_id;
             $row->email                = $request->email;
-            $row->dob                  = $request->date_of_birth;
+            $row->dob                  = $request->date_of_birth != "" ? $request->date_of_birth : NULL;
             $row->gender_id            = $request->gender != "" ? $request->gender :  NULL;
             $row->admission_date       = $request->admission_date;
-            $row->parent_guardian_id   = $request->parent != "" ? $request->parent :  NULL;
+            $row->parent_guardian_id   = $parentGuardianId;
             $row->student_category_id  = $request->category != "" ? $request->category :  NULL;
 
             $row->previous_school = $request->previous_school ?? 0;
@@ -134,6 +217,13 @@ class StudentRepository implements StudentInterface
             $row->upload_documents     = $this->uploadDocuments($request);
             $row->save();
 
+            // LOG CHECKPOINT: Student model saved successfully
+            Log::info('CHECKPOINT: Student model saved', [
+                'student_id' => $row->id,
+                'student_name' => $row->first_name . ' ' . $row->last_name,
+                'parent_guardian_id' => $row->parent_guardian_id
+            ]);
+
             $session_class                      = new SessionClassStudent();
             $session_class->session_id          = setting('session');
             $session_class->classes_id          = $request->class;
@@ -142,6 +232,14 @@ class StudentRepository implements StudentInterface
             $session_class->student_id          = $row->id;
             $session_class->roll                = NULL; // Roll number field removed
             $session_class->save();
+
+            // LOG CHECKPOINT: Session class created successfully
+            Log::info('CHECKPOINT: Session class student created', [
+                'session_class_id' => $session_class->id,
+                'student_id' => $row->id,
+                'class_id' => $request->class,
+                'section_id' => $request->section
+            ]);
 
             // Auto-subscribe to mandatory services for enhanced fee processing system
             try {
@@ -180,6 +278,39 @@ class StudentRepository implements StudentInterface
             return $this->responseWithSuccess(___('alert.created_successfully'), ['student_id' => $row->id]);
         } catch (\Throwable $th) {
             DB::rollback();
+
+            // COMPREHENSIVE ERROR LOGGING
+            Log::error('========== STUDENT STORE OPERATION FAILED ==========', [
+                'error_message' => $th->getMessage(),
+                'error_type' => get_class($th),
+                'error_file' => $th->getFile(),
+                'error_line' => $th->getLine(),
+                'parent_creation_mode' => $request->input('parent_creation_mode', 'existing'),
+                'parent_guardian_id' => $parentGuardianId ?? null,
+                'request_data' => [
+                    'student_info' => [
+                        'first_name' => $request->first_name ?? null,
+                        'last_name' => $request->last_name ?? null,
+                        'mobile' => $request->mobile ?? null,
+                        'email' => $request->email ?? null,
+                        'grade' => $request->grade ?? null,
+                        'class' => $request->class ?? null,
+                        'section' => $request->section ?? null,
+                        'admission_date' => $request->admission_date ?? null,
+                        'date_of_birth' => $request->date_of_birth ?? null,
+                        'status' => $request->status ?? null,
+                    ],
+                    'parent_info' => [
+                        'mode' => $request->parent_creation_mode ?? 'existing',
+                        'existing_parent_id' => $request->parent ?? null,
+                        'new_parent_name' => $request->new_parent_name ?? null,
+                        'new_parent_mobile' => $request->new_parent_mobile ?? null,
+                        'new_parent_relation' => $request->new_parent_relation ?? null,
+                    ],
+                ],
+                'stack_trace' => $th->getTraceAsString()
+            ]);
+
             return $this->responseWithError(___('alert.something_went_wrong_please_try_again'), []);
         }
     }
