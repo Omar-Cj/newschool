@@ -340,7 +340,6 @@
         {{-- Screen-only information banner --}}
         <div class="print-info-banner">
             <i class="bi bi-printer"></i>
-            Print dialog will open automatically. This banner will not appear in the printed document.
         </div>
 
         {{-- Include the SAME template used for PDF exports --}}
