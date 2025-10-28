@@ -34,7 +34,11 @@
                         showCloseButton: true,
                         confirmButtonText: response[3],
                     });
-                    $(table_row).fadeOut(2000);
+
+                    // Only remove row if deletion was successful
+                    if (response[1] === 'success') {
+                        $(table_row).fadeOut(2000);
+                    }
 
                     if (reload) {
                         // reload

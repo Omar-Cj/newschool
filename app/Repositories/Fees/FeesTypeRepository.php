@@ -77,6 +77,17 @@ class FeesTypeRepository implements FeesTypeInterface
     {
         try {
             $row = $this->model->find($id);
+
+            // Check if any students are subscribed to this fee type via Student Services
+            $subscribedStudentsCount = $row->studentServices()->count();
+
+            if ($subscribedStudentsCount > 0) {
+                return $this->responseWithError(
+                    "Cannot delete this fee type. {$subscribedStudentsCount} student(s) are currently subscribed to this fee.",
+                    []
+                );
+            }
+
             $row->delete();
             return $this->responseWithSuccess(___('alert.deleted_successfully'), []);
         } catch (\Throwable $th) {

@@ -57,25 +57,21 @@
                                     <td>{{ @$row->name }}</td>
                                     <td>{{ @$row->code }}</td>
                                     <td>
-                                        <span class="badge badge-soft-info">
-                                            {{ $row->getFormattedAcademicLevel() }}
-                                        </span>
+                                        {{ $row->getFormattedAcademicLevel() }}
                                     </td>
                                     <td>
-                                        <span class="badge badge-soft-secondary">
-                                            {{ $row->getFormattedCategory() }}
-                                        </span>
+                                        {{ $row->getFormattedCategory() }}
                                     </td>
                                     <td>
                                         <strong>{{ number_format(@$row->amount, 2) }}</strong>
                                     </td>
                                     <td class="text-center">
                                         @if (@$row->is_mandatory_for_level)
-                                            <span class="badge badge-soft-success">
+                                            <span class="badge badge-success" style="font-weight: bold;">
                                                 <i class="fa-solid fa-check"></i> {{ ___('common.yes') }}
                                             </span>
                                         @else
-                                            <span class="badge badge-soft-warning">
+                                            <span class="badge badge-warning" style="font-weight: bold;">
                                                 <i class="fa-solid fa-times"></i> {{ ___('common.no') }}
                                             </span>
                                         @endif
