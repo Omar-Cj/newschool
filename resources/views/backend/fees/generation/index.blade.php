@@ -92,7 +92,7 @@
                                 <tr>
                                     <th class="serial">{{ ___('common.sr_no') }}</th>
                                     <th class="purchase">{{ ___('common.batch_id') }}</th>
-                                    <th class="purchase">{{ ___('common.status') }}</th>
+                                    <th class="purchase">{{ ___('fees.fee_period') }}</th>
                                     <th class="purchase">{{ ___('fees.students') }}</th>
                                     <th class="purchase">{{ ___('fees.amount') }}</th>
                                     <th class="purchase">{{ ___('common.created_at') }}</th>
@@ -108,15 +108,63 @@
                                         </td>
                                         <td>
                                             @php
-                                                $statusClass = match($generation->status) {
-                                                    'completed' => 'badge-basic-success-text',
-                                                    'processing' => 'badge-basic-warning-text',
-                                                    'failed' => 'badge-basic-danger-text',
-                                                    'cancelled' => 'badge-basic-secondary-text',
-                                                    default => 'badge-basic-info-text'
-                                                };
+                                                // Extract fee period with comprehensive fallback logic
+                                                $filters = $generation->filters;
+
+                                                // Ensure filters is an array (handle both string JSON and already-decoded array)
+                                                if (is_string($filters)) {
+                                                    $filters = json_decode($filters, true) ?? [];
+                                                } elseif (!is_array($filters)) {
+                                                    $filters = [];
+                                                }
+
+                                                $periodLabel = null;
+
+                                                // 1. Primary: Check filters for generation_month (Y-m format)
+                                                if (!empty($filters['generation_month'])) {
+                                                    try {
+                                                        $periodLabel = \Carbon\Carbon::createFromFormat('Y-m', $filters['generation_month'])->format('F Y');
+                                                    } catch (Exception $e) {
+                                                        $periodLabel = $filters['generation_month'];
+                                                    }
+                                                }
+                                                // 2. Secondary: Check filters for separate month and year
+                                                elseif (!empty($filters['month']) && !empty($filters['year'])) {
+                                                    $m = (int)$filters['month'];
+                                                    $y = (int)$filters['year'];
+                                                    $periodLabel = date('F', mktime(0, 0, 0, $m, 1)) . ' ' . $y;
+                                                }
+                                                // 3. Tertiary: Fallback to feesCollects relationship billing_period
+                                                elseif ($generation->feesCollects && $generation->feesCollects->isNotEmpty()) {
+                                                    $firstFee = $generation->feesCollects->first();
+                                                    if (!empty($firstFee->billing_period)) {
+                                                        try {
+                                                            $periodLabel = \Carbon\Carbon::createFromFormat('Y-m', $firstFee->billing_period)->format('F Y');
+                                                        } catch (Exception $e) {
+                                                            $periodLabel = $firstFee->billing_period;
+                                                        }
+                                                    } elseif (!empty($firstFee->date)) {
+                                                        try {
+                                                            $periodLabel = \Carbon\Carbon::parse($firstFee->date)->format('F Y');
+                                                        } catch (Exception $e) {
+                                                            $periodLabel = null;
+                                                        }
+                                                    }
+                                                }
+                                                // 4. Quaternary: Fallback to due_date in filters
+                                                elseif (!empty($filters['due_date'])) {
+                                                    try {
+                                                        $periodLabel = \Carbon\Carbon::parse($filters['due_date'])->format('F Y');
+                                                    } catch (Exception $e) {
+                                                        $periodLabel = null;
+                                                    }
+                                                }
+                                                // 5. Final: Fallback to generation created_at
+                                                elseif ($generation->created_at) {
+                                                    $periodLabel = $generation->created_at->format('F Y');
+                                                }
                                             @endphp
-                                            <span class="{{ $statusClass }}">{{ ucfirst($generation->status) }}</span>
+                                            <span class="text-muted">{{ $periodLabel ?? 'N/A' }}</span>
                                         </td>
                                         <td>
                                             <div class="d-flex align-items-center">
@@ -733,19 +781,6 @@ $(document).ready(function() {
             </div>
         `;
 
-        // Enhanced duplicate warning with more details
-        if (data.duplicate_warning && data.duplicate_warning.has_duplicates) {
-            html += `<div class="alert alert-warning mt-3">
-                <div class="d-flex align-items-center">
-                    <i class="fa-solid fa-exclamation-triangle me-2"></i>
-                    <div>
-                        <strong>{{ ___('fees.duplicate_fees_detected') }}</strong><br>
-                        <small>${data.duplicate_warning.message}</small>
-                    </div>
-                </div>
-            </div>`;
-        }
-
         html += `<div class="mt-4"><h6>${breakdownTitle}</h6><div class="table-responsive"><table class="table table-sm"><thead><tr><th>${columnLabel}</th><th>${studentsLabel}</th><th>${amountLabel}</th></tr></thead><tbody>`;
 
         Object.entries(breakdown).forEach(([groupName, groupData]) => {
@@ -798,7 +833,7 @@ $(document).ready(function() {
         $('#processed-students').text(data.processed_students || 0);
         $('#successful-students').text(data.successful_students || 0);
         $('#failed-students').text(data.failed_students || 0);
-        
+
         let message = '';
         switch(data.status) {
             case 'pending':
@@ -809,6 +844,11 @@ $(document).ready(function() {
                 break;
             case 'completed':
                 message = '{{ ___("fees.generation_completed") }}';
+                // Auto-close modal after 2 seconds and reload page
+                setTimeout(function() {
+                    $('#progressModal').modal('hide');
+                    location.reload();
+                }, 2000);
                 break;
             case 'failed':
                 message = '{{ ___("fees.generation_failed") }}';
@@ -882,83 +922,7 @@ $(document).ready(function() {
     }
 
     function checkForDuplicatesAndGenerate() {
-        if (currentPreviewData && currentPreviewData.duplicate_warning && currentPreviewData.duplicate_warning.has_duplicates) {
-            showDuplicateConfirmationDialog();
-        } else {
-            startGeneration(true);
-        }
-    }
-
-    function showDuplicateConfirmationDialog() {
-        const duplicateInfo = currentPreviewData.duplicate_warning;
-        
-        // Create confirmation modal HTML
-        const modalHtml = `
-            <div class="modal fade" id="duplicateConfirmModal" tabindex="-1" aria-labelledby="duplicateConfirmModalLabel" aria-hidden="true">
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <div class="modal-header bg-warning text-dark">
-                            <h5 class="modal-title" id="duplicateConfirmModalLabel">
-                                <i class="fa-solid fa-exclamation-triangle me-2"></i>{{ ___('fees.duplicate_fees_detected') }}
-                            </h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-                        <div class="modal-body">
-                            <div class="alert alert-warning">
-                                <h6><i class="fa-solid fa-info-circle me-2"></i>{{ ___('fees.duplicate_detection_title') }}</h6>
-                                <p class="mb-2">${duplicateInfo.message}</p>
-                                <hr>
-                                <small class="text-muted">
-                                    <strong>{{ ___('fees.what_this_means') }}:</strong><br>
-                                    • {{ ___('fees.duplicate_explanation_1') }}<br>
-                                    • {{ ___('fees.duplicate_explanation_2') }}<br>
-                                    • {{ ___('fees.duplicate_explanation_3') }}
-                                </small>
-                            </div>
-                            
-                            <div class="mt-3">
-                                <h6>{{ ___('fees.generation_summary') }}:</h6>
-                                <ul class="list-unstyled">
-                                    <li><i class="fa-solid fa-users text-info me-2"></i><strong>{{ ___('fees.total_students') }}:</strong> ${currentPreviewData.total_students}</li>
-                                    <li><i class="fa-solid fa-dollar-sign text-success me-2"></i><strong>{{ ___('fees.estimated_amount') }}:</strong> ${formatCurrency(currentPreviewData.estimated_amount)}</li>
-                                    <li><i class="fa-solid fa-exclamation-triangle text-warning me-2"></i><strong>{{ ___('fees.existing_fees') }}:</strong> ${duplicateInfo.count} {{ ___('fees.records') }}</li>
-                                </ul>
-                            </div>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn ot-btn-secondary" data-bs-dismiss="modal">
-                                <i class="fa-solid fa-times me-1"></i>{{ ___('common.cancel') }}
-                            </button>
-                            <button type="button" class="btn ot-btn-primary" id="confirmGenerateBtn">
-                                <i class="fa-solid fa-bolt me-1"></i>{{ ___('fees.proceed_anyway') }}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        // Remove existing modal if any
-        $('#duplicateConfirmModal').remove();
-        
-        // Add modal to body
-        $('body').append(modalHtml);
-        
-        // Show modal
-        const modal = new bootstrap.Modal(document.getElementById('duplicateConfirmModal'));
-        modal.show();
-        
-        // Handle confirm button
-        $('#confirmGenerateBtn').on('click', function() {
-            modal.hide();
-            showAlert('{{ ___('fees.proceeding_with_generation') }}', 'info');
-            startGeneration(true);
-        });
-        
-        // Clean up modal after hide
-        document.getElementById('duplicateConfirmModal').addEventListener('hidden.bs.modal', function() {
-            $('#duplicateConfirmModal').remove();
-        });
+        startGeneration(true);
     }
 
     function resetGenerationForm() {

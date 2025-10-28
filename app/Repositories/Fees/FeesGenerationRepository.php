@@ -53,7 +53,14 @@ class FeesGenerationRepository
     public function getPaginateAll(int $perPage = 15): LengthAwarePaginator
     {
         return $this->model
-            ->with(['creator'])
+            ->with([
+                'creator',
+                'feesCollects' => function ($query) {
+                    $query->select('id', 'generation_batch_id', 'billing_period', 'date')
+                          ->oldest()
+                          ->limit(1);
+                }
+            ])
             ->orderBy('created_at', 'desc')
             ->paginate($perPage);
     }
