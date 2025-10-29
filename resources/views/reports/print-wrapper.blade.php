@@ -448,8 +448,8 @@
         </div>
         @endif
 
-        {{-- Financial Summary Table - For Paid Students Report and Fee Generation Report --}}
-        @if(isset($summaryData) && !empty($summaryData) && isset($summaryData['type']) && $summaryData['type'] === 'financial' && isset($summaryData['rows']) && in_array($procedureName, ['GetPaidStudentsReport', 'GetFeeGenerationReport']))
+        {{-- Financial Summary Table - For Financial Reports --}}
+        @if(isset($summaryData) && !empty($summaryData) && isset($summaryData['type']) && $summaryData['type'] === 'financial' && isset($summaryData['rows']) && in_array($procedureName, ['GetPaidStudentsReport', 'GetFeeGenerationReport', 'GetUnpaidStudentsReport', 'GetDiscountReport', 'GetExpensesReport']))
         <div class="summary-section">
             <h5>Financial Summary</h5>
             <table class="summary-table">
@@ -469,6 +469,23 @@
                         <tr class="{{ $rowClass }}">
                             <td>{{ $row['metric'] }}</td>
                             <td>${{ number_format($row['value'], 2) }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+        @endif
+
+        {{-- Count Summary Table - For Student Count Reports --}}
+        @if(isset($summaryData) && !empty($summaryData) && isset($summaryData['type']) && $summaryData['type'] === 'count' && isset($summaryData['rows']))
+        <div class="summary-section">
+            <h5 style="margin-top: 30px; margin-bottom: 15px; font-weight: bold;">Summary</h5>
+            <table class="summary-table" style="width: 50%; margin-left: auto; border-collapse: collapse;">
+                <tbody>
+                    @foreach($summaryData['rows'] as $row)
+                        <tr class="exam-row" style="background-color: #e9ecef;">
+                            <td style="padding: 8px 12px; text-align: right; width: 50%; font-weight: bold; border: 1px solid #dee2e6;">{{ $row['metric'] }}</td>
+                            <td style="padding: 8px 12px; text-align: right; width: 50%; font-weight: bold; border: 1px solid #dee2e6;">{{ number_format($row['value']) }}</td>
                         </tr>
                     @endforeach
                 </tbody>

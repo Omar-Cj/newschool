@@ -98,6 +98,30 @@
                 </div>
             </div>
         </div>
+
+    {{-- Count/Statistics Summary (Student Counts, etc.) --}}
+    @elseif($summaryType === 'count' && isset($summary['rows']))
+        <div class="summary-container mt-4">
+            <h5 class="mb-3">Summary</h5>
+            <div class="row">
+                <div class="col-md-6 offset-md-6">
+                    <table class="table table-bordered">
+                        <tbody>
+                            @foreach($summary['rows'] as $row)
+                                <tr class="table-active font-weight-bold">
+                                    <th class="text-end py-2 px-3" style="width: 50%;">
+                                        {{ $row['metric'] ?? '-' }}:
+                                    </th>
+                                    <td class="text-end py-2 px-3" style="width: 50%;">
+                                        {{ number_format($row['value'] ?? 0) }}
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     @endif
 @endif
 

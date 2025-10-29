@@ -113,6 +113,36 @@ class ReportExecutionService
                 $report->procedure_name
             );
 
+            // Add student list summary if applicable
+            $transformedResults = $this->addStudentListSummary(
+                $transformedResults,
+                $report->procedure_name
+            );
+
+            // Add student registration summary if applicable
+            $transformedResults = $this->addStudentRegistrationSummary(
+                $transformedResults,
+                $report->procedure_name
+            );
+
+            // Add unpaid students summary if applicable
+            $transformedResults = $this->addUnpaidStudentsSummary(
+                $transformedResults,
+                $report->procedure_name
+            );
+
+            // Add discount report summary if applicable
+            $transformedResults = $this->addDiscountReportSummary(
+                $transformedResults,
+                $report->procedure_name
+            );
+
+            // Add expenses report summary if applicable
+            $transformedResults = $this->addExpensesReportSummary(
+                $transformedResults,
+                $report->procedure_name
+            );
+
             Log::info('Report executed successfully', [
                 'report_id' => $reportId,
                 'report_name' => $report->name,
@@ -894,5 +924,318 @@ class ReportExecutionService
         $numericValue = (float) $cleaned;
 
         return $numericValue;
+    }
+
+    /**
+     * Add student list summary calculations
+     *
+     * Calculates total number of students for GetStudentListReport procedure
+     * Only applies to student list report type
+     *
+     * @param array $data Transformed report data with columns and rows
+     * @param string $procedureName Stored procedure name
+     * @return array Enhanced data with student count summary
+     */
+    private function addStudentListSummary(array $data, string $procedureName): array
+    {
+        // Only apply summary to GetStudentListReport procedure
+        if ($procedureName !== 'GetStudentListReport') {
+            return $data;
+        }
+
+        // Ensure data structure contains rows
+        if (!isset($data['rows']) || empty($data['rows'])) {
+            return $data;
+        }
+
+        try {
+            $rows = $data['rows'];
+
+            // Count total number of students
+            $totalStudents = count($rows);
+
+            // Create summary row structure
+            $summaryRows = [
+                [
+                    'metric' => 'Total Students',
+                    'value' => $totalStudents
+                ]
+            ];
+
+            // Add summary to data structure with count type
+            $data['summary'] = [
+                'rows' => $summaryRows,
+                'type' => 'count'
+            ];
+
+            Log::debug('Student list summary calculated', [
+                'procedure' => $procedureName,
+                'total_students' => $totalStudents,
+                'row_count' => count($rows),
+            ]);
+
+        } catch (\Exception $e) {
+            // Log error but don't fail the report
+            Log::warning('Failed to calculate student list summary', [
+                'procedure' => $procedureName,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return $data;
+    }
+
+    /**
+     * Add student registration summary calculations
+     *
+     * Calculates total number of registered students for GetStudentRegistrationReport procedure
+     * Only applies to student registration report type
+     *
+     * @param array $data Transformed report data with columns and rows
+     * @param string $procedureName Stored procedure name
+     * @return array Enhanced data with student count summary
+     */
+    private function addStudentRegistrationSummary(array $data, string $procedureName): array
+    {
+        // Only apply summary to GetStudentRegistrationReport procedure
+        if ($procedureName !== 'GetStudentRegistrationReport') {
+            return $data;
+        }
+
+        // Ensure data structure contains rows
+        if (!isset($data['rows']) || empty($data['rows'])) {
+            return $data;
+        }
+
+        try {
+            $rows = $data['rows'];
+
+            // Count total number of registered students
+            $totalStudents = count($rows);
+
+            // Create summary row structure
+            $summaryRows = [
+                [
+                    'metric' => 'Total Students',
+                    'value' => $totalStudents
+                ]
+            ];
+
+            // Add summary to data structure with count type
+            $data['summary'] = [
+                'rows' => $summaryRows,
+                'type' => 'count'
+            ];
+
+            Log::debug('Student registration summary calculated', [
+                'procedure' => $procedureName,
+                'total_students' => $totalStudents,
+                'row_count' => count($rows),
+            ]);
+
+        } catch (\Exception $e) {
+            // Log error but don't fail the report
+            Log::warning('Failed to calculate student registration summary', [
+                'procedure' => $procedureName,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return $data;
+    }
+
+    /**
+     * Add unpaid students summary calculations
+     *
+     * Calculates total invoice amount for unpaid students
+     * Only applies to GetUnpaidStudentsReport procedure
+     *
+     * @param array $data Transformed report data with columns and rows
+     * @param string $procedureName Stored procedure name
+     * @return array Enhanced data with total invoice summary
+     */
+    private function addUnpaidStudentsSummary(array $data, string $procedureName): array
+    {
+        // Only apply summary to GetUnpaidStudentsReport procedure
+        if ($procedureName !== 'GetUnpaidStudentsReport') {
+            return $data;
+        }
+
+        // Ensure data structure contains rows
+        if (!isset($data['rows']) || empty($data['rows'])) {
+            return $data;
+        }
+
+        try {
+            $rows = $data['rows'];
+
+            // Initialize total invoice amount
+            $totalInvoice = 0;
+
+            // Sum total_amount column from all rows (handle multiple column name variations)
+            foreach ($rows as $row) {
+                $value = $row['total_amount'] ?? $row['TotalAmount'] ?? $row['total_invoice'] ?? $row['amount'] ?? 0;
+                $totalInvoice += $this->cleanCurrencyValue($value);
+            }
+
+            // Create summary row structure
+            $summaryRows = [
+                [
+                    'metric' => 'Total Invoice',
+                    'value' => $totalInvoice
+                ]
+            ];
+
+            // Add summary to data structure with financial type
+            $data['summary'] = [
+                'rows' => $summaryRows,
+                'type' => 'financial'
+            ];
+
+            Log::debug('Unpaid students summary calculated', [
+                'procedure' => $procedureName,
+                'total_invoice' => $totalInvoice,
+                'row_count' => count($rows),
+            ]);
+
+        } catch (\Exception $e) {
+            // Log error but don't fail the report
+            Log::warning('Failed to calculate unpaid students summary', [
+                'procedure' => $procedureName,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return $data;
+    }
+
+    /**
+     * Add discount report summary calculations
+     *
+     * Calculates total discount amount for student discounts
+     * Only applies to GetDiscountReport procedure
+     *
+     * @param array $data Transformed report data with columns and rows
+     * @param string $procedureName Stored procedure name
+     * @return array Enhanced data with total discount summary
+     */
+    private function addDiscountReportSummary(array $data, string $procedureName): array
+    {
+        // Only apply summary to GetDiscountReport procedure
+        if ($procedureName !== 'GetDiscountReport') {
+            return $data;
+        }
+
+        // Ensure data structure contains rows
+        if (!isset($data['rows']) || empty($data['rows'])) {
+            return $data;
+        }
+
+        try {
+            $rows = $data['rows'];
+
+            // Initialize total discount amount
+            $totalDiscount = 0;
+
+            // Sum discount_amount column from all rows (handle multiple column name variations)
+            foreach ($rows as $row) {
+                $value = $row['discount_amount'] ?? $row['discount'] ?? $row['DiscountAmount'] ?? $row['Discount'] ?? 0;
+                $totalDiscount += $this->cleanCurrencyValue($value);
+            }
+
+            // Create summary row structure
+            $summaryRows = [
+                [
+                    'metric' => 'Total Discount',
+                    'value' => $totalDiscount
+                ]
+            ];
+
+            // Add summary to data structure with financial type
+            $data['summary'] = [
+                'rows' => $summaryRows,
+                'type' => 'financial'
+            ];
+
+            Log::debug('Discount report summary calculated', [
+                'procedure' => $procedureName,
+                'total_discount' => $totalDiscount,
+                'row_count' => count($rows),
+            ]);
+
+        } catch (\Exception $e) {
+            // Log error but don't fail the report
+            Log::warning('Failed to calculate discount report summary', [
+                'procedure' => $procedureName,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return $data;
+    }
+
+    /**
+     * Add expenses report summary calculations
+     *
+     * Calculates total expenses amount
+     * Only applies to GetExpensesReport procedure
+     *
+     * @param array $data Transformed report data with columns and rows
+     * @param string $procedureName Stored procedure name
+     * @return array Enhanced data with total expenses summary
+     */
+    private function addExpensesReportSummary(array $data, string $procedureName): array
+    {
+        // Only apply summary to GetExpensesReport procedure
+        if ($procedureName !== 'GetExpensesReport') {
+            return $data;
+        }
+
+        // Ensure data structure contains rows
+        if (!isset($data['rows']) || empty($data['rows'])) {
+            return $data;
+        }
+
+        try {
+            $rows = $data['rows'];
+
+            // Initialize total expenses amount
+            $totalExpenses = 0;
+
+            // Sum total_amount column from all rows (handle multiple column name variations)
+            foreach ($rows as $row) {
+                $value = $row['total_amount'] ?? $row['TotalAmount'] ?? $row['amount'] ?? $row['expense_amount'] ?? 0;
+                $totalExpenses += $this->cleanCurrencyValue($value);
+            }
+
+            // Create summary row structure
+            $summaryRows = [
+                [
+                    'metric' => 'Total Expenses',
+                    'value' => $totalExpenses
+                ]
+            ];
+
+            // Add summary to data structure with financial type
+            $data['summary'] = [
+                'rows' => $summaryRows,
+                'type' => 'financial'
+            ];
+
+            Log::debug('Expenses report summary calculated', [
+                'procedure' => $procedureName,
+                'total_expenses' => $totalExpenses,
+                'row_count' => count($rows),
+            ]);
+
+        } catch (\Exception $e) {
+            // Log error but don't fail the report
+            Log::warning('Failed to calculate expenses report summary', [
+                'procedure' => $procedureName,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return $data;
     }
 }

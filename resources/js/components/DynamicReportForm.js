@@ -799,7 +799,104 @@ export class DynamicReportForm {
             console.log('✅ New summary structure detected with rows array');
 
             // Check summary type to determine which template to use
-            const isFinancialSummary = summary.type === 'financial';
+            const summaryType = summary.type;
+
+            // Handle Count Summary (for Student List, Student Registration, etc.)
+            if (summaryType === 'count') {
+                console.log('📊 Rendering count summary');
+
+                const countRows = summary.rows.map((row) => {
+                    const rowClass = row.is_total ? 'total-all-exams-row' : 'exam-row';
+
+                    return `
+                        <tr class="${rowClass}">
+                            <td class="exam-name">${this.escapeHtml(row.label || row.metric || 'Unknown')}</td>
+                            <td class="exam-total">${this.formatNumber(row.value || 0, 0)}</td>
+                        </tr>
+                    `;
+                }).join('');
+
+                return `
+                    <div class="summary-section mt-4">
+                        <h5 class="mb-3">
+                            <i class="bi bi-bar-chart me-2"></i>${this.escapeHtml(summary.title || 'Summary')}
+                        </h5>
+                        <div class="table-responsive">
+                            <table class="table gradebook-summary-table">
+                                <thead>
+                                    <tr>
+                                        <th>Metric</th>
+                                        <th>Count</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${countRows}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <style>
+                        .gradebook-summary-table {
+                            border-radius: 8px;
+                            overflow: hidden;
+                            border: 1px solid #dee2e6;
+                        }
+
+                        .gradebook-summary-table thead {
+                            background: #e8e8e8;
+                        }
+
+                        .gradebook-summary-table thead th {
+                            padding: 12px 16px;
+                            font-weight: 600;
+                            font-size: 15px;
+                            border: none;
+                            color: #000;
+                        }
+
+                        .gradebook-summary-table thead th:last-child {
+                            text-align: right;
+                        }
+
+                        .gradebook-summary-table tbody tr.exam-row {
+                            background: #ffffff;
+                        }
+
+                        .gradebook-summary-table tbody tr.exam-row:nth-child(even) {
+                            background: #f8f9fa;
+                        }
+
+                        .gradebook-summary-table tbody td {
+                            padding: 12px 16px;
+                            border: 1px solid #dee2e6;
+                        }
+
+                        .gradebook-summary-table .exam-name {
+                            font-weight: 500;
+                        }
+
+                        .gradebook-summary-table .exam-total {
+                            text-align: right;
+                            font-weight: 600;
+                            font-size: 16px;
+                        }
+
+                        .gradebook-summary-table .total-all-exams-row {
+                            background: #f5f5f5 !important;
+                            border-top: 2px solid #333;
+                        }
+
+                        .gradebook-summary-table .total-all-exams-row td {
+                            font-size: 17px;
+                            font-weight: 700;
+                            padding: 14px 16px;
+                        }
+                    </style>
+                `;
+            }
+
+            const isFinancialSummary = summaryType === 'financial';
 
             if (isFinancialSummary) {
                 // Render Financial Summary (for Paid Students Report)
