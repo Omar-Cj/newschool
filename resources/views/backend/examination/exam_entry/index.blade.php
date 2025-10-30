@@ -395,13 +395,8 @@
                 table.ajax.reload();
             });
 
-            // Delete exam entry - SweetAlert2 Implementation
-            $(document).on('click', '.delete-entry', function() {
-                const entryId = $(this).data('id');
-                const examType = $(this).data('exam-type');
-                const className = $(this).data('class');
-                const resultsCount = $(this).data('results-count');
-
+            // Delete exam entry - Global function for inline onclick (dropdown-compatible)
+            window.deleteExamEntry = function(entryId, examType, className, resultsCount) {
                 // Build confirmation message with details
                 let detailsHtml = `<p>${$('#alert_subtitle').val()}</p>
                                    <p><strong>Exam Type:</strong> ${examType}</p>
@@ -458,16 +453,10 @@
                         });
                     }
                 });
-            });
+            };
 
-            // Publish exam entry - SweetAlert2 Implementation
-            $(document).on('click', '.publish-entry', function() {
-                const entryId = $(this).data('id');
-                const examType = $(this).data('exam-type');
-                const className = $(this).data('class');
-                const subjectName = $(this).data('subject');
-                const resultsCount = $(this).data('results-count');
-
+            // Publish exam entry - Global function for inline onclick (dropdown-compatible)
+            window.publishExamEntry = function(entryId, examType, className, subjectName, resultsCount) {
                 // Build confirmation message with details
                 let detailsHtml = `<p>${$('#publish_subtitle').val()}</p>
                                    <p><strong>Exam Type:</strong> ${examType}</p>
@@ -521,7 +510,7 @@
                         });
                     }
                 });
-            });
+            };
         });
     </script>
 @endpush

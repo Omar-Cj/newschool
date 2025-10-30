@@ -119,48 +119,69 @@ class ExamEntryRepository
             // Results count
             $resultsCount = $row->results()->count();
 
-            // Actions
-            $action = '<div class="btn-group" role="group">';
+            // Actions - using dropdown pattern for consistency with system UI
+            $action = '<div class="dropdown dropdown-action">
+                <button type="button" class="btn-dropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="fa-solid fa-ellipsis"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">';
 
-            // View button
-            $action .= '<a href="'.route('exam-entry.show', $row->id).'" class="btn btn-sm btn-info" title="View">
-                        <i class="fas fa-eye"></i></a>';
+            // View action - always visible
+            $action .= '<li>
+                <a class="dropdown-item" href="'.route('exam-entry.show', $row->id).'">
+                    <span class="icon mr-8"><i class="fa-solid fa-eye"></i></span>
+                    '.___('common.view').'
+                </a>
+            </li>';
 
-            // Edit button (only for draft/completed)
+            // Edit action - only for draft/completed status
             if (in_array($row->status, ['draft', 'completed'])) {
-                $action .= '<a href="'.route('exam-entry.edit', $row->id).'" class="btn btn-sm btn-primary" title="Edit">
-                            <i class="fas fa-edit"></i></a>';
+                $action .= '<li>
+                    <a class="dropdown-item" href="'.route('exam-entry.edit', $row->id).'">
+                        <span class="icon mr-8"><i class="fa-solid fa-pen-to-square"></i></span>
+                        '.___('common.edit').'
+                    </a>
+                </li>';
             }
 
-            // Delete button - always shown, validation happens on click
+            // Prepare common data for publish/delete actions
             $examTypeName = $row->examType->name ?? 'Unknown';
             $className = $row->class->name ?? 'Unknown';
 
-            // Publish button (only for completed AND user has role_id 1 or 2)
+            // Publish action - only for completed status AND roles 1,2 (using inline onclick)
             if ($row->status === 'completed' && in_array(auth()->user()->role_id, [1, 2])) {
                 $subjectName = $row->is_all_subjects ? 'All Subjects' : ($row->subject->name ?? 'Unknown');
-                $action .= '<button type="button" class="btn btn-sm btn-success publish-entry"
-                            data-id="'.$row->id.'"
-                            data-exam-type="'.htmlspecialchars($examTypeName, ENT_QUOTES).'"
-                            data-class="'.htmlspecialchars($className, ENT_QUOTES).'"
-                            data-subject="'.htmlspecialchars($subjectName, ENT_QUOTES).'"
-                            data-results-count="'.$resultsCount.'"
-                            title="Publish">
-                            <i class="fas fa-paper-plane"></i></button>';
+
+                // Escape values for JavaScript onclick handler
+                $escapedExamType = addslashes(htmlspecialchars($examTypeName, ENT_QUOTES));
+                $escapedClassName = addslashes(htmlspecialchars($className, ENT_QUOTES));
+                $escapedSubjectName = addslashes(htmlspecialchars($subjectName, ENT_QUOTES));
+
+                $action .= '<li>
+                    <a class="dropdown-item" href="javascript:void(0);"
+                       onclick="publishExamEntry('.$row->id.', \''.$escapedExamType.'\', \''.$escapedClassName.'\', \''.$escapedSubjectName.'\', '.$resultsCount.')">
+                        <span class="icon mr-8"><i class="fa-solid fa-paper-plane"></i></span>
+                        '.___('examination.publish').'
+                    </a>
+                </li>';
             }
 
-            // Delete button (only for users with role_id 1 or 2)
+            // Delete action - only for roles 1,2 (using inline onclick)
             if (in_array(auth()->user()->role_id, [1, 2])) {
-                $action .= '<button type="button" class="btn btn-sm btn-danger delete-entry"
-                            data-id="'.$row->id.'"
-                            data-exam-type="'.htmlspecialchars($examTypeName, ENT_QUOTES).'"
-                            data-class="'.htmlspecialchars($className, ENT_QUOTES).'"
-                            data-results-count="'.$resultsCount.'"
-                            title="Delete">
-                            <i class="fas fa-trash"></i></button>';
+                // Escape values for JavaScript onclick handler
+                $escapedExamType = addslashes(htmlspecialchars($examTypeName, ENT_QUOTES));
+                $escapedClassName = addslashes(htmlspecialchars($className, ENT_QUOTES));
+
+                $action .= '<li>
+                    <a class="dropdown-item" href="javascript:void(0);"
+                       onclick="deleteExamEntry('.$row->id.', \''.$escapedExamType.'\', \''.$escapedClassName.'\', '.$resultsCount.')">
+                        <span class="icon mr-8"><i class="fa-solid fa-trash-can"></i></span>
+                        <span>'.___('common.delete').'</span>
+                    </a>
+                </li>';
             }
 
-            $action .= '</div>';
+            $action .= '</ul></div>';
 
             $data[] = [
                 'DT_RowIndex' => $key++,
