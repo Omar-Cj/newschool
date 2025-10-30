@@ -79,14 +79,26 @@
             padding-bottom: 15px;
         }
 
-        .logo-section {
-            text-align: center;
-            margin-bottom: 12px;
+        .page-header-content {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-container {
+            flex-shrink: 0;
+            width: 110px;
         }
 
         .logo {
-            max-width: 140px;
+            max-width: 100px;
             max-height: 70px;
+            display: block;
+        }
+
+        .title-container {
+            flex: 1;
+            text-align: center;
         }
 
         .report-title {
@@ -94,7 +106,7 @@
             font-size: 20pt;
             font-weight: bold;
             color: #2c3e50;
-            margin-bottom: 8px;
+            margin: 0 0 8px 0;
             letter-spacing: 0.5px;
         }
 
@@ -102,7 +114,7 @@
             text-align: center;
             font-size: 11pt;
             color: #7f8c8d;
-            margin-bottom: 10px;
+            margin: 0;
             font-style: italic;
         }
 
@@ -345,24 +357,33 @@
         {{-- Include the SAME template used for PDF exports --}}
         {{-- This ensures IDENTICAL layout to PDF --}}
         <div class="page-header">
-            @if(config('app.logo_path'))
-            <div class="logo-section">
-                <img src="{{ public_path(config('app.logo_path')) }}" alt="Logo" class="logo">
-            </div>
-            @endif
+            <div class="page-header-content">
+                @php
+                    $logoSetting = \App\Models\Setting::where('name', 'light_logo')->first();
+                    $logoPath = $logoSetting ? asset($logoSetting->value) : asset('backend/assets/images/default-logo.png');
+                @endphp
 
-            <h1 class="report-title">
-                @if(isset($studentName) && $studentName && $procedureName === 'GetStudentGradebook')
-                    {{ $studentName }} Gradebook
-                @else
-                    {{ $reportName }}
+                @if($logoSetting)
+                <div class="logo-container">
+                    <img src="{{ $logoPath }}" alt="School Logo" class="logo">
+                </div>
                 @endif
-            </h1>
 
-            {{-- Conditional Subtitle: Only show for Gradebook reports --}}
-            @if(isset($procedureName) && $procedureName === 'GetStudentGradebook')
-            <div class="report-subtitle">Complete gradebook showing all marks and grades for this student</div>
-            @endif
+                <div class="title-container">
+                    <h1 class="report-title">
+                        @if(isset($studentName) && $studentName && $procedureName === 'GetStudentGradebook')
+                            {{ $studentName }} Gradebook
+                        @else
+                            {{ $reportName }}
+                        @endif
+                    </h1>
+
+                    {{-- Conditional Subtitle: Only show for Gradebook reports --}}
+                    @if(isset($procedureName) && $procedureName === 'GetStudentGradebook')
+                    <div class="report-subtitle">Complete gradebook showing all marks and grades for this student</div>
+                    @endif
+                </div>
+            </div>
         </div>
 
         {{-- Metadata Section --}}

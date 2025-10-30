@@ -322,30 +322,24 @@ if (!function_exists('numberToWords')) {
 if (!function_exists('globalAsset')) {
     function globalAsset($path, $default_image = null)
     {
-        // Handle empty path
-        if (empty($path)) {
-            return asset("backend/uploads/default-images/" . ($default_image ?? 'user2.jpg'));
-        }
-
-        try {
-            $fileSystem = setting('file_system') ?? 'local';
-
-            // S3 Storage
-            if ($fileSystem == "s3" && Storage::disk('s3')->exists($path)) {
-                return Storage::disk('s3')->url($path);
+        if ($path == "") {
+            return url("backend/uploads/default-images/$default_image");
+        } else {
+            try {
+                if (setting('file_system') == "s3" && Storage::disk('s3')->exists($path) && $path != "") {
+                    return Storage::disk('s3')->url($path);
+                } else if (setting('file_system') == "local" && file_exists(@$path)) {
+                    return url($path);
+                } else {
+                    if ($default_image == null) {
+                        return url('backend/uploads/default-images/user2.jpg');
+                    } else {
+                        return url("backend/uploads/default-images/$default_image");
+                    }
+                }
+            } catch (\Exception $c) {
+                return url("backend/uploads/default-images/$default_image");
             }
-
-            // Local Storage - Use public_path() to check correct directory & asset() for direct URL
-            if ($fileSystem == "local" && file_exists(public_path($path))) {
-                return asset($path);
-            }
-
-            // Fallback to default image
-            return asset("backend/uploads/default-images/" . ($default_image ?? 'user2.jpg'));
-
-        } catch (\Exception $e) {
-            \Log::warning("globalAsset failed for path: {$path}", ['error' => $e->getMessage()]);
-            return asset("backend/uploads/default-images/" . ($default_image ?? 'user2.jpg'));
         }
     }
 }

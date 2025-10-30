@@ -9,30 +9,11 @@ class Setting extends BaseModel
 {
     use HasFactory;
 
-    // Removed array cast to prevent double JSON-encoding of string values
-    // Logo paths and other settings are stored as plain strings, not arrays
     protected $casts = [
-        // 'value' => 'array', // REMOVED: This was causing double JSON-encoding
+        'value' => 'array',
     ];
     
     protected $guarded = ["id"];
-
-    /**
-     * Clean up value attribute by removing escaped slashes
-     * This fixes any legacy data that was incorrectly encoded with the array cast
-     *
-     * @param string|null $value
-     * @return string|null
-     */
-    public function getValueAttribute($value)
-    {
-        if ($value === null) {
-            return null;
-        }
-
-        // Remove escaped forward slashes that were created by the old array cast
-        return str_replace('\\/', '/', $value);
-    }
 
     public function defaultTranslate()
     {

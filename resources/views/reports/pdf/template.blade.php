@@ -26,14 +26,29 @@
             padding-bottom: 15px;
         }
 
-        .logo-section {
-            text-align: center;
-            margin-bottom: 12px;
+        .page-header-content {
+            display: table;
+            width: 100%;
+            table-layout: fixed;
+        }
+
+        .logo-container {
+            display: table-cell;
+            vertical-align: middle;
+            width: 110px;
+            padding-right: 10px;
         }
 
         .logo {
-            max-width: 140px;
+            max-width: 100px;
             max-height: 70px;
+            display: block;
+        }
+
+        .title-container {
+            display: table-cell;
+            vertical-align: middle;
+            text-align: center;
         }
 
         .report-title {
@@ -41,7 +56,7 @@
             font-size: 20pt;
             font-weight: bold;
             color: #2c3e50;
-            margin-bottom: 8px;
+            margin: 0 0 8px 0;
             letter-spacing: 0.5px;
         }
 
@@ -49,7 +64,7 @@
             text-align: center;
             font-size: 11pt;
             color: #7f8c8d;
-            margin-bottom: 10px;
+            margin: 0;
             font-style: italic;
         }
 
@@ -291,24 +306,53 @@
 <body>
     {{-- Page Header --}}
     <div class="page-header">
-        @if(config('app.logo_path'))
-        <div class="logo-section">
-            <img src="{{ public_path(config('app.logo_path')) }}" alt="Logo" class="logo">
-        </div>
-        @endif
+        <div class="page-header-content">
+            @php
+                $logoSetting = \App\Models\Setting::where('name', 'light_logo')->first();
+                $logoSrc = null;
 
-        <h1 class="report-title">
-            @if(isset($studentName) && $studentName && $procedureName === 'GetStudentGradebook')
-                {{ $studentName }} Gradebook
-            @else
-                {{ $reportName }}
+                if ($logoSetting) {
+                    $logoPath = public_path($logoSetting->value);
+
+                    if (file_exists($logoPath)) {
+                        // Base64 encode for DomPDF compatibility
+                        $imageData = file_get_contents($logoPath);
+                        $imageType = pathinfo($logoPath, PATHINFO_EXTENSION);
+                        $logoSrc = 'data:image/' . $imageType . ';base64,' . base64_encode($imageData);
+                    }
+                }
+
+                // Fallback to default logo if needed
+                if (!$logoSrc) {
+                    $defaultLogoPath = public_path('backend/assets/images/default-logo.png');
+                    if (file_exists($defaultLogoPath)) {
+                        $imageData = file_get_contents($defaultLogoPath);
+                        $logoSrc = 'data:image/png;base64,' . base64_encode($imageData);
+                    }
+                }
+            @endphp
+
+            @if($logoSrc)
+            <div class="logo-container">
+                <img src="{{ $logoSrc }}" alt="School Logo" class="logo">
+            </div>
             @endif
-        </h1>
 
-        {{-- Conditional Subtitle: Only show for Gradebook reports --}}
-        @if(isset($procedureName) && $procedureName === 'GetStudentGradebook')
-        <div class="report-subtitle">Complete gradebook showing all marks and grades for this student</div>
-        @endif
+            <div class="title-container">
+                <h1 class="report-title">
+                    @if(isset($studentName) && $studentName && $procedureName === 'GetStudentGradebook')
+                        {{ $studentName }} Gradebook
+                    @else
+                        {{ $reportName }}
+                    @endif
+                </h1>
+
+                {{-- Conditional Subtitle: Only show for Gradebook reports --}}
+                @if(isset($procedureName) && $procedureName === 'GetStudentGradebook')
+                <div class="report-subtitle">Complete gradebook showing all marks and grades for this student</div>
+                @endif
+            </div>
+        </div>
     </div>
 
     {{-- Metadata Section - Table-based for DomPDF compatibility --}}
