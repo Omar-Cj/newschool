@@ -355,6 +355,59 @@ if (!function_exists('globalAsset')) {
 if (!function_exists('hasPermission')) {
     function hasPermission($keyword)
     {
+        // Special handling for exam_entry_publish - only roles 1 and 2
+        if ($keyword === 'exam_entry_publish') {
+            Log::info('🔍 PUBLISH CHECK: Starting permission check', [
+                'keyword' => $keyword,
+                'user_id' => Auth::user()->id ?? 'guest',
+                'role_id' => Auth::user()->role_id ?? 'none',
+                'is_authenticated' => Auth::check()
+            ]);
+
+            if (Auth::check() && in_array(Auth::user()->role_id, [1, 2])) {
+                Log::info('✅ PUBLISH CHECK: Role validation passed', [
+                    'role_id' => Auth::user()->role_id
+                ]);
+
+                // Super Admin (role 1) always has permission
+                if (Auth::user()->role_id == 1) {
+                    Log::info('🎯 PUBLISH CHECK: Super Admin bypass - GRANTED', [
+                        'role_id' => 1
+                    ]);
+                    return true;
+                }
+
+                // Admin (role 2) needs permission in array
+                $hasPermission = in_array($keyword, Auth::user()->permissions ?? []);
+                Log::info('🔍 PUBLISH CHECK: Admin permission array check', [
+                    'role_id' => 2,
+                    'has_permission' => $hasPermission,
+                    'permissions' => Auth::user()->permissions
+                ]);
+                return $hasPermission;
+            }
+
+            Log::warning('❌ PUBLISH CHECK: Role validation failed - DENIED', [
+                'role_id' => Auth::user()->role_id ?? 'none',
+                'required_roles' => [1, 2]
+            ]);
+            return false;
+        }
+
+        // Special handling for exam_entry_delete - only roles 1 and 2
+        if ($keyword === 'exam_entry_delete') {
+            if (Auth::check() && in_array(Auth::user()->role_id, [1, 2])) {
+                // Super Admin (role 1) always has permission
+                if (Auth::user()->role_id == 1) {
+                    return true;
+                }
+                // Admin (role 2) needs permission in array
+                return in_array($keyword, Auth::user()->permissions ?? []);
+            }
+            return false;
+        }
+
+        // Default permission check
         if (Auth::check() && Auth::user()->role_id == 1) {
             return true;
         }

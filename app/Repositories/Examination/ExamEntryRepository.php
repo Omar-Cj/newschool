@@ -136,8 +136,8 @@ class ExamEntryRepository
             $examTypeName = $row->examType->name ?? 'Unknown';
             $className = $row->class->name ?? 'Unknown';
 
-            // Publish button (only for completed)
-            if ($row->status === 'completed') {
+            // Publish button (only for completed AND user has role_id 1 or 2)
+            if ($row->status === 'completed' && in_array(auth()->user()->role_id, [1, 2])) {
                 $subjectName = $row->is_all_subjects ? 'All Subjects' : ($row->subject->name ?? 'Unknown');
                 $action .= '<button type="button" class="btn btn-sm btn-success publish-entry"
                             data-id="'.$row->id.'"
@@ -148,13 +148,17 @@ class ExamEntryRepository
                             title="Publish">
                             <i class="fas fa-paper-plane"></i></button>';
             }
-            $action .= '<button type="button" class="btn btn-sm btn-danger delete-entry"
-                        data-id="'.$row->id.'"
-                        data-exam-type="'.htmlspecialchars($examTypeName, ENT_QUOTES).'"
-                        data-class="'.htmlspecialchars($className, ENT_QUOTES).'"
-                        data-results-count="'.$resultsCount.'"
-                        title="Delete">
-                        <i class="fas fa-trash"></i></button>';
+
+            // Delete button (only for users with role_id 1 or 2)
+            if (in_array(auth()->user()->role_id, [1, 2])) {
+                $action .= '<button type="button" class="btn btn-sm btn-danger delete-entry"
+                            data-id="'.$row->id.'"
+                            data-exam-type="'.htmlspecialchars($examTypeName, ENT_QUOTES).'"
+                            data-class="'.htmlspecialchars($className, ENT_QUOTES).'"
+                            data-results-count="'.$resultsCount.'"
+                            title="Delete">
+                            <i class="fas fa-trash"></i></button>';
+            }
 
             $action .= '</div>';
 

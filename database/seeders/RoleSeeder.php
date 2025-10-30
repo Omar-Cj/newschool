@@ -164,6 +164,12 @@ class RoleSeeder extends Seeder
                     'homework_delete',
                     'exam_setting_read',
                     'exam_setting_update',
+                    // exam_entry
+                    'exam_entry_read',
+                    'exam_entry_create',
+                    'exam_entry_update',
+                    'exam_entry_delete',
+                    'exam_entry_publish',
                     // End Examination
 
                     // Start Transactions
@@ -428,6 +434,12 @@ class RoleSeeder extends Seeder
                     'storage_settings_read',
                     'recaptcha_settings_update',
                     'email_settings_read',
+                    // exam_entry permissions
+                    'exam_entry_read',
+                    'exam_entry_create',
+                    'exam_entry_update',
+                    'exam_entry_delete',
+                    'exam_entry_publish',
                 ],
             ],
             [

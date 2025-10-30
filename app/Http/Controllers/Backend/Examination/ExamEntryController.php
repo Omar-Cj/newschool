@@ -17,6 +17,7 @@ use App\Services\ExamEntryService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 
 class ExamEntryController extends Controller
 {
@@ -359,13 +360,24 @@ class ExamEntryController extends Controller
 
     /**
      * Delete exam entry (AJAX)
+     * Only users with role_id 1 (Super Admin) or role_id 2 (Admin) can delete
      */
     public function destroy($id)
     {
+        // Check if user has required role (1 or 2) AND exam_entry_delete permission
+        $userRoleId = auth()->user()->role_id;
+
+        if (!in_array($userRoleId, [1, 2])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only Super Admin and Admin can delete exam entries'
+            ], 403);
+        }
+
         if (!hasPermission('exam_entry_delete')) {
             return response()->json([
                 'success' => false,
-                'message' => 'Unauthorized access'
+                'message' => 'You do not have permission to delete exam entries'
             ], 403);
         }
 
@@ -393,31 +405,81 @@ class ExamEntryController extends Controller
 
     /**
      * Publish exam entry results (AJAX)
+     * Only users with role_id 1 (Super Admin) or role_id 2 (Admin) can publish
      */
     public function publish($id)
     {
-        if (!hasPermission('exam_entry_update')) {
+        Log::info('📝 PUBLISH REQUEST: Started', [
+            'exam_entry_id' => $id,
+            'user_id' => auth()->user()->id,
+            'user_role' => auth()->user()->role_id,
+            'user_name' => auth()->user()->name
+        ]);
+
+        // Check if user has required role (1 or 2) AND exam_entry_publish permission
+        $userRoleId = auth()->user()->role_id;
+
+        if (!in_array($userRoleId, [1, 2])) {
+            Log::warning('❌ PUBLISH DENIED: Invalid role', [
+                'user_role' => $userRoleId,
+                'exam_entry_id' => $id
+            ]);
             return response()->json([
                 'success' => false,
-                'message' => 'Unauthorized access'
+                'message' => 'Only Super Admin and Admin can publish exam entries'
             ], 403);
         }
 
+        Log::info('✅ PUBLISH: Role check passed', ['role_id' => $userRoleId]);
+
+        if (!hasPermission('exam_entry_publish')) {
+            Log::warning('❌ PUBLISH DENIED: Permission check failed', [
+                'user_role' => $userRoleId,
+                'exam_entry_id' => $id,
+                'has_permission' => hasPermission('exam_entry_publish')
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to publish exam entries'
+            ], 403);
+        }
+
+        Log::info('✅ PUBLISH: Permission check passed');
+
         try {
+            Log::info('🔄 PUBLISH: Calling repository publish method', [
+                'exam_entry_id' => $id
+            ]);
+
             $result = $this->examEntryRepository->publish($id);
 
             if ($result['status']) {
+                Log::info('✅ PUBLISH SUCCESS', [
+                    'exam_entry_id' => $id,
+                    'message' => $result['message']
+                ]);
                 return response()->json([
                     'success' => true,
                     'message' => $result['message']
                 ]);
             }
 
+            Log::warning('❌ PUBLISH FAILED: Repository returned failure', [
+                'exam_entry_id' => $id,
+                'message' => $result['message']
+            ]);
+
             return response()->json([
                 'success' => false,
                 'message' => $result['message']
             ], 400);
         } catch (\Exception $e) {
+            Log::error('💥 PUBLISH ERROR: Exception caught', [
+                'exam_entry_id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
             return response()->json([
                 'success' => false,
                 'message' => $e->getMessage()

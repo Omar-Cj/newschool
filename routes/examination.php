@@ -84,7 +84,7 @@ Route::middleware(saasMiddleware())->group(function () {
                     Route::get('/edit/{id}',                'edit')->name('exam-entry.edit')->middleware('PermissionCheck:exam_entry_update');
                     Route::put('/update/{id}',              'update')->name('exam-entry.update')->middleware('PermissionCheck:exam_entry_update', 'DemoCheck');
                     Route::delete('/delete/{id}',           'destroy')->name('exam-entry.delete')->middleware('PermissionCheck:exam_entry_delete', 'DemoCheck');
-                    Route::put('/publish/{id}',             'publish')->name('exam-entry.publish')->middleware('PermissionCheck:exam_entry_update', 'DemoCheck');
+                    Route::put('/publish/{id}',             'publish')->name('exam-entry.publish')->middleware('PermissionCheck:exam_entry_publish', 'DemoCheck');
                     Route::get('/get-students',             'getStudents')->name('exam-entry.get-students');
                     Route::get('/download-template',        'downloadTemplate')->name('exam-entry.download-template');
                     Route::post('/upload-results',          'uploadResults')->name('exam-entry.upload-results')->middleware('PermissionCheck:exam_entry_create', 'DemoCheck');

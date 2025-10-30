@@ -52,6 +52,7 @@ class PermissionSeeder extends Seeder
             'marks_register'    => ['read' => 'marks_register_read', 'create' => 'marks_register_create', 'update' => 'marks_register_update', 'delete' => 'marks_register_delete'],
             'homework'          => ['read' => 'homework_read', 'create' => 'homework_create', 'update' => 'homework_update', 'delete' => 'homework_delete'],
             'exam_setting'      => ['read' => 'exam_setting_read', 'update' => 'exam_setting_update'],
+            'exam_entry'        => ['read' => 'exam_entry_read', 'create' => 'exam_entry_create', 'update' => 'exam_entry_update', 'delete' => 'exam_entry_delete', 'publish' => 'exam_entry_publish'],
             // Account
             'account_head'      => ['read' => 'account_head_read', 'create' => 'account_head_create', 'update' => 'account_head_update', 'delete' => 'account_head_delete'],
             'income'            => ['read' => 'income_read', 'create' => 'income_create', 'update' => 'income_update', 'delete' => 'income_delete'],
