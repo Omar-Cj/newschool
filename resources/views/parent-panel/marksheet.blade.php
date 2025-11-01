@@ -734,7 +734,7 @@
                                                 </td>
                                                 <td>
                                                     <div class="classBox_wiz">
-                                                        @if($result->is_absent)
+                                                        @if($result->grade === 'Absent')
                                                             <h5 class="text-danger">{{ ___('examination.Absent') }}</h5>
                                                         @else
                                                             <h5>{{ number_format($result->result, 2) }}</h5>
@@ -787,7 +787,7 @@
 $(document).ready(function() {
     // Load sessions on page load
     $.ajax({
-        url: '{{ url("") }}/report-marksheet/get-sessions',
+        url: '{{ route("parent-panel-marksheet.get-sessions") }}',
         type: 'GET',
         success: function(response) {
             var sessionSelect = $('#getTermsParent');
@@ -816,7 +816,7 @@ $(document).ready(function() {
 
             // Load terms for selected session
             $.ajax({
-                url: '{{ url("") }}/report-marksheet/get-terms/' + sessionId,
+                url: '{{ route("parent-panel-marksheet.get-terms", ["sessionId" => "__sessionId__"]) }}'.replace('__sessionId__', sessionId),
                 type: 'GET',
                 success: function(response) {
                     var termSelect = $('.term');
@@ -833,6 +833,87 @@ $(document).ready(function() {
                 }
             });
         }
+    });
+
+    // Load published exam types when term is selected
+    $('.term').on('change', function() {
+        var termId = $(this).val();
+        var sessionId = $('#getTermsParent').val();
+        var studentId = $('.student').val();
+
+        if (termId && sessionId && studentId) {
+            // Clear exam types dropdown
+            $('.exam_types').html('<option value="">{{ ___('common.Loading') }}...</option>');
+            $('.exam_types').niceSelect('update');
+
+            // Load published exam types for selected session + term + student
+            $.ajax({
+                url: '{{ route("parent-panel-marksheet.get-exam-types") }}',
+                type: 'GET',
+                data: {
+                    session_id: sessionId,
+                    term_id: termId,
+                    student_id: studentId
+                },
+                success: function(response) {
+                    var examTypeSelect = $('.exam_types');
+                    examTypeSelect.html('<option value="">{{ ___('examination.select_exam_type') }} *</option>');
+
+                    if (response.length > 0) {
+                        $.each(response, function(key, examType) {
+                            examTypeSelect.append('<option value="' + examType.id + '">' + examType.name + '</option>');
+                        });
+                    } else {
+                        examTypeSelect.html('<option value="">{{ ___('examination.no_published_exams') }}</option>');
+                    }
+
+                    examTypeSelect.niceSelect('update');
+                },
+                error: function(xhr) {
+                    console.error('Error loading exam types:', xhr);
+                    $('.exam_types').html('<option value="">{{ ___('common.Error loading data') }}</option>');
+                    $('.exam_types').niceSelect('update');
+                }
+            });
+        } else {
+            // Clear exam types if term is deselected
+            $('.exam_types').html('<option value="">{{ ___('examination.select_exam_type') }} *</option>');
+            $('.exam_types').niceSelect('update');
+        }
+    });
+
+    // Form validation before submit
+    $('#marksheet').on('submit', function(e) {
+        var sessionId = $('#getTermsParent').val();
+        var termId = $('.term').val();
+        var studentId = $('.student').val();
+        var examTypeId = $('.exam_types').val();
+
+        if (!sessionId) {
+            e.preventDefault();
+            alert('{{ ___('examination.please_select_session') }}');
+            return false;
+        }
+
+        if (!termId) {
+            e.preventDefault();
+            alert('{{ ___('examination.please_select_term') }}');
+            return false;
+        }
+
+        if (!studentId) {
+            e.preventDefault();
+            alert('{{ ___('student_info.please_select_student') }}');
+            return false;
+        }
+
+        if (!examTypeId) {
+            e.preventDefault();
+            alert('{{ ___('examination.please_select_exam_type') }}');
+            return false;
+        }
+
+        return true;
     });
 });
 </script>

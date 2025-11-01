@@ -63,14 +63,15 @@ class MarksheetRepository implements MarksheetInterface
                 'term'        => $request->term,
             ]);
 
-            // Call stored procedure with parameters including session and term
-            $examResults = \DB::select("CALL GetStudentExamReport(?, ?, ?, ?, ?, ?)", [
-                $student->id,
-                $searchRequest->class,
-                $searchRequest->section,
-                $searchRequest->exam_type,
-                $searchRequest->session,
-                $searchRequest->term
+            // Call stored procedure with parameters: session_id, term_id, exam_type_id, class_id, section_id, student_id, branch_id
+            $examResults = \DB::select("CALL GetStudentExamReport(?, ?, ?, ?, ?, ?, ?)", [
+                $searchRequest->session,           // p_session_id
+                $searchRequest->term,              // p_term_id
+                $searchRequest->exam_type,         // p_exam_type_id
+                $searchRequest->class,             // p_class_id
+                $searchRequest->section,           // p_section_id
+                $student->id,                      // p_student_id
+                $student->branch_id ?? null        // p_branch_id (null for non-multi-branch)
             ]);
 
             // Transform results to collection of stdClass objects
@@ -84,7 +85,7 @@ class MarksheetRepository implements MarksheetInterface
             $subjectCount = $examResults->count();
 
             foreach($examResults as $examResult) {
-                if($examResult->is_absent ||
+                if($examResult->grade === 'Absent' ||
                    $examResult->result < examSetting('average_pass_marks')) {
                     $result = ___('examination.Failed');
                 }
@@ -112,6 +113,19 @@ class MarksheetRepository implements MarksheetInterface
 
             return $data;
         } catch (\Throwable $th) {
+            \Log::error('Stored procedure execution failed: ' . $th->getMessage(), [
+                'exception' => $th,
+                'parameters' => [
+                    'session' => $searchRequest->session,
+                    'term' => $searchRequest->term,
+                    'exam_type' => $searchRequest->exam_type,
+                    'class' => $searchRequest->class,
+                    'section' => $searchRequest->section,
+                    'student_id' => $student->id,
+                    'branch_id' => $student->branch_id ?? null
+                ],
+                'trace' => $th->getTraceAsString()
+            ]);
             return false;
         }
     }

@@ -65,7 +65,10 @@ Route::middleware(saasMiddleware())->group(function () {
                         Route::controller(MarksheetController::class)->prefix('parent-panel-marksheet')->group(function () {
                             Route::get('/', 'index')->name('parent-panel-marksheet.index');
                             Route::post('/search', 'search')->name('parent-panel-marksheet.search');
-                            Route::get('/exam-types', 'getExamTypes');
+                            Route::get('/exam-types', 'getExamTypes'); // Legacy method
+                            Route::get('/get-sessions', 'getSessions')->name('parent-panel-marksheet.get-sessions'); // Get all sessions
+                            Route::get('/get-terms/{sessionId}', 'getTermsBySession')->name('parent-panel-marksheet.get-terms'); // Get terms for session
+                            Route::get('/get-exam-types', 'getExamTypesByTerm')->name('parent-panel-marksheet.get-exam-types'); // Get published exam types
                             Route::get('/pdf-generate/{student}/{type}', 'generatePDF')->name('parent-panel-marksheet.pdf-generate');
                         });
                     });
