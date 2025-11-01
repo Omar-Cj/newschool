@@ -19,6 +19,18 @@ class SubjectListRepository implements SubjectListInterface
             $data['students'] = Student::where('parent_guardian_id', $parent->id)->get();
             $data['student']  = Student::where('id', Session::get('student_id'))->first();
 
+            // Auto-load subjects for the current student if student_id exists in session
+            if (Session::has('student_id')) {
+                $classSection   = SessionClassStudent::where('session_id', setting('session'))
+                    ->where('student_id', Session::get('student_id'))
+                    ->latest()
+                    ->first();
+                $data['subjectTeacher'] = SubjectAssign::where('session_id', setting('session'))
+                    ->where('classes_id', @$classSection->classes_id)
+                    ->where('section_id', @$classSection->section_id)
+                    ->first();
+            }
+
             return $data;
         } catch (\Throwable $th) {
             return false;

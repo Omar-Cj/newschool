@@ -55,7 +55,6 @@
                                 <th class="serial">{{ ___('common.sr_no') }}</th>
                                 <th class="purchase">{{ ___('common.name') }}</th>
                                 <th class="purchase">{{ ___('academic.code') }}</th>
-                                <th class="purchase">{{ ___('academic.type') }}</th>
                                 <th class="purchase">{{ ___('academic.teacher') }}</th>
                             </tr>
                         </thead>
@@ -66,14 +65,7 @@
                                     <td class="serial">{{ ++$key }}</td>
                                     <td>{{ $row->subject->name }}</td>
                                     <td>{{ $row->subject->code }}</td>
-                                    <td>
-                                        @if ($row->subject->type == App\Enums\SubjectType::THEORY)
-                                        {{ ___('academic.theory') }}
-                                        @elseif ($row->subject->type == App\Enums\SubjectType::PRACTICAL)
-                                        {{ ___('academic.practical') }}
-                                        @endif
-                                    </td>
-                                    <td>{{ $row->teacher->first_name }} {{ $row->teacher->last_name }} <br> <small>{{ $row->teacher->email }}</small></td>
+                                    <td>{{ $row->teacher->first_name }} {{ $row->teacher->last_name }} <br> <small>{{ $row->teacher->phone ?? 'N/A' }}</small></td>
 
                                 </tr>
                                 @empty

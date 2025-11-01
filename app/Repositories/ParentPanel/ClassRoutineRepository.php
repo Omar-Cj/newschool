@@ -22,6 +22,34 @@ class ClassRoutineRepository implements ClassRoutineInterface
             $data['students'] = Student::where('parent_guardian_id', $parent->id)->get();
             $data['student']  = Student::where('id', Session::get('student_id'))->first();
 
+            // Auto-load class routine data if student is selected
+            if (Session::has('student_id') && Session::get('student_id')) {
+                $classSection = SessionClassStudent::where('session_id', setting('session'))
+                    ->where('student_id', Session::get('student_id'))
+                    ->latest()
+                    ->first();
+
+                if ($classSection) {
+                    // Fetch class routine data
+                    $data['result'] = ClassRoutine::where('classes_id', $classSection->classes_id)
+                        ->where('section_id', $classSection->section_id)
+                        ->where('session_id', setting('session'))
+                        ->orderBy('day')
+                        ->get();
+
+                    // Fetch time schedules
+                    $data['time'] = ClassRoutineChildren::whereHas('classRoutine', function($q) use($classSection) {
+                        $q->where('classes_id', $classSection->classes_id)
+                          ->where('section_id', $classSection->section_id)
+                          ->where('session_id', setting('session'));
+                    })
+                    ->orderBy('time_schedule_id')
+                    ->select('time_schedule_id')
+                    ->distinct()
+                    ->get();
+                }
+            }
+
             return $data;
         } catch (\Throwable $th) {
             return false;

@@ -7,169 +7,88 @@
 @section('content')
 <div class="page-content">
 
-    <div class="col-12 p-0">
-        <form action="" id="marksheed" enctype="multipart/form-data">
-            <div class="card ot-card mb-24 position-relative z_1">
-                <div class="card-header d-flex align-items-center gap-4 flex-wrap">
-                    <h3 class="mb-0">{{ ___('common.Filtering') }}</h3>
-
-                    <div class="card_header_right d-flex align-items-center gap-3 flex-fill justify-content-end flex-wrap">
-                        <!-- table_searchBox -->
-
-                        <div class="single_large_selectBox">
-                            <select class="nice-select niceSelect bordered_style wide" name="student_id">
-                                <option value="">{{ ___('student_info.select_student') }}</option>
-                                @foreach (@$data['students'] ?? [] as $item)
-                                    <option {{ request('student_id') == $item->id ? 'selected' : '' }} value="{{ $item->id }}">{{ $item->first_name }} {{ $item->last_name }}
-                                @endforeach
-                            </select>
-                            @error('student')
-                            <div id="validationServer04Feedback" class="invalid-feedback">
-                                {{ $message }}
-                            </div>
-                            @enderror
-                        </div>
-
-                        <button class="btn btn-lg ot-btn-primary" type="submit">
-                            {{ ___('common.Search') }}
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </form>
-    </div>
-
-
-    <!--  table content start -->
-    @if (request()->filled('student_id'))
-        <div class="table-content table-basic">
+    {{-- Simplified Children Fees Summary Table --}}
+    @if (!empty(@$data['children_fees_summary']))
+        <div class="table-content table-basic mb-24">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h4 class="mb-0">{{ ___('fees.fees_list') }}</h4>
+                    <h4 class="mb-0">{{ ___('fees.children_fees_summary') ?? 'Children Fees Summary' }}</h4>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
                         <table class="table table-bordered class-table">
                             <thead class="thead">
                                 <tr>
-                                    <th class="purchase">{{ ___('fees.group') }}</th>
-                                    <th class="purchase">{{ ___('fees.type') }}</th>
-                                    <th class="purchase">{{ ___('fees.due_date') }}</th>
-                                    <th class="purchase">{{ ___('fees.amount') }} ({{ Setting('currency_symbol')}}) + {{___('tax.Tax')}} + {{___('fees.Fine')}}</th>
-                                    <th class="purchase">{{ ___('fees.Sub total') }}</th>
-                                    <th class="purchase">{{ ___('common.status') }}</th>
-                                    <th class="purchase">{{ ___('fees.fine_type') }}</th>
-                                    <th class="purchase">{{ ___('fees.percentage') }}</th>
-                                    <th class="purchase">{{ ___('fees.fine_amount') }} ({{ Setting('currency_symbol') }})</th>
-                                    <th class="purchase">{{ ___('fees.payment_info') }}</th>
-                                    <th class="purchase">{{ ___('fees.Action') }}</th>
+                                    <th class="purchase">{{ ___('student_info.student_name') }}</th>
+                                    <th class="purchase">{{ ___('common.class') }} & {{ ___('common.section') }}</th>
+                                    <th class="purchase text-center">{{ ___('fees.outstanding_amount') }}</th>
+                                    <th class="purchase text-center">{{ ___('common.action') }}</th>
                                 </tr>
                             </thead>
                             <tbody class="tbody">
-                                @if (@$data['fees_assigned'])
-                                    @forelse (@$data['fees_assigned'] as $item)
-                                        <tr>
-                                            <td>{{ @$item->feesMaster->group->name }}</td>
-                                            <td>{{ @$item->feesMaster->type->name }}</td>
-                                            <td>{{ dateFormat(@$item->feesMaster->due_date) }}</td>
-                                            <td>{{ @$item->feesMaster->amount }}
-                                                <span class="text-danger"> + {{ calculateTax(@$item->feesMaster->amount) }}</span>
+                                @foreach (@$data['children_fees_summary'] as $summary)
+                                    <tr>
+                                        <td>
+                                            <strong>{{ $summary['student_name'] }}</strong>
+                                        </td>
+                                        <td>{{ $summary['class_section'] }}</td>
+                                        <td class="text-center">
+                                            @if ($summary['outstanding_amount'] > 0)
+                                                <span class="text-danger fw-bold">
+                                                    {{ Setting('currency_symbol') }} {{ number_format($summary['outstanding_amount'], 2) }}
+                                                </span>
+                                            @else
+                                                <span class="text-success small">
+                                                    {{ ___('fees.no_dues') ?? 'No Dues' }}
+                                                </span>
+                                            @endif
+                                        </td>
+                                        <td class="text-center">
+                                            @if ($summary['outstanding_amount'] > 0)
+                                                <button
+                                                    class="btn btn-sm ot-btn-primary"
+                                                    onclick="handlePayment({{ $summary['student_id'] }}, {{ $summary['outstanding_amount'] }})"
+                                                    data-student-id="{{ $summary['student_id'] }}"
+                                                    data-amount="{{ $summary['outstanding_amount'] }}">
+                                                    <i class="fa fa-credit-card"></i> {{ ___('fees.pay') ?? 'Pay' }}
+                                                </button>
+                                            @else
+                                                <span class="text-muted small">{{ ___('fees.paid') ?? 'Paid' }}</span>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @endforeach
 
-                                                @if (date('Y-m-d') > $item->feesMaster->due_date && !($item->fees_collect_count && $item->feesCollect && $item->feesCollect->isPaid()))
-                                                    <span class="text-danger">+ {{ @$item->feesMaster->fine_amount }}</span>
-                                                @elseif($item->fees_collect_count == 1 && $item->feesMaster->due_date < $item->feesCollect->date)
-                                                    <span class="text-danger">+ {{ @$item->feesMaster->fine_amount }}</span>
-                                                @endif
-                                            </td>
-                                            <td>
-                                                {{@$item->feesMaster->amount + calculateTax(@$item->feesMaster->amount)}}
-                                            </td>
-                                            <td>
-                                                @if ($item->fees_collect_count && $item->feesCollect && $item->feesCollect->isPaid())
-                                                    <span class="badge-basic-success-text">{{ ___('fees.Paid') }}</span>
-                                                @elseif ($item->fees_collect_count && $item->feesCollect && $item->feesCollect->isGenerated())
-                                                    <span class="badge-basic-warning-text">{{ ___('fees.Generated - Pending Payment') }}</span>
-                                                @else
-                                                    <span class="badge-basic-danger-text">{{ ___('fees.Unpaid') }}</span>
-                                                @endif
-                                            </td>
-                                            <td>
-                                                @if (@$item->fine_type == 0)
-                                                    <span class="badge-basic-info-text">{{ ___('fees.none') }}</span>
-                                                @elseif(@$item->fine_type == 1)
-                                                    <span class="badge-basic-info-text">{{ ___('fees.percentage') }}</span>
-                                                @elseif(@$item->fine_type == 2)
-                                                    <span class="badge-basic-info-text">{{ ___('fees.fixed') }}</span>
-                                                @endif
-                                            </td>
-                                            <td>{{ @$item->feesMaster->percentage }}</td>
-                                            <td>
-                                                @if(date('Y-m-d') > @$item->feesMaster->due_date)
-                                                    {{ @$item->feesMaster->fine_amount }}
-                                                @else
-                                                    0
-                                                @endif
-                                            </td>
-                                            <td>
-                                                @if (@$item->feesCollect)
-                                                    <b class="text-primary me-2">{{ @$item->feesCollect->payment_gateway }}</b>
-                                                    <b class="text-success">#{{ @$item->feesCollect->transaction_id }}</b>
-                                                @endif
-                                            </td>
-                                            <td>
-                                                @if (!($item->fees_collect_count && $item->feesCollect && $item->feesCollect->isPaid()))
-                                                    <a
-                                                        href="#"
-                                                        class="btn btn-sm ot-btn-primary px-3"
-                                                        data-bs-toggle="modal"
-                                                        data-bs-target="#modalCustomizeWidth"
-                                                        onclick="feePayByParentModal(`{{ $item->id }}`)"
-                                                    >
-                                                        <span class="">{{ ___('fees.Pay') }}</span>
-                                                    </a>
-                                                @endif
-                                            </td>
-                                        </tr>
-                                    @empty
-                                        <tr>
-                                            <td colspan="100%" class="text-center gray-color">
-                                                <img src="{{ asset('images/no_data.svg') }}" alt="" class="mb-primary" width="100">
-                                                <p class="mb-0 text-center">{{ ___('common.no_data_available') }}</p>
-                                                <p class="mb-0 text-center text-secondary font-size-90">
-                                                    {{ ___('common.please_add_new_entity_regarding_this_table') }}
-                                                </p>
-                                            </td>
-                                        </tr>
-                                    @endforelse
+                                {{-- Total Outstanding Row (only if multiple children) --}}
+                                @if (count(@$data['children_fees_summary']) > 1)
+                                    <tr class="table-info fw-bold">
+                                        <td colspan="2" class="text-end">
+                                            <strong>{{ ___('fees.total_outstanding') ?? 'Total Outstanding' }}:</strong>
+                                        </td>
+                                        <td class="text-center">
+                                            @php
+                                                $totalOutstanding = collect($data['children_fees_summary'])->sum('outstanding_amount');
+                                            @endphp
+                                            @if ($totalOutstanding > 0)
+                                                <span class="text-danger fs-5">
+                                                    {{ Setting('currency_symbol') }} {{ number_format($totalOutstanding, 2) }}
+                                                </span>
+                                            @else
+                                                <span class="text-success">
+                                                    {{ ___('fees.all_clear') ?? 'All Clear' }}
+                                                </span>
+                                            @endif
+                                        </td>
+                                        <td></td>
+                                    </tr>
                                 @endif
                             </tbody>
                         </table>
                     </div>
-                    <!--  table end -->
-                    <!--  pagination start -->
-                    <div class="ot-pagination pagination-content d-flex justify-content-end align-content-center py-3">
-                        <nav aria-label="Page navigation example">
-                            <ul class="pagination justify-content-between">
-                                {!!$data['fees_assigned']->appends(\Request::capture()->except('page'))->links() !!}
-                            </ul>
-                        </nav>
-                    </div>
-                    <!--  pagination end -->
                 </div>
             </div>
         </div>
     @endif
-    <!--  table content end -->
-
-
-
-    <div id="view-modal">
-        <div class="modal fade" id="modalCustomizeWidth" tabindex="-1" aria-labelledby="modalWidth" aria-hidden="true">
-            <div class="modal-dialog">
-                {{-- CONTENT WILL BE LOAD HERE DYNAMICALLY --}}
-            </div>
-        </div>
-    </div>
 </div>
 @endsection
 
@@ -178,4 +97,93 @@
 
 @push('script')
     <script src="https://js.stripe.com/v3/"></script>
+    <script>
+        /**
+         * Payment handler - to be implemented with payment API
+         * @param {number} studentId - Student ID
+         * @param {number} amount - Outstanding amount to pay
+         */
+        function handlePayment(studentId, amount) {
+            // TODO: Implement payment API integration
+            console.log('Payment initiated for student:', studentId, 'Amount:', amount);
+
+            // Professional SweetAlert notification
+            Swal.fire({
+                icon: 'info',
+                title: '{{ ___("fees.payment_coming_soon") ?? "Payment Integration Coming Soon" }}',
+                html: `
+                    <div style="text-align: left; padding: 10px;">
+                        <p><strong>{{ ___("student_info.student_id") ?? "Student ID" }}:</strong> ${studentId}</p>
+                        <p><strong>{{ ___("fees.outstanding_amount") ?? "Outstanding Amount" }}:</strong> <span style="color: #dc3545; font-weight: bold;">{{ Setting('currency_symbol') }}${amount.toFixed(2)}</span></p>
+                        <hr style="margin: 15px 0;">
+                        <p style="color: #6c757d; font-size: 14px;">
+                            <i class="fa fa-info-circle"></i> {{ ___("fees.payment_gateway_note") ?? "This button will be connected to a secure payment gateway in the next update. You'll be able to pay via credit card, debit card, or online banking." }}
+                        </p>
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonText: '{{ ___("common.ok") ?? "OK" }}',
+                cancelButtonText: '{{ ___("common.cancel") ?? "Cancel" }}',
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#6c757d',
+                customClass: {
+                    popup: 'swal-wide'
+                }
+            });
+
+            // Future implementation will:
+            // 1. Open payment modal/gateway (Stripe, PayPal, etc.)
+            // 2. Process payment via API endpoint
+            // 3. Update fees_collects table with payment record
+            // 4. Refresh the summary table to show updated outstanding amounts
+            // 5. Send confirmation email/notification to parent
+
+            /* Example future implementation:
+
+            Swal.fire({
+                title: '{{ ___("fees.processing_payment") ?? "Processing Payment" }}',
+                text: '{{ ___("common.please_wait") ?? "Please wait..." }}',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            fetch('/parent-panel/fees/initiate-payment', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify({
+                    student_id: studentId,
+                    amount: amount
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                Swal.close();
+                if (data.success) {
+                    // Redirect to payment gateway or open payment modal
+                    window.location.href = data.payment_url;
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: '{{ ___("common.error") ?? "Error" }}',
+                        text: data.message
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Payment error:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: '{{ ___("common.error") ?? "Error" }}',
+                    text: '{{ ___("fees.payment_error") ?? "An error occurred while processing payment" }}'
+                });
+            });
+
+            */
+        }
+    </script>
 @endpush

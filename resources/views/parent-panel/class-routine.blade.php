@@ -439,7 +439,7 @@
             @csrf
             <div class="card ot-card mb-24 position-relative z_1">
                 <div class="card-header d-flex align-items-center gap-4 flex-wrap">
-                    <h3 class="mb-0">{{ ___('common.Filtering') }}</h3>
+                    <h3 class="mb-0">{{ ___('common.Filtering') }} <span class="text-muted font-size-90">({{ ___('common.Optional') }})</span></h3>
 
                     <div class="card_header_right d-flex align-items-center gap-3 flex-fill justify-content-end flex-wrap">
                         <!-- table_searchBox -->
@@ -474,7 +474,7 @@
                     {{___('common.print_now')}}
                     <span><i class="fa-solid fa-print"></i></span>
                 </button>
-                <a class="btn btn-lg ot-btn-primary" href="{{ route('parent-panel-class-routine.pdf-generate', ['student' => @$data['request']->student]) }}">
+                <a class="btn btn-lg ot-btn-primary" href="{{ route('parent-panel-class-routine.pdf-generate', ['student' => @$data['request']->student ?? Session::get('student_id')]) }}">
                     {{___('common.pdf_download')}}
                     <span><i class="fa-brands fa-dochub"></i></span>
                 </a>
@@ -567,6 +567,25 @@
                             <p class="mb-0 text-center">{{ ___('common.no_data_available') }}</p>
                             <p class="mb-0 text-center text-secondary font-size-90">
                                 {{ ___('common.please_add_new_entity_regarding_this_table') }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endif
+    @else
+        @if(!Session::has('student_id') || !Session::get('student_id'))
+            <div class="table-content table-basic">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">{{ ___('settings.class_routine') }}</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="text-center gray-color">
+                            <img src="{{ asset('images/no_data.svg') }}" alt="" class="mb-primary" width="100">
+                            <p class="mb-0 text-center">{{ ___('common.no_data_available') }}</p>
+                            <p class="mb-0 text-center text-secondary font-size-90">
+                                Please select a student from the filter above to view class routine.
                             </p>
                         </div>
                     </div>
