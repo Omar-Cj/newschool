@@ -28,16 +28,38 @@ class AttendanceController extends Controller
 
     public function search(Request $request)
     {
-        $data                 = $this->repo->search($request);
-        $data['title']        = ___('common.Attendance');
-        $data['request']      = $request;
+        // Validate that student is selected
+        if (!$request->filled('student')) {
+            return redirect()->back()->with('danger', ___('common.please_select_student'));
+        }
+
+        $data = $this->repo->search($request);
+
+        // Handle repository error
+        if ($data === false) {
+            return redirect()->back()->with('danger', ___('alert.something_went_wrong_please_try_again'));
+        }
+
+        $data['title']   = ___('common.Attendance');
+        $data['request'] = $request;
+
         return view('parent-panel.attendance', compact('data'));
     }
 
     public function exportExcel(Request $request)
     {
+        // Validate that student is selected
+        if (!$request->filled('student')) {
+            return redirect()->back()->with('danger', ___('common.please_select_student'));
+        }
+
         // Get the same data as search() method
         $data = $this->repo->search($request);
+
+        // Handle repository error
+        if ($data === false) {
+            return redirect()->back()->with('danger', ___('alert.something_went_wrong_please_try_again'));
+        }
 
         // Generate filename with current date
         $filename = 'parent-attendance-report-' . date('Y-m-d') . '.xlsx';
@@ -48,10 +70,21 @@ class AttendanceController extends Controller
 
     public function print(Request $request)
     {
+        // Validate that student is selected
+        if (!$request->filled('student')) {
+            return redirect()->back()->with('danger', ___('common.please_select_student'));
+        }
+
         // Get the same data as search() method
-        $data                 = $this->repo->search($request);
-        $data['title']        = ___('common.Attendance');
-        $data['request']      = $request;
+        $data = $this->repo->search($request);
+
+        // Handle repository error
+        if ($data === false) {
+            return redirect()->back()->with('danger', ___('alert.something_went_wrong_please_try_again'));
+        }
+
+        $data['title']   = ___('common.Attendance');
+        $data['request'] = $request;
 
         // Return view for printing
         return view('parent-panel.attendance-print', compact('data'));
