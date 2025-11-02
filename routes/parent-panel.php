@@ -89,6 +89,8 @@ Route::middleware(saasMiddleware())->group(function () {
                         Route::controller(AttendanceController::class)->prefix('parent-panel-attendance')->group(function () {
                             Route::get('/', 'index')->name('parent-panel-attendance.index');
                             Route::any('/search', 'search')->name('parent-panel-attendance.search');
+                            Route::get('/export-excel', 'exportExcel')->name('parent-panel-attendance.export-excel');
+                            Route::get('/print', 'print')->name('parent-panel-attendance.print');
                         });
 
                         Route::controller(HomeworkController::class)->prefix('parent-panel-homeworks')->group(function () {

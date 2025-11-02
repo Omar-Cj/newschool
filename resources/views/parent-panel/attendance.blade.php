@@ -577,6 +577,23 @@
             font-size: 24px;
         }
     }
+
+    @media print {
+        .ot-card:has(.d-flex.align-items-center.gap-3),
+        .card-header.d-flex.align-items-center.gap-4,
+        .btn,
+        a.btn {
+            display: none !important;
+        }
+
+        body {
+            background: white;
+        }
+
+        .page-break {
+            page-break-before: always;
+        }
+    }
 </style>
 
 @section('content')
@@ -596,6 +613,7 @@
                             <div class="single_large_selectBox">
                                 <select class="nice-select niceSelect bordered_style wide @error('student') is-invalid @enderror" name="student">
                                     <option value="">{{ ___('student_info.select_student') }}</option>
+                                    <option {{ old('student', Session::get('student_id')) == 'all' ? 'selected' : '' }} value="all">{{ ___('common.All Students') }}</option>
                                     @foreach ($data['students'] as $item)
                                     <option {{ old('student', Session::get('student_id')) == $item->id ? 'selected' : '' }} value="{{ $item->id }}">{{ $item->first_name }} {{ $item->last_name }}
                                         @endforeach
@@ -642,6 +660,31 @@
 
         @if($data['results'] != null)
 
+        <!-- Export Buttons -->
+        <div class="card ot-card mb-24">
+            <div class="card-body">
+                <div class="d-flex align-items-center gap-3 flex-wrap">
+                    <a href="{{ route('parent-panel-attendance.print', [
+                        'student' => old('student', Session::get('student_id')),
+                        'view' => old('view', @$data['request']->view),
+                        'month' => old('month', @$data['request']->month),
+                        'date' => old('date', @$data['request']->date)
+                    ]) }}" target="_blank" class="btn btn-lg ot-btn-primary">
+                        <i class="fa fa-print me-2"></i>
+                        {{ ___('common.Print') }}
+                    </a>
+                    <a href="{{ route('parent-panel-attendance.export-excel', [
+                        'student' => old('student', Session::get('student_id')),
+                        'view' => old('view', @$data['request']->view),
+                        'month' => old('month', @$data['request']->month),
+                        'date' => old('date', @$data['request']->date)
+                    ]) }}" class="btn btn-lg ot-btn-primary">
+                        <i class="fa fa-file-excel me-2"></i>
+                        {{ ___('common.Export Excel') }}
+                    </a>
+                </div>
+            </div>
+        </div>
 
         <!--  table content start -->
         <div class="table-content table-basic mt-20">
@@ -660,104 +703,223 @@
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
-                        @if ( @$data['request']->view == '0')
-                            <table class="table table-bordered">
-                                <thead>
-                                    <tr>
-                                        @for ($i = 1; $i < date('t'); $i++)
-                                            <th>{{ $i }}</th>
-                                        @endfor
-                                        <th class="purchase text-success">{{ ___('common.P') }}</th>
-                                        <th class="purchase text-warning">{{ ___('common.L') }}</th>
-                                        <th class="purchase text-danger">{{ ___('common.A') }}</th>
-                                        <th class="purchase text-primary">{{ ___('common.F') }}</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        @php
-                                            $p = 0; $l = 0; $a = 0; $f = 0;
-                                        @endphp
-                                        @for ($i = 1; $i < date('t'); $i++)
-                                            <td>
-                                                @foreach ($data['results'] as $item)
-                                                    @if ((int)substr($item->date, -2) == $i)
+                        @if (is_array($data['results']) && isset($data['results'][0]['student']))
+                            {{-- All Students Mode --}}
+                            @foreach ($data['results'] as $studentData)
+                                {{-- Student Header --}}
+                                <div class="mb-4">
+                                    <div class="bg-light p-3 rounded mb-3">
+                                        <h5 class="mb-1">{{ $studentData['student']->first_name }} {{ $studentData['student']->last_name }}</h5>
+                                        <p class="mb-0 text-muted">
+                                            <strong>{{ ___('common.Class') }}:</strong> {{ $studentData['class_name'] ?? 'N/A' }} |
+                                            <strong>{{ ___('common.Section') }}:</strong> {{ $studentData['section_name'] ?? 'N/A' }}
+                                        </p>
+                                    </div>
+
+                                    @if ( @$data['request']->view == '0')
+                                        {{-- Short View for this student --}}
+                                        <table class="table table-bordered mb-3">
+                                            <thead>
+                                                <tr>
+                                                    @for ($i = 1; $i < date('t'); $i++)
+                                                        <th>{{ $i }}</th>
+                                                    @endfor
+                                                    <th class="purchase text-success">{{ ___('common.P') }}</th>
+                                                    <th class="purchase text-warning">{{ ___('common.L') }}</th>
+                                                    <th class="purchase text-danger">{{ ___('common.A') }}</th>
+                                                    <th class="purchase text-primary">{{ ___('common.F') }}</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    @php
+                                                        $p = 0; $l = 0; $a = 0; $f = 0;
+                                                    @endphp
+                                                    @for ($i = 1; $i < date('t'); $i++)
+                                                        <td>
+                                                            @foreach ($studentData['records'] as $item)
+                                                                @if ((int)substr($item->date, -2) == $i)
+                                                                    @if (@$item->attendance == App\Enums\AttendanceType::PRESENT)
+                                                                        <span class="text-success">{{ ___('common.P') }}</span>
+                                                                        @php ++$p @endphp
+                                                                    @elseif(@$item->attendance == App\Enums\AttendanceType::LATE)
+                                                                        <span class="text-warning">{{ ___('common.L') }}</span>
+                                                                        @php ++$l @endphp
+                                                                    @elseif(@$item->attendance == App\Enums\AttendanceType::ABSENT)
+                                                                        <span class="text-danger">{{ ___('common.A') }}</span>
+                                                                        @php ++$a @endphp
+                                                                    @elseif(@$item->attendance == App\Enums\AttendanceType::HALFDAY)
+                                                                        <span class="text-primary">{{ ___('common.F') }}</span>
+                                                                        @php ++$f @endphp
+                                                                    @else
+                                                                        <span>{{ ___('common.H') }}</span>
+                                                                    @endif
+                                                                @endif
+                                                            @endforeach
+                                                        </td>
+                                                    @endfor
+                                                    <td><span class="text-success">{{ $p }}</span></td>
+                                                    <td><span class="text-warning">{{ $l }}</span></td>
+                                                    <td><span class="text-danger">{{ $a }}</span></td>
+                                                    <td><span class="text-primary">{{ $f }}</span></td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    @else
+                                        {{-- Detail View for this student --}}
+                                        <table class="table table-bordered mb-3">
+                                            <thead class="thead">
+                                                <tr>
+                                                    <th class="purchase">{{ ___('common.date') }}</th>
+                                                    <th class="purchase">{{ ___('attendance.Attendance') }}</th>
+                                                    <th class="purchase">{{ ___('attendance.Note') }}</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @forelse ($studentData['records'] as $item)
+                                                <tr>
+                                                    <td>{{ dateFormat(@$item->date) }}</td>
+                                                    <td>
                                                         @if (@$item->attendance == App\Enums\AttendanceType::PRESENT)
-                                                            <span class="text-success">{{ ___('common.P') }}</span>
-                                                            @php
-                                                                ++$p
-                                                            @endphp
+                                                            <span class="badge-basic-success-text">{{ ___('common.Present') }}</span>
                                                         @elseif(@$item->attendance == App\Enums\AttendanceType::LATE)
-                                                            <span class="text-warning">{{ ___('common.L') }}</span>
-                                                            @php
-                                                                ++$l
-                                                            @endphp
+                                                            <span class="badge-basic-warning-text">{{ ___('common.Late') }}</span>
                                                         @elseif(@$item->attendance == App\Enums\AttendanceType::ABSENT)
-                                                            <span class="text-danger">{{ ___('common.A') }}</span>
-                                                            @php
-                                                                ++$a
-                                                            @endphp
+                                                            <span class="badge-basic-danger-text">{{ ___('common.Absent') }}</span>
                                                         @elseif(@$item->attendance == App\Enums\AttendanceType::HALFDAY)
-                                                            <span class="text-primary">{{ ___('common.F') }}</span>
-                                                            @php
-                                                                ++$f
-                                                            @endphp
+                                                            <span class="badge-basic-primary-text">{{ ___('common.half_day') }}</span>
                                                         @else
-                                                            <span>{{ ___('common.H') }}</span>
+                                                            <span class="badge-basic-info-text">{{ ___('common.Holiday') }}</span>
                                                         @endif
-                                                    @endif
-                                                @endforeach
-                                            </td>
-                                        @endfor
-                                        <td><span class="text-success">{{ $p }}</span></td>
-                                        <td><span class="text-warning">{{ $l }}</span></td>
-                                        <td><span class="text-danger">{{ $a }}</span></td>
-                                        <td><span class="text-primary">{{ $f }}</span></td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                                                    </td>
+                                                    <td>{{ old('note',@$item->note) }}</td>
+                                                </tr>
+                                                @empty
+                                                <tr>
+                                                    <td colspan="100%" class="text-center gray-color">
+                                                        <p class="mb-0">{{ ___('common.no_data_available') }}</p>
+                                                    </td>
+                                                </tr>
+                                                @endforelse
+                                            </tbody>
+                                        </table>
+                                    @endif
+
+                                    {{-- Summary Counts --}}
+                                    @php
+                                        $summary_p = 0; $summary_l = 0; $summary_a = 0; $summary_f = 0;
+                                        foreach ($studentData['records'] as $item) {
+                                            if ($item->attendance == App\Enums\AttendanceType::PRESENT) $summary_p++;
+                                            elseif ($item->attendance == App\Enums\AttendanceType::LATE) $summary_l++;
+                                            elseif ($item->attendance == App\Enums\AttendanceType::ABSENT) $summary_a++;
+                                            elseif ($item->attendance == App\Enums\AttendanceType::HALFDAY) $summary_f++;
+                                        }
+                                    @endphp
+                                    <div class="p-2 bg-light rounded">
+                                        <small>
+                                            <span class="text-success me-3"><strong>{{ ___('common.P') }}:</strong> {{ $summary_p }}</span>
+                                            <span class="text-warning me-3"><strong>{{ ___('common.L') }}:</strong> {{ $summary_l }}</span>
+                                            <span class="text-danger me-3"><strong>{{ ___('common.A') }}:</strong> {{ $summary_a }}</span>
+                                            <span class="text-primary"><strong>{{ ___('common.F') }}:</strong> {{ $summary_f }}</span>
+                                        </small>
+                                    </div>
+                                </div>
+
+                                @if (!$loop->last)
+                                    <hr class="my-4">
+                                @endif
+                            @endforeach
                         @else
-                            <table class="table table-bordered role-table" id="students_table">
-                                <thead class="thead">
-                                    <tr>
-                                        <th class="purchase">{{ ___('common.date') }}</th>
-                                        <th class="purchase">{{ ___('attendance.Attendance') }}</th>
-                                        <th class="purchase">{{ ___('attendance.Note') }}</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @forelse ($data['results'] as $item)
-                                    <tr>
-                                        <td>
-                                            @if (@$item->attendance == App\Enums\AttendanceType::PRESENT)
-                                                <span class="badge-basic-success-text">{{ ___('common.Present') }}</span>
-                                            @elseif(@$item->attendance == App\Enums\AttendanceType::LATE)
-                                                <span class="badge-basic-warning-text">{{ ___('common.Late') }}</span>
-                                            @elseif(@$item->attendance == App\Enums\AttendanceType::ABSENT)
-                                                <span class="badge-basic-danger-text">{{ ___('common.Absent') }}</span>
-                                            @elseif(@$item->attendance == App\Enums\AttendanceType::HALFDAY)
-                                                <span class="badge-basic-primary-text">{{ ___('common.half_day') }}</span>
-                                            @else
-                                                <span class="badge-basic-info-text">{{ ___('common.Holiday') }}</span>
-                                            @endif
-                                        </td>
-                                        <td>{{ dateFormat(@$item->date) }}</td>
-                                        <td>
-                                            {{ old('note',@$item->note) }}
-                                        </td>
-                                    </tr>
-                                    @empty
-                                    <tr>
-                                        <td colspan="100%" class="text-center gray-color">
-                                            <img src="{{ asset('images/no_data.svg') }}" alt="" class="mb-primary" width="100">
-                                            <p class="mb-0 text-center">{{ ___('common.no_data_available') }}</p>
-                                            <p class="mb-0 text-center text-secondary font-size-90">
-                                                {{ ___('common.please_add_new_entity_regarding_this_table') }}</p>
-                                        </td>
-                                    </tr>
-                                    @endforelse
-                                </tbody>
-                            </table>
+                            {{-- Single Student Mode --}}
+                            @if ( @$data['request']->view == '0')
+                                <table class="table table-bordered">
+                                    <thead>
+                                        <tr>
+                                            @for ($i = 1; $i < date('t'); $i++)
+                                                <th>{{ $i }}</th>
+                                            @endfor
+                                            <th class="purchase text-success">{{ ___('common.P') }}</th>
+                                            <th class="purchase text-warning">{{ ___('common.L') }}</th>
+                                            <th class="purchase text-danger">{{ ___('common.A') }}</th>
+                                            <th class="purchase text-primary">{{ ___('common.F') }}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            @php
+                                                $p = 0; $l = 0; $a = 0; $f = 0;
+                                            @endphp
+                                            @for ($i = 1; $i < date('t'); $i++)
+                                                <td>
+                                                    @foreach ($data['results'] as $item)
+                                                        @if ((int)substr($item->date, -2) == $i)
+                                                            @if (@$item->attendance == App\Enums\AttendanceType::PRESENT)
+                                                                <span class="text-success">{{ ___('common.P') }}</span>
+                                                                @php ++$p @endphp
+                                                            @elseif(@$item->attendance == App\Enums\AttendanceType::LATE)
+                                                                <span class="text-warning">{{ ___('common.L') }}</span>
+                                                                @php ++$l @endphp
+                                                            @elseif(@$item->attendance == App\Enums\AttendanceType::ABSENT)
+                                                                <span class="text-danger">{{ ___('common.A') }}</span>
+                                                                @php ++$a @endphp
+                                                            @elseif(@$item->attendance == App\Enums\AttendanceType::HALFDAY)
+                                                                <span class="text-primary">{{ ___('common.F') }}</span>
+                                                                @php ++$f @endphp
+                                                            @else
+                                                                <span>{{ ___('common.H') }}</span>
+                                                            @endif
+                                                        @endif
+                                                    @endforeach
+                                                </td>
+                                            @endfor
+                                            <td><span class="text-success">{{ $p }}</span></td>
+                                            <td><span class="text-warning">{{ $l }}</span></td>
+                                            <td><span class="text-danger">{{ $a }}</span></td>
+                                            <td><span class="text-primary">{{ $f }}</span></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            @else
+                                <table class="table table-bordered role-table" id="students_table">
+                                    <thead class="thead">
+                                        <tr>
+                                            <th class="purchase">{{ ___('common.date') }}</th>
+                                            <th class="purchase">{{ ___('attendance.Attendance') }}</th>
+                                            <th class="purchase">{{ ___('attendance.Note') }}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @forelse ($data['results'] as $item)
+                                        <tr>
+                                            <td>{{ dateFormat(@$item->date) }}</td>
+                                            <td>
+                                                @if (@$item->attendance == App\Enums\AttendanceType::PRESENT)
+                                                    <span class="badge-basic-success-text">{{ ___('common.Present') }}</span>
+                                                @elseif(@$item->attendance == App\Enums\AttendanceType::LATE)
+                                                    <span class="badge-basic-warning-text">{{ ___('common.Late') }}</span>
+                                                @elseif(@$item->attendance == App\Enums\AttendanceType::ABSENT)
+                                                    <span class="badge-basic-danger-text">{{ ___('common.Absent') }}</span>
+                                                @elseif(@$item->attendance == App\Enums\AttendanceType::HALFDAY)
+                                                    <span class="badge-basic-primary-text">{{ ___('common.half_day') }}</span>
+                                                @else
+                                                    <span class="badge-basic-info-text">{{ ___('common.Holiday') }}</span>
+                                                @endif
+                                            </td>
+                                            <td>{{ old('note',@$item->note) }}</td>
+                                        </tr>
+                                        @empty
+                                        <tr>
+                                            <td colspan="100%" class="text-center gray-color">
+                                                <img src="{{ asset('images/no_data.svg') }}" alt="" class="mb-primary" width="100">
+                                                <p class="mb-0 text-center">{{ ___('common.no_data_available') }}</p>
+                                                <p class="mb-0 text-center text-secondary font-size-90">
+                                                    {{ ___('common.please_add_new_entity_regarding_this_table') }}</p>
+                                            </td>
+                                        </tr>
+                                        @endforelse
+                                    </tbody>
+                                </table>
+                            @endif
                         @endif
                     </div>
                     <!--  pagination start -->
