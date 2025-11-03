@@ -117,12 +117,13 @@
                     </li>
                 @endif
 
-                <li class="sidebar-menu-item {{ set_menu(['student.study-material*']) }}">
+                {{-- Leave menu - Hidden as per requirement --}}
+                {{-- <li class="sidebar-menu-item {{ set_menu(['student.study-material*']) }}">
                     <a href="{{ route('parent.leave.index') }}" class="parent-item-content">
                         <i class="las la-book-reader"></i>
                         <span class="on-half-expanded">{{ ___('study-material.Leave') }}</span>
                     </a>
-                </li>
+                </li> --}}
 
                 <!-- Library end -->
                 @if (hasFeature('attendance'))
@@ -143,14 +144,15 @@
                     </li>
                 @endif
 
-                @if (hasModule('LiveChat'))
+                {{-- LiveChat menu - Hidden as per requirement --}}
+                {{-- @if (hasModule('LiveChat'))
                     <li class="sidebar-menu-item {{ set_menu(['guardian/live-chat*']) }}">
                         <a href="{{ route('guardian.live_chat') }}" class="parent-item-content">
                             <i class="lab la-facebook-messenger"></i>
                             <span class="on-half-expanded">{{ ___('settings.Live Chat') }}</span>
                         </a>
                     </li>
-                @endif
+                @endif --}}
                 @if (hasModule('Forums'))
                     @include('forums::menus.parents_forum_menu')
                 @endif

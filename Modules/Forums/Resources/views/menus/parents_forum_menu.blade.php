@@ -1,4 +1,5 @@
-<li class="sidebar-menu-item {{ set_menu(['forums*']) }}">
+{{-- Forums menu - Hidden as per requirement --}}
+{{-- <li class="sidebar-menu-item {{ set_menu(['forums*']) }}">
     <a class="parent-item-content has-arrow">
         <i class="las la-rss"></i>
         <span class="on-half-expanded">{{ ___('setting.Forums') }}</span>
@@ -12,9 +13,10 @@
             <a href="{{ route('parent-panel-forum.feeds') }}">{{ ___('setting.Forum Feeds') }}</a>
         </li>
     </ul>
-</li>
+</li> --}}
 
-<li class="sidebar-menu-item {{ set_menu(['memories*']) }}">
+{{-- Memories menu - Hidden as per requirement --}}
+{{-- <li class="sidebar-menu-item {{ set_menu(['memories*']) }}">
     <a class="parent-item-content has-arrow">
         <i class="las la-photo-video"></i>
         <span class="on-half-expanded">{{ ___('setting.Memories') }}</span>
@@ -24,4 +26,4 @@
             <a href="{{ route('parent-panel-memory.index') }}">{{ ___('setting.My Memories') }}</a>
         </li>
     </ul>
-</li>
+</li> --}}
