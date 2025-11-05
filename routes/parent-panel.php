@@ -15,8 +15,8 @@ use App\Http\Controllers\ParentPanel\ExamRoutineController;
 use App\Http\Controllers\ParentPanel\SubjectListController;
 use App\Http\Controllers\ParentPanel\ClassRoutineController;
 use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
-use Modules\VehicleTracker\Http\Controllers\ParentPanelTransportController;
-use Modules\VehicleTracker\Http\Controllers\StudentPanelTransportController;
+// use Modules\VehicleTracker\Http\Controllers\ParentPanelTransportController;
+// use Modules\VehicleTracker\Http\Controllers\StudentPanelTransportController;
 
 
 Route::middleware(saasMiddleware())->group(function () {
@@ -112,12 +112,12 @@ Route::middleware(saasMiddleware())->group(function () {
                         Route::get('parent/panel/issue-books', 'indexParent')->name('parent-panel-issue-books.index');
                     });
 
-                    Route::controller(ParentPanelTransportController::class)->prefix('parent-panel-transport')->group(function () {
-                        Route::get('/schdule', 'schdule')->name('parent-panel-transport.schdule');
-                        Route::get('/report', 'report')->name('parent-panel-transport.report');
-                        Route::get('/report-details/{id}', 'reportDetails')->name('parent-panel-transport.report-details');
-                        Route::get('/livetrack', 'livetrack')->name('parent-panel-transport.livetrack');
-                    });
+                    // Route::controller(ParentPanelTransportController::class)->prefix('parent-panel-transport')->group(function () {
+                    //     Route::get('/schdule', 'schdule')->name('parent-panel-transport.schdule');
+                    //     Route::get('/report', 'report')->name('parent-panel-transport.report');
+                    //     Route::get('/report-details/{id}', 'reportDetails')->name('parent-panel-transport.report-details');
+                    //     Route::get('/livetrack', 'livetrack')->name('parent-panel-transport.livetrack');
+                    // });
 
 
 

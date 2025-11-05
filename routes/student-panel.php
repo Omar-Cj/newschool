@@ -17,7 +17,7 @@ use App\Http\Controllers\StudentPanel\ExamRoutineController;
 use App\Http\Controllers\StudentPanel\SubjectListController;
 use App\Http\Controllers\StudentPanel\ClassRoutineController;
 use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
-use Modules\VehicleTracker\Http\Controllers\StudentPanelTransportController;
+// use Modules\VehicleTracker\Http\Controllers\StudentPanelTransportController;
 
 
 Route::middleware(saasMiddleware())->group(function () {
@@ -131,12 +131,12 @@ Route::middleware(saasMiddleware())->group(function () {
 
 
 
-                    Route::controller(StudentPanelTransportController::class)->prefix('student-panel-transport')->group(function () {
-                        Route::get('/schdule', 'schdule')->name('student-panel-transport.schdule');
-                        Route::get('/report', 'report')->name('student-panel-transport.report');
-                        Route::get('/report-details/{id}', 'reportDetails')->name('student-panel-transport.report-details');
-                        Route::get('/livetrack', 'livetrack')->name('student-panel-transport.livetrack');
-                    });
+                    // Route::controller(StudentPanelTransportController::class)->prefix('student-panel-transport')->group(function () {
+                    //     Route::get('/schdule', 'schdule')->name('student-panel-transport.schdule');
+                    //     Route::get('/report', 'report')->name('student-panel-transport.report');
+                    //     Route::get('/report-details/{id}', 'reportDetails')->name('student-panel-transport.report-details');
+                    //     Route::get('/livetrack', 'livetrack')->name('student-panel-transport.livetrack');
+                    // });
 
                 });
             });
