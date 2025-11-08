@@ -20,7 +20,8 @@ return [
         env('APP_MAIN_APP_URL','school-management.test'),
         '127.0.0.1',
         'http:://127.0.0.1:8000',
-        'localhost'
+        'localhost',
+        '10.55.1.32',  // Development server IP
     ],
 
     /**

@@ -85,19 +85,6 @@
                             @enderror
                         </div>
 
-                        <div class="col-md-6 mb-3">
-                            <label for="sub_domain_key" class="form-label">{{ ___('mainapp_schools.Sub domain key') }} <span
-                                    class="fillable">*</span></label>
-                            <input class="form-control ot-input @error('sub_domain_key') is-invalid @enderror" name="sub_domain_key" type="text"
-                                list="datalistOptions" id="sub_domain_key"
-                                placeholder="{{ ___('mainapp_schools.Enter sub domain key (0-9a-z)') }}" value="{{ old('sub_domain_key') }}">
-                            @error('sub_domain_key')
-                                <div id="validationServer04Feedback" class="invalid-feedback">
-                                    {{ $message }}
-                                </div>
-                            @enderror
-                        </div>
-
                         <div class="col-md-6">
                             <label for="exampleDataList" class="form-label">{{ ___('mainapp_common.address') }} <span
                                     class="fillable">*</span></label>
@@ -110,6 +97,61 @@
                                 </div>
                             @enderror
                         </div>
+
+                        <!-- School Administrator Section -->
+                        <div class="col-md-12 mb-3">
+                            <h5 class="mb-3 mt-2">{{ ___('mainapp_schools.School Administrator') }}</h5>
+                            <hr>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="admin_name" class="form-label">{{ ___('mainapp_common.name') }} <span class="fillable">*</span></label>
+                            <input class="form-control ot-input @error('admin_name') is-invalid @enderror" name="admin_name" type="text"
+                                id="admin_name"
+                                placeholder="{{ ___('mainapp_common.Enter name') }}" value="{{ old('admin_name') }}">
+                            @error('admin_name')
+                                <div id="validationServer04Feedback" class="invalid-feedback">
+                                    {{ $message }}
+                                </div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="admin_email" class="form-label">{{ ___('mainapp_common.email') }} <span class="fillable">*</span></label>
+                            <input class="form-control ot-input @error('admin_email') is-invalid @enderror" name="admin_email" type="email"
+                                id="admin_email"
+                                placeholder="{{ ___('mainapp_common.Enter email') }}" value="{{ old('admin_email') }}">
+                            @error('admin_email')
+                                <div id="validationServer04Feedback" class="invalid-feedback">
+                                    {{ $message }}
+                                </div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="admin_password" class="form-label">{{ ___('mainapp_common.password') }} <span class="fillable">*</span></label>
+                            <input class="form-control ot-input @error('admin_password') is-invalid @enderror" name="admin_password" type="password"
+                                id="admin_password"
+                                placeholder="{{ ___('mainapp_common.Enter password') }}">
+                            @error('admin_password')
+                                <div id="validationServer04Feedback" class="invalid-feedback">
+                                    {{ $message }}
+                                </div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="admin_password_confirm" class="form-label">{{ ___('mainapp_common.confirm_password') }} <span class="fillable">*</span></label>
+                            <input class="form-control ot-input @error('admin_password_confirmation') is-invalid @enderror" name="admin_password_confirmation" type="password"
+                                id="admin_password_confirm"
+                                placeholder="{{ ___('mainapp_common.Confirm password') }}">
+                            @error('admin_password_confirmation')
+                                <div id="validationServer04Feedback" class="invalid-feedback">
+                                    {{ $message }}
+                                </div>
+                            @enderror
+                        </div>
+
                         <div class="col-md-12 justify-content-center">
                            <code> {{___('mainapp_schools.School Superadmin Email Will Be As your Email Input')}} </code><br>
                            <code>{{ ___('mainapp_schools.Default Password Will Be : 123456') }} </code>
@@ -132,12 +174,4 @@
 
 
 @push('script')
-    <script>
-        const inputField = document.getElementById('sub_domain_key');
-        inputField.addEventListener('input', function(event) {
-        const currentValue = event.target.value;
-        const sanitizedValue = currentValue.replace(/[^0-9a-z]/g, '');
-        event.target.value = sanitizedValue;
-        });
-    </script>
 @endpush

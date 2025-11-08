@@ -5,12 +5,14 @@ namespace Modules\MainApp\Http\Repositories;
 use PDO;
 use App\Enums\Status;
 use App\Models\Tenant;
+use App\Models\User;
 use App\Enums\Settings;
 use Illuminate\Support\Str;
 use App\Enums\PricingDuration;
 use App\Enums\SubscriptionStatus;
 use App\Traits\ReturnFormatTrait;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Modules\MainApp\Entities\School;
 use Modules\MainApp\Entities\Package;
 use Illuminate\Support\Facades\Session;
@@ -79,6 +81,8 @@ class SchoolRepository implements SchoolInterface
             $school->email              = $request['email'];
             $school->status             = Status::INACTIVE;
             $school->save();
+
+            $this->createSchoolAdminUser($school, $request);
         }
         return $school;
 
@@ -187,6 +191,22 @@ class SchoolRepository implements SchoolInterface
         } catch (\Throwable $th) {
             DB::rollback();
             return $this->responseWithError(___('alert.something_went_wrong_please_try_again'), []);
+        }
+    }
+
+    protected function createSchoolAdminUser($school, $request)
+    {
+        try {
+            User::create([
+                'name' => $request['admin_name'],
+                'email' => $request['admin_email'],
+                'password' => Hash::make($request['admin_password']),
+                'school_id' => $school->id,
+                'role_id' => 2, // ADMIN role
+                'status' => 1, // Active
+            ]);
+        } catch (\Throwable $th) {
+            \Log::error('Failed to create school admin user: ' . $th->getMessage());
         }
     }
 }

@@ -17,6 +17,21 @@ trait SaasHelperTrait
 
     protected function subscriptionUpdateInTenant($subscription, $tenant_db)
     {
+        // Skip tenant database replication in single-database mode
+        if (!env('APP_SAAS', false)) {
+            Log::info('Skipping tenant database replication - single database mode (APP_SAAS=false)');
+            return;
+        }
+
+        // Skip if no tenant database specified
+        if (empty($tenant_db)) {
+            Log::warning('Skipping tenant database replication - no tenant database name provided', [
+                'subscription_id' => $subscription?->id,
+                'school_id' => $subscription?->school_id
+            ]);
+            return;
+        }
+
         try {
             $this->subscription           = $subscription;
             $this->tenant_db_name              = $tenant_db;

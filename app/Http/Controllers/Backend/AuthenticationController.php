@@ -69,12 +69,22 @@ class AuthenticationController extends Controller
         }
 
         if ($this->loginRepository->login($request->all())) {
-            if ($user->role_id == 6) // student role id 8
+            // System Admin (role_id = 0) routes to MainApp dashboard
+            if ($user->role_id == 0) {
+                return redirect()->route('mainapp.dashboard');
+            }
+            // Student role
+            elseif ($user->role_id == 6) {
                 return redirect()->route('student-panel-dashboard.index');
-            elseif ($user->role_id == 7)
+            }
+            // Parent role
+            elseif ($user->role_id == 7) {
                 return redirect()->route('parent-panel-dashboard.index');
-            else
+            }
+            // All other roles (school admins, teachers, staff)
+            else {
                 return redirect()->route('dashboard');
+            }
         }
 
         return back()->with('danger', ___('users_roles.something_went_wrong_please_try_again'));

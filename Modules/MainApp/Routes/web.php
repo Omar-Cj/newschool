@@ -33,8 +33,14 @@ use Modules\MainApp\Http\Controllers\AuthenticationController;
 */
 
 // Non-auth routes
+// Single database multi-tenant architecture: MainApp routes are accessible
+// for all users including System Admin (role_id=0, school_id=NULL) who manages
+// all schools from a single application instance
+//
+// NOTE: System Admin uses the main application's login (not MainApp login)
+// MainApp homepage and login are commented out to prevent route conflicts
 
-if (Request::getHost() == env('APP_MAIN_APP_URL') && env('APP_SAAS')) {
+if (true) { // Single database multi-tenant architecture
 
 
     Route::middleware([
@@ -42,11 +48,12 @@ if (Request::getHost() == env('APP_MAIN_APP_URL') && env('APP_SAAS')) {
         AccessFromCentralDomains::class,
     ])->group(function () {
 
-        Route::get('/',               [MainAppController::class, 'index'])->name('Home');
-        Route::group(['middleware' => ['not.auth.routes']], function () {
-            Route::get('/login',      [AuthenticationController::class, 'loginPage'])->name('login');
-            Route::post('/login',     [AuthenticationController::class, 'login'])->name('login-auth');
-        });
+        // Commented out to prevent conflict with main app routes
+        // Route::get('/',               [MainAppController::class, 'index'])->name('Home');
+        // Route::group(['middleware' => ['not.auth.routes']], function () {
+        //     Route::get('/login',      [AuthenticationController::class, 'loginPage'])->name('login');
+        //     Route::post('/login',     [AuthenticationController::class, 'login'])->name('login-auth');
+        // });
 
         Route::post('/contact',                  [MainAppController::class, 'storeContact'])->name('contact');
         Route::post('/subscribe',                [MainAppController::class, 'storeSubscribe'])->name('subscribe');
@@ -64,9 +71,13 @@ if (Request::getHost() == env('APP_MAIN_APP_URL') && env('APP_SAAS')) {
         // auth routes
         Route::group(['middleware' =>   ['auth.routes']], function () {
 
-            Route::post('logout',       [AuthenticationController::class, 'logout'])->name('logout');
+            // Commented out to prevent route name collision with main app logout
+            // System Admins and school users should use the main application's logout functionality
+            // Route::post('logout',       [AuthenticationController::class, 'logout'])->name('logout');
+
             Route::group(['middleware' => 'AdminPanel'], function () {
-                Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
+                // MainApp dashboard uses unique path to prevent collision with main app dashboard
+                Route::get('mainapp/dashboard', [DashboardController::class, 'index'])->name('mainapp.dashboard');
             });
 
             Route::get('/contacts',     [MainAppController::class, 'getContacts'])->name('contacts');
@@ -181,3 +192,10 @@ else
         }
     }
 }
+
+
+
+
+
+
+

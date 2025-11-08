@@ -58,7 +58,6 @@
                             <thead class="thead">
                                 <tr>
                                     <th class="serial">{{ ___('mainapp_common.sr_no') }}</th>
-                                    <th class="purchase">{{ ___('mainapp_schools.Sub domain') }}</th>
                                     <th class="purchase">{{ ___('mainapp_common.name') }}</th>
                                     <th class="purchase">{{ ___('mainapp_schools.Package') }}</th>
                                     <th class="purchase">{{ ___('mainapp_common.phone') }}</th>
@@ -72,16 +71,6 @@
                                 @forelse ($data['schools'] as $key => $row)
                                 <tr id="row_{{ $row->id }}">
                                     <td class="serial">{{ ++$key }}</td>
-                                    <td>
-                                        @if($row->status == App\Enums\Status::ACTIVE && $row->tenant)
-                                            <a href="https://{{ $row->sub_domain_key.'.'.env('APP_MAIN_APP_URL') }}" target="_blank">
-                                                    {{ $row->sub_domain_key.'.'.env('APP_MAIN_APP_URL') }}
-                                            </a>
-                                        @else
-                                              <span class="loader"></span>
-
-                                        @endif
-                                    </td>
                                     <td>{{ $row->name }}</td>
 
                                     <td>{{ $row->package->name }}</td>
@@ -89,7 +78,7 @@
                                     <td>{{ $row->email }}</td>
                                     <td>{{ $row->address }}</td>
                                     <td>
-                                        @if ($row->status == App\Enums\Status::ACTIVE && $row->tenant)
+                                        @if ($row->status == App\Enums\Status::ACTIVE)
                                             <span class="badge-basic-success-text">{{ ___('mainapp_common.active') }}</span>
                                         @else
                                             <span class="badge-basic-danger-text">{{ ___('mainapp_common.inactive') }}</span>

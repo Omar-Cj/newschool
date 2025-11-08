@@ -44,7 +44,13 @@ class SubscriptionRepository implements SubscriptionInterface
 
     public function getAll()
     {
-        return $this->model->latest()->paginate(Settings::PAGINATE);
+        return $this->model
+            ->with([
+                'school:id,name,email,phone',
+                'package:id,name'
+            ])
+            ->latest()
+            ->paginate(Settings::PAGINATE);
     }
 
     public function show($id)
@@ -62,8 +68,8 @@ class SubscriptionRepository implements SubscriptionInterface
             // $this->updateSchoolStatus($subscription->school_id, Status::ACTIVE);
             $tenant = Tenant::where('id', $this->school->sub_domain_key)->first();
 
-            if ($tenant){
-                $this->subscriptionUpdateInTenant($subscription, $tenant?->tenancy_db_name);
+            if (env('APP_SAAS', false) && $tenant && $tenant->tenancy_db_name) {
+                $this->subscriptionUpdateInTenant($subscription, $tenant->tenancy_db_name);
             } else {
                 if($request->status == SubscriptionStatus::APPROVED) {
                      \Log::info("TestJob ran successfully 1.");
@@ -210,10 +216,9 @@ class SubscriptionRepository implements SubscriptionInterface
             $this->saasSchool->cacheForget();
             $this->school        = School::find($request->school);
             $this->package       = Package::find($request->package);
-            foreach ($this->package->packageChilds ?? [] as $value) {
-                $this->features[]       = @$value->feature->key;
-                $this->featuresName[]   = @$value->feature->title;
-            }
+
+            // Calculate expiry date and extract features from package
+            $this->featureInfo();
             $this->subscription = new $this->model();
             $this->subscription->package_id         = @$this->package->id;
             $this->subscription->price              = @$this->package->price;
@@ -231,10 +236,21 @@ class SubscriptionRepository implements SubscriptionInterface
 
 
             $this->updateSchoolStatus($this->subscription->school_id, Status::ACTIVE);
-            $tenant = Tenant::find($this->school->sub_domain_key);
-            $tenant_db_name = $tenant?->tenancy_db_name;
 
-            $this->subscriptionUpdateInTenant($this->subscription, $tenant_db_name);
+            // Only replicate to tenant database if in SaaS mode with separate databases
+            if (env('APP_SAAS', false)) {
+                $tenant = Tenant::find($this->school->sub_domain_key);
+                $tenant_db_name = $tenant?->tenancy_db_name;
+
+                if ($tenant_db_name) {
+                    $this->subscriptionUpdateInTenant($this->subscription, $tenant_db_name);
+                } else {
+                    Log::warning('Tenant found but no database name assigned', [
+                        'school_id' => $this->school->id,
+                        'sub_domain_key' => $this->school->sub_domain_key
+                    ]);
+                }
+            }
 
             $this->subscription->save();
 

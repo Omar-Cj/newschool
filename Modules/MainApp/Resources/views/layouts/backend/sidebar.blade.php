@@ -9,7 +9,7 @@
             <!-- parent menu list start  -->
             <ul class="sidebar-dropdown-menu">
                 <li class="sidebar-menu-item {{ set_menu(['dashboard']) }}">
-                    <a href="{{ route('dashboard') }}" class="parent-item-content">
+                    <a href="{{ route('mainapp.dashboard') }}" class="parent-item-content">
                         <i class="las la-desktop"></i>
                         <span class="on-half-expanded">{{ ___('mainapp_dashboard.Dashboard') }}</span>
                     </a>

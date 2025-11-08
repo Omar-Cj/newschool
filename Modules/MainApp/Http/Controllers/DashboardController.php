@@ -57,7 +57,7 @@ class DashboardController extends Controller
         ->groupBy(DB::raw('YEAR(created_at)'), DB::raw('MONTH(created_at)'))
         ->orderBy('year', 'asc')
         ->orderBy('month', 'asc')
-        ->where('payment_status', 1)
+        ->where('status', 1)  // Filter for active subscriptions (status: 0=inactive, 1=active)
         ->get();
 
         $months  = [];

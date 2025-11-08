@@ -81,5 +81,29 @@ class DashboardController extends Controller
             return response()->json(['error' => $th->getMessage()], 500);
         }
     }
-    
+
+    /**
+     * School dashboard - main dashboard for school users (admins, teachers, staff)
+     */
+    public function schoolDashboard()
+    {
+        return $this->index();
+    }
+
+    /**
+     * LMS dashboard
+     */
+    public function lmsDashboard()
+    {
+        return $this->index();
+    }
+
+    /**
+     * CRM dashboard
+     */
+    public function crmDashboard()
+    {
+        return $this->index();
+    }
+
 }

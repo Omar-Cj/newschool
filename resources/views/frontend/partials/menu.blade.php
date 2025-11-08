@@ -47,14 +47,18 @@
                                         @if(!\Auth::check())
                                         <a href="{{route('login')}}">{{ ___('frontend.Login') }} </a>
                                         @else
-                                            @if(\Auth::user()->role_id == 6)
+                                            @if(\Auth::user()->role_id == 0)
+                                                {{-- System Admin (role_id=0) routes to MainApp dashboard --}}
+                                                <a href="{{route('mainapp.dashboard')}}">{{ ___('frontend.Dashboard') }} </a>
+                                            @elseif(\Auth::user()->role_id == 6)
+                                                {{-- Student routes to student panel --}}
                                                 <a href="{{route('student-panel-dashboard.index')}}">{{ ___('frontend.Dashboard') }} </a>
-
                                             @elseif(\Auth::user()->role_id == 7)
+                                                {{-- Parent routes to parent panel --}}
                                                 <a href="{{route('parent-panel-dashboard.index')}}">{{ ___('frontend.Dashboard') }} </a>
                                             @else
-                                                <a href="{{route('dashboard')}}">{{ ___('frontend.Dashboard') }} </a>
-
+                                                {{-- School users (admins, teachers, staff) route to school dashboard --}}
+                                                <a href="{{route('school_dashboard')}}">{{ ___('frontend.Dashboard') }} </a>
                                             @endif
                                         @endif
                                     </div>

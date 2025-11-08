@@ -10,7 +10,7 @@ class Subscription extends Model
 {
     use HasFactory;
 
-    protected $fillable = [];
+    protected $fillable = ['school_id', 'package_id', 'payment_status'];
 
     protected $casts = [
         'features_name' => 'array',

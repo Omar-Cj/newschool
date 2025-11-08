@@ -7,6 +7,7 @@ use App\Models\Role;
 
 class RoleEnum
 {
+    const MAIN_SYSTEM_ADMIN = 0;  // Main System Administrator (SaaS level)
     const SUPERADMIN = 1;
     const ADMIN = 2;
     const STAFF = 3;

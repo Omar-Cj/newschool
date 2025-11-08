@@ -36,7 +36,7 @@
                             <thead class="thead">
                                 <tr>
                                     <th class="serial">{{ ___('mainapp_common.sr_no') }}</th>
-                                    <th class="purchase">{{ ___('mainapp_subscriptions.Sub domain key') }}</th>
+                                    <th class="purchase">{{ ___('mainapp_schools.School') }}</th>
                                     <th class="purchase">{{ ___('mainapp_subscriptions.Package') }}</th>
                                     <th class="purchase">{{ ___('mainapp_common.Price') }}</th>
                                     <th class="purchase">{{ ___('mainapp_subscriptions.Purchase Date') }}</th>
@@ -52,9 +52,9 @@
                                 @forelse ($data['subscriptions'] as $key => $row)
                                 <tr id="row_{{ $row->id }}">
                                     <td class="serial">{{ ++$key }}</td>
-                                    <td>{{ @$row->school->sub_domain_key }}</td>
-                                    <td>{{ $row->package->name }}</td>
-                                    <td>{{ $row->package->price }}</td>
+                                    <td title="{{ @$row->school->email }}">{{ Str::limit(@$row->school->name, 30) ?? ___('mainapp_common.N/A') }}</td>
+                                    <td>{{ $row->package->name ?? ___('mainapp_common.N/A') }}</td>
+                                    <td>{{ $row->price }}</td>
                                     <td>{{ dateFormat(@$row->created_at) }}</td>
                                     <td>{{ $row->expiry_date ? dateFormat(@$row->expiry_date) : ___('mainapp_subscriptions.Lifetime') }}</td>
                                     <td>{{ $row->trx_id }}</td>
