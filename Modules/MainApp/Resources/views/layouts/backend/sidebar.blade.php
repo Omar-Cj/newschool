@@ -82,7 +82,7 @@
                     </a>
                 </li>
                 <li class="sidebar-menu-item {{ set_menu(['general-settings*']) }}">
-                    <a href="{{ route('settings.general-settings') }}" class="parent-item-content">
+                    <a href="{{ route('mainapp.settings.general-settings') }}" class="parent-item-content">
                         <i class="las la-cog"></i>
                         <span class="on-half-expanded">{{ ___('mainapp_settings.General settings') }}</span>
                     </a>

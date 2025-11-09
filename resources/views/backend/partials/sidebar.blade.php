@@ -1032,70 +1032,70 @@
                             @if (hasPermission('general_settings_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['settings.general-settings']) }}">
                                     <a
-                                        href="{{ route('settings.general-settings') }}">{{ ___('settings.general_settings') }}</a>
+                                        href="{{ safeRoute('settings.general-settings') }}">{{ ___('settings.general_settings') }}</a>
                                 </li>
                             @endif
 
                             @if (!hasPermission('notification-settings_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['settings.notification-settings']) }}">
                                     <a
-                                        href="{{ route('settings.notification-settings') }}">{{ ___('settings.notification_setting') }}</a>
+                                        href="{{ safeRoute('settings.notification-settings') }}">{{ ___('settings.notification_setting') }}</a>
                                 </li>
                             @endif
 
                             @if (hasPermission('storage_settings_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['settings.storagesetting']) }}">
                                     <a
-                                        href="{{ route('settings.storagesetting') }}">{{ ___('settings.storage_settings') }}</a>
+                                        href="{{ safeRoute('settings.storagesetting') }}">{{ ___('settings.storage_settings') }}</a>
                                 </li>
                             @endif
 
                             @if (hasPermission('task_schedules_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['settings.task-schedulers']) }}">
                                     <a
-                                        href="{{ route('settings.task-schedulers') }}">{{ ___('settings.task_schedules') }}</a>
+                                        href="{{ safeRoute('settings.task-schedulers') }}">{{ ___('settings.task_schedules') }}</a>
                                 </li>
                             @endif
 
                             @if (hasPermission('software_update_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['settings.software-update']) }}">
                                     <a
-                                        href="{{ route('settings.software-update') }}">{{ ___('settings.software_update') }}</a>
+                                        href="{{ safeRoute('settings.software-update') }}">{{ ___('settings.software_update') }}</a>
                                 </li>
                             @endif
 
                             @if (hasPermission('recaptcha_settings_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['settings.recaptcha-setting']) }}">
                                     <a
-                                        href="{{ route('settings.recaptcha-setting') }}">{{ ___('settings.recaptcha_settings') }}</a>
+                                        href="{{ safeRoute('settings.recaptcha-setting') }}">{{ ___('settings.recaptcha_settings') }}</a>
                                 </li>
                             @endif
 
                             @if (hasPermission('sms_settings_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['settings.recaptcha-setting']) }}">
                                     <a
-                                        href="{{ route('settings.sms-setting') }}">{{ ___('settings.sms_settings') }}</a>
+                                        href="{{ safeRoute('settings.sms-setting') }}">{{ ___('settings.sms_settings') }}</a>
                                 </li>
                             @endif
 
                             @if (hasPermission('payment_gateway_settings_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['settings.payment-gateway-setting']) }}">
                                     <a
-                                        href="{{ route('settings.payment-gateway-setting') }}">{{ ___('settings.payment_gateway_settings') }}</a>
+                                        href="{{ safeRoute('settings.payment-gateway-setting') }}">{{ ___('settings.payment_gateway_settings') }}</a>
                                 </li>
                             @endif
 
                             @if (hasPermission('email_settings_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['settings.mail-setting']) }}">
                                     <a
-                                        href="{{ route('settings.mail-setting') }}">{{ ___('settings.email_settings') }}</a>
+                                        href="{{ safeRoute('settings.mail-setting') }}">{{ ___('settings.email_settings') }}</a>
                                 </li>
                             @endif
 
                             @if (hasPermission('email_settings_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['settings.notification-settings']) }}">
                                     <a
-                                        href="{{ route('settings.notification-settings') }}">{{ ___('settings.notification_setting') }}</a>
+                                        href="{{ safeRoute('settings.notification-settings') }}">{{ ___('settings.notification_setting') }}</a>
                                 </li>
                             @endif
 

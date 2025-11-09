@@ -1222,3 +1222,56 @@ if (!function_exists('activeBranch')) {
         }
     }
 }
+
+/**
+ * Get the appropriate dashboard route based on user role and context
+ *
+ * This helper provides a single source of truth for dashboard routing across the application.
+ * It respects the multi-tenant architecture and directs users to their appropriate dashboard:
+ * - System Admin (role_id=0, school_id=NULL) → MainApp dashboard
+ * - School users (Super Admin, Admin, Staff, Teachers) → School dashboard
+ * - Students → Student panel dashboard
+ * - Parents/Guardians → Parent panel dashboard
+ *
+ * @return string Dashboard route URL
+ */
+if (!function_exists('getDashboardRoute')) {
+    function getDashboardRoute(): string
+    {
+        try {
+            $user = Auth::user();
+
+            // Guest users go to login
+            if (!$user) {
+                return route('login');
+            }
+
+            // System Admin with no school assignment → MainApp dashboard
+            if ($user->role_id === \App\Enums\RoleEnum::MAIN_SYSTEM_ADMIN
+                && $user->school_id === null) {
+                return route('mainapp.dashboard');
+            }
+
+            // Student → Student panel dashboard
+            if ($user->role_id === \App\Enums\RoleEnum::STUDENT) {
+                return route('student-panel-dashboard.index');
+            }
+
+            // Parent/Guardian → Parent panel dashboard
+            if ($user->role_id === \App\Enums\RoleEnum::GUARDIAN) {
+                return route('parent-panel-dashboard.index');
+            }
+
+            // School admin, staff, teachers → School dashboard
+            return route('dashboard');
+
+        } catch (\Throwable $th) {
+            // Fallback to login on any error
+            Log::warning('getDashboardRoute error', [
+                'error' => $th->getMessage(),
+                'user_id' => Auth::id() ?? 'guest'
+            ]);
+            return route('login');
+        }
+    }
+}

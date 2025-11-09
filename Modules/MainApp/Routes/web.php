@@ -160,9 +160,9 @@ if (true) { // Single database multi-tenant architecture
                 Route::put('/password/update/store', 'passwordUpdateStore')->name('password-update-store');
             });
 
-            Route::controller(SettingController::class)->prefix('/')->group(function () {
-                Route::get('/general-settings',  'generalSettings')->name('settings.general-settings');
-                Route::post('/general-settings', 'updateGeneralSetting')->name('settings.general-settings');
+            Route::controller(SettingController::class)->prefix('mainapp')->group(function () {
+                Route::get('/general-settings',  'generalSettings')->name('mainapp.settings.general-settings');
+                Route::post('/general-settings', 'updateGeneralSetting')->name('mainapp.settings.general-settings.update');
             });
 
             Route::controller(LanguageController::class)->prefix('languages')->group(function () {

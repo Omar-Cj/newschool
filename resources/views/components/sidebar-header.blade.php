@@ -1,6 +1,12 @@
 <div class="sidebar-header">
     <div class="sidebar-logo">
-        <a href="{{ route('dashboard') }}">
+        <a href="{{ Auth::user()->role_id === \App\Enums\RoleEnum::MAIN_SYSTEM_ADMIN && Auth::user()->school_id === null
+                    ? route('mainapp.dashboard')
+                    : (Auth::user()->role_id === \App\Enums\RoleEnum::STUDENT
+                        ? route('student-panel-dashboard.index')
+                        : (Auth::user()->role_id === \App\Enums\RoleEnum::GUARDIAN
+                            ? route('parent-panel-dashboard.index')
+                            : route('dashboard'))) }}">
             <input type="hidden" name="global_light_logo" id="global_light_logo" value="{{ @globalAsset(setting('light_logo'), '154X38.webp') }}" />
             <input type="hidden" name="global_dark_logo" id="global_dark_logo" value="{{ @globalAsset(setting('dark_logo'), '154X38.webp') }}" />
 

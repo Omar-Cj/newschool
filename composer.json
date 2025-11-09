@@ -43,7 +43,8 @@
             "Modules\\": "Modules/"
         },
         "files" : [
-            "app/Helpers/common-helpers.php"
+            "app/Helpers/common-helpers.php",
+            "app/Helpers/route_helpers.php"
         ]
     },
     "autoload-dev": {

@@ -26,7 +26,7 @@
                 <h4>{{ ___('main_settings.General Settings') }}</h4>
             </div>
             <div class="card-body">
-                <form action="{{ route('settings.general-settings') }}" enctype="multipart/form-data" method="post"
+                <form action="{{ route('mainapp.settings.general-settings.update') }}" enctype="multipart/form-data" method="post"
                     id="visitForm">
                     @csrf
                     <div class="row mb-3">
