@@ -18,6 +18,9 @@ class SchoolContext
      * Establishes school context from authenticated user and shares
      * context data with views. Handles both school users and admin users.
      *
+     * SECURITY: School users (role_id >= 1) ALWAYS use their user->school_id.
+     * Only System Admins (role_id = 0) can use session-based school context switching.
+     *
      * @param Request $request
      * @param Closure $next
      * @return mixed
@@ -27,11 +30,21 @@ class SchoolContext
         // Only process authenticated requests
         if (Auth::check()) {
             $user = Auth::user();
-            $schoolId = $this->determineSchoolId($user);
             $isAdmin = $this->isAdminUser($user);
 
-            // Store school_id in session for later access
-            session(['school_id' => $schoolId]);
+            // CRITICAL FIX: Clear any stale session data first
+            $this->cleanupStaleSessionData($user, $isAdmin);
+
+            $schoolId = $this->determineSchoolId($user);
+
+            // SECURITY FIX: Only store in session for admin users who can switch context
+            // School users should NEVER have their school_id stored in session to prevent contamination
+            if ($isAdmin && $schoolId !== null) {
+                session(['school_id' => $schoolId]);
+            } elseif (!$isAdmin) {
+                // For school users, remove any session school_id to prevent contamination
+                session()->forget('school_id');
+            }
 
             // Determine current school context
             $currentSchool = $this->getCurrentSchool($schoolId, $isAdmin);
@@ -48,6 +61,9 @@ class SchoolContext
             $request->attributes->set('school_id', $schoolId);
             $request->attributes->set('current_school', $currentSchool);
             $request->attributes->set('is_admin', $isAdmin);
+        } else {
+            // User not authenticated - clear all session context
+            session()->forget(['school_id', 'admin_school_context']);
         }
 
         return $next($request);
@@ -56,21 +72,47 @@ class SchoolContext
     /**
      * Determine the school ID for the authenticated user.
      *
-     * For admin users: returns the explicitly set school context or default.
-     * For school users: returns the school_id from user record.
+     * SECURITY CRITICAL: Precedence logic ensures data isolation:
+     * - System Admin (role_id=0, school_id=NULL): Can switch context via session
+     * - School Users (role_id>=1): MUST use their user->school_id, session is IGNORED
      *
      * @param \App\Models\User $user
-     * @return int|null
+     * @return int|null Returns school_id or NULL for System Admin viewing all schools
      */
     protected function determineSchoolId($user): ?int
     {
-        // Admin users can have an explicit school context in session
-        if ($this->isAdminUser($user)) {
-            return session('admin_school_context') ?? $user->school_id ?? null;
+        // SECURITY FIX: System Admin (role_id=0) with NULL school_id can use session context
+        if ($user->role_id === RoleEnum::MAIN_SYSTEM_ADMIN && $user->school_id === null) {
+            // System Admin can switch context or see all schools (NULL)
+            return session('admin_school_context') ?? null;
         }
 
-        // School users use their school_id as school identifier
-        return $user->school_id ?? null;
+        // CRITICAL: School users (including school-level admins) MUST use their assigned school_id
+        // Session is NEVER used for school users to prevent data leakage
+        if ($user->school_id !== null) {
+            // Log security violation if session attempted to override school user's school_id
+            if (session()->has('admin_school_context') && session('admin_school_context') != $user->school_id) {
+                \Log::warning('Session school context mismatch detected for school user', [
+                    'user_id' => $user->id,
+                    'user_school_id' => $user->school_id,
+                    'session_school_id' => session('admin_school_context'),
+                    'role_id' => $user->role_id,
+                ]);
+                // Clear the invalid session
+                session()->forget('admin_school_context');
+            }
+
+            return $user->school_id;
+        }
+
+        // School-level admins with school_id can optionally switch context
+        if ($this->isAdminUser($user) && $user->school_id !== null) {
+            // School admins can only view their own school
+            return $user->school_id;
+        }
+
+        // Fallback: No school context
+        return null;
     }
 
     /**
@@ -213,5 +255,60 @@ class SchoolContext
     public static function clearAdminSchoolContext(): void
     {
         session()->forget('admin_school_context');
+    }
+
+    /**
+     * Clean up stale session data to prevent context contamination.
+     *
+     * CRITICAL: Ensures session data doesn't persist incorrectly between user switches
+     * or when non-admin users have session data they shouldn't have.
+     *
+     * @param \App\Models\User $user Current authenticated user
+     * @param bool $isAdmin Whether user is admin
+     * @return void
+     */
+    protected function cleanupStaleSessionData($user, bool $isAdmin): void
+    {
+        // For school users (non-System Admin), always clear admin context session
+        if (!($user->role_id === RoleEnum::MAIN_SYSTEM_ADMIN && $user->school_id === null)) {
+            // School users should never have admin_school_context
+            if (session()->has('admin_school_context')) {
+                \Log::warning('Clearing admin_school_context for non-System Admin user', [
+                    'user_id' => $user->id,
+                    'role_id' => $user->role_id,
+                    'user_school_id' => $user->school_id,
+                ]);
+                session()->forget('admin_school_context');
+            }
+        }
+
+        // Validate school_id in session matches user's school_id for school users
+        if (!$isAdmin && $user->school_id !== null) {
+            $sessionSchoolId = session('school_id');
+            if ($sessionSchoolId !== null && $sessionSchoolId !== $user->school_id) {
+                \Log::warning('Session school_id mismatch for school user - clearing session', [
+                    'user_id' => $user->id,
+                    'user_school_id' => $user->school_id,
+                    'session_school_id' => $sessionSchoolId,
+                ]);
+                session()->forget('school_id');
+            }
+        }
+
+        // For System Admin with NULL school_id, validate admin_school_context is a valid school
+        if ($user->role_id === RoleEnum::MAIN_SYSTEM_ADMIN && $user->school_id === null) {
+            $adminContext = session('admin_school_context');
+            if ($adminContext !== null) {
+                // Optionally validate that the school exists
+                $schoolExists = \DB::table('schools')->where('id', $adminContext)->exists();
+                if (!$schoolExists) {
+                    \Log::warning('Invalid admin_school_context detected - clearing', [
+                        'user_id' => $user->id,
+                        'invalid_school_id' => $adminContext,
+                    ]);
+                    session()->forget('admin_school_context');
+                }
+            }
+        }
     }
 }

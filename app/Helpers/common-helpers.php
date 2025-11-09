@@ -30,20 +30,42 @@ function getPagination($ITEM)
 }
 
 
+/**
+ * Get setting value for the current school context
+ *
+ * This helper respects school context through SchoolScope automatically applied to Setting model.
+ * - School users (school_id NOT NULL): Only see their school's settings
+ * - System Admin (school_id NULL): Sees all settings (no filtering applied)
+ *
+ * Cache keys include school_id to prevent cross-school data leakage
+ *
+ * @param string $name Setting name to retrieve
+ * @return mixed|null Setting value or null if not found
+ */
 function setting($name)
 {
     try {
-        if ($name == 'currency_symbol') {
-            $currencyCode = Setting::where('name', 'currency_code')->first()?->value;
-            return Currency::where('code', $currencyCode)->first()?->symbol;
-        }
+        // Build school-aware cache key to prevent cross-school data leakage
+        // System Admin (NULL school_id) gets separate cache namespace
+        $schoolId = auth()->check() ? (auth()->user()->school_id ?? 'admin') : 'guest';
+        $cacheKey = "setting_{$name}_school_{$schoolId}";
 
-        $setting_data = Setting::where('name', $name)->first();
-        if ($setting_data) {
-            return $setting_data->value;
-        }
+        // Cache for 1 hour with school-specific key
+        return Cache::remember($cacheKey, 3600, function () use ($name) {
+            // Special handling for currency_symbol
+            if ($name == 'currency_symbol') {
+                // SchoolScope automatically filters both queries by school_id
+                $currencyCode = Setting::where('name', 'currency_code')->first()?->value;
+                return Currency::where('code', $currencyCode)->first()?->symbol;
+            }
 
-        return null;
+            // SchoolScope automatically filters this query by authenticated user's school_id
+            // System Admin (school_id = NULL) will see all settings (no scope filtering)
+            // School users (school_id NOT NULL) will only see their school's settings
+            $setting_data = Setting::where('name', $name)->first();
+
+            return $setting_data?->value;
+        });
     } catch (\Throwable $th) {
         return null;
     }
@@ -109,24 +131,33 @@ if (!function_exists('uploadPath')) {
 }
 
 if (!function_exists('calculateTax')) {
+    /**
+     * Calculate tax amount based on school-specific tax settings
+     *
+     * IMPORTANT: This function respects school context through setting() helper
+     * Each school can have different tax_min_amount and tax_percentage values
+     *
+     * @param float $amount Amount to calculate tax for
+     * @return float Calculated tax amount
+     */
     function calculateTax($amount)
     {
-        static $settings = null;
+        try {
+            // Use setting() helper which is school-aware through SchoolScope
+            // REMOVED static cache to prevent cross-school data leakage
+            $taxMinAmount = (float) setting('tax_min_amount');
+            $taxPercentage = (float) setting('tax_percentage');
 
-        if ($settings === null) {
-            $settings = Setting::whereIn('name', ['tax_min_amount', 'tax_percentage'])
-                ->pluck('value', 'name');
-        }
+            $tax = 0;
 
-        $tax = 0;
-
-        if (isset($settings['tax_min_amount'], $settings['tax_percentage'])) {
-            if ($amount >= $settings['tax_min_amount']) {
-                $tax = ($settings['tax_percentage'] / 100) * $amount;
+            if ($taxMinAmount && $taxPercentage && $amount >= $taxMinAmount) {
+                $tax = ($taxPercentage / 100) * $amount;
             }
-        }
 
-        return $tax;
+            return $tax;
+        } catch (\Throwable $th) {
+            return 0;
+        }
     }
 }
 

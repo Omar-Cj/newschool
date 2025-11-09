@@ -18,21 +18,64 @@ use App\Models\StudentInfo\ParentGuardian;
 use App\Models\StudentInfo\SessionClassStudent;
 use App\Models\StudentInfo\Student;
 
+/**
+ * DashboardRepository - School-Isolated Dashboard Statistics
+ *
+ * IMPORTANT: All queries in this repository are automatically filtered by school_id
+ * through SchoolScope applied to BaseModel. This ensures complete data isolation
+ * between different schools in the multi-school system.
+ *
+ * School Context Behavior:
+ * - School Users (school_id NOT NULL): See ONLY their school's data
+ * - System Admin (school_id NULL): See data from ALL schools (no filtering)
+ *
+ * Models with SchoolScope (extend BaseModel):
+ * - SessionClassStudent, ParentGuardian, Staff, Session, Event
+ * - Income, Expense, FeesCollect, Attendance, ClassSetup
+ *
+ * setting('session') is also school-aware through the fixed setting() helper
+ */
 class DashboardRepository implements DashboardInterface
 {
-
+    /**
+     * Get dashboard overview statistics for current school context
+     *
+     * All counts and sums are automatically filtered by:
+     * 1. SchoolScope (school_id from authenticated user)
+     * 2. Session filter using setting('session') which is school-aware
+     *
+     * @return array Dashboard statistics scoped to current school
+     */
     public function index()
     {
+        // All models extend BaseModel → SchoolScope auto-applied
+        // School users see only their school's data, System Admin sees all
+
+        // Student count for current school's active session
         $data['student'] = SessionClassStudent::where('session_id', setting('session'))->count();
+
+        // Parent count for current school (SchoolScope filters automatically)
         $data['parent']  = ParentGuardian::count();
-        $data['teacher'] = Staff::where('role_id',5)->count();
+
+        // Teacher count for current school (role_id=5 + SchoolScope filtering)
+        $data['teacher'] = Staff::where('role_id', 5)->count();
+
+        // Session count for current school
         $data['session'] = Session::count();
 
-        $data['events']  = Event::where('session_id', setting('session'))->active()->where('date', '>=', date('Y-m-d'))->orderBy('date')->take(5)->get();
+        // Upcoming events for current school's active session
+        $data['events']  = Event::where('session_id', setting('session'))
+                                ->active()
+                                ->where('date', '>=', date('Y-m-d'))
+                                ->orderBy('date')
+                                ->take(5)
+                                ->get();
 
+        // Financial summary for current school's active session
         $data['income']  = Income::where('session_id', setting('session'))->sum('amount');
         $data['expense'] = Expense::where('session_id', setting('session'))->sum('amount');
         $data['balance'] = $data['income'] - $data['expense'];
+
         return $data;
     }
 

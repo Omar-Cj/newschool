@@ -16,12 +16,19 @@ use Illuminate\Support\Facades\Schema;
  * school context. It's designed to work with BaseModel and provides automatic data isolation
  * between different schools in a multi-school system.
  *
+ * SECURITY CRITICAL - Precedence Rules:
+ * 1. System Admin (role_id=0, school_id=NULL): NO SCOPE (sees all schools)
+ * 2. School Users (role_id>=1, school_id=X): ALWAYS filter by user->school_id
+ * 3. Session is ONLY used for System Admin context switching
+ * 4. Session is NEVER allowed to override school users' school_id
+ *
  * Features:
- * - Skips filtering for admin users (school_id === null)
- * - Applies school_id filter from authenticated user
+ * - Skips filtering for System Admin (role_id=0 with NULL school_id)
+ * - Enforces school_id filter from authenticated user for school users
  * - Only filters tables that have school_id column
  * - Works seamlessly with existing branch_id scoping
- * - Supports session-based school_id override
+ * - Supports session-based school_id override (System Admin only)
+ * - Includes security logging for debugging and auditing
  *
  * Usage:
  * 1. Apply to individual models:
