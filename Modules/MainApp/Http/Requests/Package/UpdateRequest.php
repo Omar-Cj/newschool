@@ -30,7 +30,6 @@ class UpdateRequest extends FormRequest
         $staff_limit   = 'required';
         $duration      = 'required';
         $duration_number = 'required';
-        $features        = 'required';
 
         $per_student_price        = 'required';
 
@@ -43,7 +42,6 @@ class UpdateRequest extends FormRequest
             $staff_limit   = 'required';
             $duration      = 'required';
             $duration_number = 'required';
-            $features        = 'required';
 
         } elseif($this->payment_type == PackagePaymentType::POSTPAID) {
             $per_student_price        = 'required';
@@ -53,7 +51,6 @@ class UpdateRequest extends FormRequest
             $staff_limit   = 'nullable';
             $duration      = 'nullable';
             $duration_number = 'nullable';
-            $features        = 'nullable';
         }
 
         if($this->duration == PricingDuration::LIFETIME) {
@@ -70,8 +67,6 @@ class UpdateRequest extends FormRequest
             'duration_number'  => $duration_number,
             'description'      => 'required',
             'popular'          => 'required',
-            'features'         => $features,
-
             'per_student_price'         => $per_student_price
         ];
     }

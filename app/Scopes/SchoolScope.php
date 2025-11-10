@@ -74,27 +74,23 @@ class SchoolScope implements Scope
     /**
      * Get the school_id to use for filtering.
      *
-     * Priority order:
-     * 1. Session school_id (for temporary school switching)
-     * 2. Authenticated user's school_id
-     * 3. null (for admin users - allows viewing all schools)
+     * FIXED Priority order (SECURITY CRITICAL):
+     * 1. Authenticated user's school_id (FIRST - prevents session override attacks)
+     * 2. null (for System Admin with school_id=NULL - allows viewing all schools)
      *
-     * @return int|null The school_id for filtering, or null to skip filtering (admin users)
+     * Session is NOT checked to prevent data leakage where System Admin
+     * would see School 1's data due to stale session values.
+     *
+     * @return int|null The school_id for filtering, or null to skip filtering (System Admin)
      */
     private function getSchoolId(): ?int
     {
-        // Check if there's a school_id in session (for school switching functionality)
-        if (session()->has('school_id')) {
-            return (int) session('school_id');
-        }
-
-        // Get school_id from authenticated user
+        // SECURITY FIX: Check authenticated user FIRST (not session)
         if (auth()->check() && auth()->user()) {
-            $schoolId = auth()->user()->school_id ?? null;
-
-            // Return school_id if it exists (non-admin user)
-            // Return null if school_id is null (admin user can see all schools)
-            return $schoolId;
+            // Return user's school_id:
+            // - System Admin (school_id=NULL) → returns NULL → no filtering (sees no school-specific data)
+            // - School User (school_id=1) → returns 1 → filters by school_id=1
+            return auth()->user()->school_id ?? null;
         }
 
         // Return null if user is not authenticated (should be rare due to auth middleware)

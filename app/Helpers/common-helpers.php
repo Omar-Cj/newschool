@@ -400,18 +400,10 @@ if (!function_exists('hasPermission')) {
                     'role_id' => Auth::user()->role_id
                 ]);
 
-                // Super Admin (role 1) always has permission
-                if (Auth::user()->role_id == 1) {
-                    Log::info('🎯 PUBLISH CHECK: Super Admin bypass - GRANTED', [
-                        'role_id' => 1
-                    ]);
-                    return true;
-                }
-
-                // Admin (role 2) needs permission in array
+                // Both Super Admin and Admin need permission in array
                 $hasPermission = in_array($keyword, Auth::user()->permissions ?? []);
-                Log::info('🔍 PUBLISH CHECK: Admin permission array check', [
-                    'role_id' => 2,
+                Log::info('🔍 PUBLISH CHECK: Permission array check', [
+                    'role_id' => Auth::user()->role_id,
                     'has_permission' => $hasPermission,
                     'permissions' => Auth::user()->permissions
                 ]);
@@ -428,20 +420,13 @@ if (!function_exists('hasPermission')) {
         // Special handling for exam_entry_delete - only roles 1 and 2
         if ($keyword === 'exam_entry_delete') {
             if (Auth::check() && in_array(Auth::user()->role_id, [1, 2])) {
-                // Super Admin (role 1) always has permission
-                if (Auth::user()->role_id == 1) {
-                    return true;
-                }
-                // Admin (role 2) needs permission in array
+                // Both Super Admin and Admin need permission in array
                 return in_array($keyword, Auth::user()->permissions ?? []);
             }
             return false;
         }
 
         // Default permission check
-        if (Auth::check() && Auth::user()->role_id == 1) {
-            return true;
-        }
         if (in_array($keyword, Auth::user()->permissions ?? [])) {
             return true;
         }

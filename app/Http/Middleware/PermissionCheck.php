@@ -110,11 +110,6 @@ class PermissionCheck
             return abort(403, 'Only Super Admin and Admin can delete exam entries');
         }
 
-        // Allow access if user is authenticated and is admin
-        if (Auth::check() && Auth::user()->role_id == 1) {
-            return $next($request);
-        }
-
         // Allow access if user has the required permission
         if (Auth::check() && in_array($permission, Auth::user()->permissions)) {
             return $next($request);

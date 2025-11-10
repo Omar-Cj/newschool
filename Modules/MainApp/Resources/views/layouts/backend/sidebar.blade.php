@@ -38,6 +38,18 @@
                         <span class="on-half-expanded">{{ ___('mainapp_package.Packages') }}</span>
                     </a>
                 </li>
+                <li class="sidebar-menu-item {{ set_menu(['feature-groups*']) }}">
+                    <a href="{{ route('feature-groups.index') }}" class="parent-item-content">
+                        <i class="las la-layer-group"></i>
+                        <span class="on-half-expanded">{{ ___('common.Feature Groups') }}</span>
+                    </a>
+                </li>
+                <li class="sidebar-menu-item {{ set_menu(['permission-features*']) }}">
+                    <a href="{{ route('permission-features.index') }}" class="parent-item-content">
+                        <i class="las la-shield-alt"></i>
+                        <span class="on-half-expanded">{{ ___('common.Permission Features') }}</span>
+                    </a>
+                </li>
                 <li class="sidebar-menu-item {{ set_menu(['payment-report*']) }}">
                     <a href="{{ route('payment.report.index') }}" class="parent-item-content">
                         <i class="las la-bolt"></i>

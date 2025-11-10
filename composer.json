@@ -44,7 +44,8 @@
         },
         "files" : [
             "app/Helpers/common-helpers.php",
-            "app/Helpers/route_helpers.php"
+            "app/Helpers/route_helpers.php",
+            "app/Helpers/feature-helpers.php"
         ]
     },
     "autoload-dev": {

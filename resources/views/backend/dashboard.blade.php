@@ -9,7 +9,7 @@
     <div class="row ">
 
         {{-- Counter --}}
-        @if (hasPermission('counter_read'))
+        @if (hasPermission('counter_read') && hasFeature('student_info'))
             <div class="col-xl-3 col-lg-3 col-md-6">
                <a href="{{ route('student.index') }}">
                     <div class="ot_crm_summeryBox2 d-flex align-items-center mb-24">
@@ -65,7 +65,7 @@
         @endif
 
         {{-- Fees collesction --}}
-        @if (hasPermission('fees_collesction_read'))
+        @if (hasPermission('fees_collesction_read') && hasFeature('fees'))
             <div class="col-xxl-8 col-xl-12 ">
                 <div class="ot-card chart-card2 ot_heightFull mb-24">
 
@@ -84,7 +84,7 @@
         @endif
 
         {{-- Revenue --}}
-        @if (hasPermission('revenue_read'))
+        @if (hasPermission('revenue_read') && hasFeature('accounts'))
             <div class="col-12 col-lg-12 col-xl-6 col-xxl-4">
                 <div class="ot-card ot_heightFull mb-24">
                     <div class="card-header d-flex justify-content-between">
@@ -126,7 +126,7 @@
         @endif
 
         {{-- Fees collection this month --}}
-        @if (hasPermission('fees_collection_this_month_read'))
+        @if (hasPermission('fees_collection_this_month_read') && hasFeature('fees'))
             <div class="col-12 col-lg-12 col-xl-6 col-xxl-6">
                 <div class="ot-card mb-24 ot_heightFull">
                     <div class="card-header d-flex justify-content-between">
@@ -140,7 +140,7 @@
         @endif
 
         {{-- Income & Expense This Month --}}
-        @if (hasPermission('income_expense_read'))
+        @if (hasPermission('income_expense_read') && hasFeature('accounts'))
             <div class="col-12 col-lg-12 col-xl-6 col-xxl-6">
                 <div class="ot-card mb-24 ot_heightFull">
                     <div class="card-header d-flex justify-content-between">
@@ -154,7 +154,7 @@
         @endif
 
         <!-- Upcoming Events -->
-        @if (hasPermission('upcoming_events_read'))
+        @if (hasPermission('upcoming_events_read') && hasFeature('dashboard'))
             <div class="col-xxl-4 col-xl-6">
                 <div class="ot-card chart-card2 ot_heightFull mb-24">
                     <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap_10 card_header_border">
@@ -193,7 +193,7 @@
         @endif
 
         {{-- Attendance --}}
-        @if (hasPermission('attendance_chart_read'))
+        @if (hasPermission('attendance_chart_read') && hasFeature('attendance'))
             <div class="col-12 col-lg-12 col-xl-12 col-xxl-8">
                 <div class="ot-card mb-24 ot_heightFull">
                     <div class="card-header d-flex justify-content-between">
@@ -207,7 +207,7 @@
         @endif
 
         {{-- Calendar --}}
-        @if (hasPermission('calendar_read'))
+        @if (hasPermission('calendar_read') && hasFeature('dashboard'))
             <div class="col-12">
                 <div class="ot-card mb-24">
                     <div id='calendar'></div>

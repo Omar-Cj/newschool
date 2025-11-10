@@ -9,6 +9,8 @@ use App\Http\Controllers\Admin\CertificateController;
 use App\Http\Controllers\Admin\NoticeBoardController;
 use App\Http\Controllers\Admin\ModuleInstallController;
 use App\Http\Controllers\Admin\SmsMailTemplateController;
+use App\Http\Controllers\Admin\FeatureGroupController;
+use App\Http\Controllers\Admin\PermissionFeatureController;
 
 Route::middleware(saasMiddleware())->group(function () {
     Route::group(['middleware' => ['XssSanitizer']], function () {
@@ -101,6 +103,27 @@ Route::middleware(saasMiddleware())->group(function () {
 
                 Route::controller(ModuleInstallController::class)->group(function () {
                     Route::get('admin/module/install/{moduleName}', 'moduleInstall');
+                });
+
+                // Feature Management Routes
+                Route::controller(FeatureGroupController::class)->prefix('admin/feature-groups')->group(function () {
+                    Route::get('/', 'index')->name('feature-groups.index');
+                    Route::get('/create', 'create')->name('feature-groups.create');
+                    Route::post('/store', 'store')->name('feature-groups.store');
+                    Route::get('/{id}/edit', 'edit')->name('feature-groups.edit');
+                    Route::put('/{id}', 'update')->name('feature-groups.update');
+                    Route::delete('/{id}', 'destroy')->name('feature-groups.destroy');
+                    Route::post('/reorder', 'reorder')->name('feature-groups.reorder');
+                });
+
+                Route::controller(PermissionFeatureController::class)->prefix('admin/permission-features')->group(function () {
+                    Route::get('/', 'index')->name('permission-features.index');
+                    Route::get('/create', 'create')->name('permission-features.create');
+                    Route::post('/store', 'store')->name('permission-features.store');
+                    Route::get('/{id}/edit', 'edit')->name('permission-features.edit');
+                    Route::put('/{id}', 'update')->name('permission-features.update');
+                    Route::delete('/{id}', 'destroy')->name('permission-features.destroy');
+                    Route::post('/bulk-assign', 'bulkAssign')->name('permission-features.bulk-assign');
                 });
             });
         });

@@ -198,29 +198,20 @@ duration_number --}}
                             @enderror
                         </div>
 
+                        {{-- Permission Features Selector --}}
                         <div class="col-12 mb-3 _prepaid_main">
-                            <label for="validationServer04" class="form-label">{{ ___('common.Features list') }} <span class="fillable">*</span></label>
-                            <div class="table-responsive">
-                                <table class="table table-bordered role-table" id="types_table">
-                                    <thead class="thead">
-                                        <tr>
-                                            <th class="purchase mr-4"><input class="form-check-input all _prepaid" type="checkbox"> {{ ___('common.All') }} </th>
-                                            <th class="purchase">{{ ___('online-examination.Title') }}</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="tbody">
-                                        @foreach ($data['features'] as $item)
-                                        <tr>
-                                            <td><input class="form-check-input child _prepaid" type="checkbox" name="features[]" value="{{$item->id}}" {{ in_array($item->id, old('features', [])) ? 'checked' : '' }}></td>
-                                            <td>{{ $item->title }}</td>
-                                        </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                                @if ($errors->has('features'))
-                                    <span class="text-danger">{{ ___('online-examination.At least select one.') }}</span>
-                                @endif
-                            </div>
+                            <label class="form-label">{{ ___('common.Package Features') }}</label>
+                            @if(isset($data['feature_groups']) && $data['feature_groups']->isNotEmpty())
+                                @include('mainapp::package.components.feature-selector', [
+                                    'feature_groups' => $data['feature_groups'],
+                                    'selected_features' => old('permission_features', [])
+                                ])
+                            @else
+                                <div class="alert alert-info">
+                                    <i class="fa-solid fa-info-circle"></i>
+                                    {{ ___('common.No feature groups configured yet. Features can be added after package creation.') }}
+                                </div>
+                            @endif
                         </div>
 
 

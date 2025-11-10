@@ -6,7 +6,6 @@ use App\Enums\Settings;
 use App\Traits\ReturnFormatTrait;
 use Illuminate\Support\Facades\DB;
 use Modules\MainApp\Entities\Package;
-use Modules\MainApp\Entities\PackageChild;
 use Modules\MainApp\Enums\PackagePaymentType;
 use Modules\MainApp\Http\Interfaces\PackageInterface;
 
@@ -61,15 +60,8 @@ class PackageRepository implements PackageInterface
             $row->status         = $request->status;
             $row->save();
 
-            foreach ($request->features as $key => $value) {
-                $child                 = new PackageChild();
-                $child->package_id     = $row->id;
-                $child->feature_id     = $value;
-                $child->save();
-            }
-
             DB::commit();
-            return $this->responseWithSuccess(___('alert.created_successfully'), []);
+            return $this->responseWithSuccess(___('alert.created_successfully'), $row);
         } catch (\Throwable $th) {
             DB::rollBack();
             return $this->responseWithError(___('alert.something_went_wrong_please_try_again'), []);
@@ -116,16 +108,8 @@ class PackageRepository implements PackageInterface
             $row->status         = $request->status;
             $row->save();
 
-            PackageChild::where('package_id', $row->id)->delete();
-            foreach ($request->features as $key => $value) {
-                $child                 = new PackageChild();
-                $child->package_id     = $row->id;
-                $child->feature_id     = $value;
-                $child->save();
-            }
-
             DB::commit();
-            return $this->responseWithSuccess(___('alert.updated_successfully'), []);
+            return $this->responseWithSuccess(___('alert.updated_successfully'), $row);
         } catch (\Throwable $th) {
             DB::rollBack();
             return $this->responseWithError(___('alert.something_went_wrong_please_try_again'), []);
