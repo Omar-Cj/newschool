@@ -351,7 +351,7 @@
                             <span class="on-half-expanded">{{ ___('settings.fees') }}</span>
                         </a>
                         <ul class="child-menu-list">
-                            @if (auth()->user()->school_id ? (hasFeature('fees_group') && hasPermission('fees_group_read')) : hasPermission('fees_group_read'))
+                            @if ((auth()->user()->school_id && hasFeature('fees_group')) || hasPermission('fees_group_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['fees-group*']) }}">
                                     <a href="{{ route('fees-group.index') }}">{{ ___('settings.group') }}</a>
                                 </li>
@@ -361,12 +361,12 @@
                                     <a href="{{ route('fees-type.index') }}">{{ ___('settings.type') }}</a>
                                 </li>
                             @endif
-                            @if (auth()->user()->school_id ? (hasFeature('fees_master') && hasPermission('fees_master_read')) : hasPermission('fees_master_read'))
+                            @if ((auth()->user()->school_id && hasFeature('fees_master')) || hasPermission('fees_master_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['fees-master*']) }}">
                                     <a href="{{ route('fees-master.index') }}">{{ ___('settings.master') }}</a>
                                 </li>
                             @endif
-                            @if (auth()->user()->school_id ? (hasFeature('fees_assign') && hasPermission('fees_assign_read')) : hasPermission('fees_assign_read'))
+                            @if ((auth()->user()->school_id && hasFeature('fees_assign')) || hasPermission('fees_assign_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['fees-assign*']) }}">
                                     <a href="{{ route('fees-assign.index') }}">{{ ___('settings.assign') }}</a>
                                 </li>
@@ -379,7 +379,7 @@
                                     <a href="{{ route('fees.receipt.list') }}">{{ ___('fees.receipts') }}</a>
                                 </li>
                             @endif
-                            @if (auth()->user()->school_id ? (hasFeature('fees_generation') && hasPermission('fees_generate_read')) : hasPermission('fees_generate_read'))
+                            @if ((auth()->user()->school_id && hasFeature('fees_generation')) || hasPermission('fees_generate_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['fees-generation*']) }}">
                                     <a class="has-arrow">{{ ___('fees.Fee Generation') }}</a>
                                     <ul class="child-menu-list">
@@ -423,14 +423,14 @@
                             <span class="on-half-expanded">{{ ___('settings.examination') }}</span>
                         </a>
                         <ul class="child-menu-list">
-                            @if (auth()->user()->school_id ? (hasFeature('terms') && hasPermission('terms_read')) : hasPermission('terms_read'))
+                            @if ((auth()->user()->school_id && hasFeature('terms')) || hasPermission('terms_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['terms*']) }}">
                                     <a href="{{ route('terms.index') }}">
                                         {{ ___('academic.terms') }}
                                     </a>
                                 </li>
                             @endif
-                            @if (auth()->user()->school_id ? (hasFeature('exam_entry') && hasPermission('exam_entry_read')) : hasPermission('exam_entry_read'))
+                            @if (hasPermission('exam_entry_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['exam-entry*']) }}">
                                     <a href="{{ route('exam-entry.index') }}">
                                         {{ ___('examination.exam_entry') }}
@@ -714,7 +714,7 @@
                                     <a href="{{ route('income.index') }}">{{ ___('account.income') }}</a>
                                 </li>
                             @endif
-                            @if (auth()->user()->school_id ? (hasFeature('expense_category') && hasPermission('expense_category_read')) : hasPermission('expense_category_read'))
+                            @if ((auth()->user()->school_id && hasFeature('expense_category')) || hasPermission('expense_category_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['expense-category*']) }}">
                                     <a href="{{ route('expense-category.index') }}">{{ ___('account.expense_categories') }}</a>
                                 </li>
@@ -729,7 +729,7 @@
                                     <a href="{{ route('journals.index') }}">{{ ___('journals.journals') }}</a>
                                 </li>
                             @endif
-                            @if (auth()->user()->school_id ? (hasFeature('cash_transfer') && hasPermission('cash_transfer_read')) : hasPermission('cash_transfer_read'))
+                            @if (hasPermission('cash_transfer_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['cash-transfers*']) }}">
                                     <a href="{{ route('cash-transfers.index') }}">{{ ___('cash_transfer.cash_transfers') }}</a>
                                 </li>
@@ -818,7 +818,7 @@
                                         href="{{ route('report-attendance.report') }}">{{ ___('settings.Attendance') }}</a>
                                 </li>
                             @endif
-                            @if (auth()->user()->school_id ? (hasFeature('report_center') && hasPermission('report_center_read')) : hasPermission('report_center_read'))
+                            @if ((auth()->user()->school_id && hasFeature('report_center')) || hasPermission('report_center_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['report-center*']) }}">
                                     <a href="{{ route('report-center.index') }}">{{ ___('settings.report_center') }}</a>
                                 </li>
@@ -1049,59 +1049,66 @@
                                 </li>
                             @endif
 
-                            @if (auth()->user()->school_id ? (hasFeature('notification_settings') && hasPermission('notification_settings_read')) : hasPermission('notification_settings_read'))
+                            @if ((auth()->user()->school_id && hasFeature('notification_settings')) || hasPermission('notification_settings_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['settings.notification-settings']) }}">
                                     <a
                                         href="{{ safeRoute('settings.notification-settings') }}">{{ ___('settings.notification_setting') }}</a>
                                 </li>
                             @endif
 
-                            @if (auth()->user()->school_id ? (hasFeature('storage_settings') && hasPermission('storage_settings_read')) : hasPermission('storage_settings_read'))
+                            @if ((auth()->user()->school_id && hasFeature('storage_settings')) || hasPermission('storage_settings_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['settings.storagesetting']) }}">
                                     <a
                                         href="{{ safeRoute('settings.storagesetting') }}">{{ ___('settings.storage_settings') }}</a>
                                 </li>
                             @endif
 
-                            @if (auth()->user()->school_id ? (hasFeature('task_schedules') && hasPermission('task_schedules_read')) : hasPermission('task_schedules_read'))
+                            @if ((auth()->user()->school_id && hasFeature('task_schedules')) || hasPermission('task_schedules_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['settings.task-schedulers']) }}">
                                     <a
                                         href="{{ safeRoute('settings.task-schedulers') }}">{{ ___('settings.task_schedules') }}</a>
                                 </li>
                             @endif
 
-                            @if (auth()->user()->school_id ? (hasFeature('software_update') && hasPermission('software_update_read')) : hasPermission('software_update_read'))
+                            @if ((auth()->user()->school_id && hasFeature('software_update')) || hasPermission('software_update_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['settings.software-update']) }}">
                                     <a
                                         href="{{ safeRoute('settings.software-update') }}">{{ ___('settings.software_update') }}</a>
                                 </li>
                             @endif
 
-                            @if (auth()->user()->school_id ? (hasFeature('recaptcha_settings') && hasPermission('recaptcha_settings_read')) : hasPermission('recaptcha_settings_read'))
+                            @if ((auth()->user()->school_id && hasFeature('recaptcha_settings')) || hasPermission('recaptcha_settings_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['settings.recaptcha-setting']) }}">
                                     <a
                                         href="{{ safeRoute('settings.recaptcha-setting') }}">{{ ___('settings.recaptcha_settings') }}</a>
                                 </li>
                             @endif
 
-                            @if (auth()->user()->school_id ? (hasFeature('sms_settings') && hasPermission('sms_settings_read')) : hasPermission('sms_settings_read'))
+                            @if ((auth()->user()->school_id && hasFeature('sms_settings')) || hasPermission('sms_settings_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['settings.recaptcha-setting']) }}">
                                     <a
                                         href="{{ safeRoute('settings.sms-setting') }}">{{ ___('settings.sms_settings') }}</a>
                                 </li>
                             @endif
 
-                            @if (auth()->user()->school_id ? (hasFeature('payment_gateway_settings') && hasPermission('payment_gateway_settings_read')) : hasPermission('payment_gateway_settings_read'))
+                            @if (hasPermission('payment_gateway_settings_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['settings.payment-gateway-setting']) }}">
                                     <a
                                         href="{{ safeRoute('settings.payment-gateway-setting') }}">{{ ___('settings.payment_gateway_settings') }}</a>
                                 </li>
                             @endif
 
-                            @if (auth()->user()->school_id ? (hasFeature('email_settings') && hasPermission('email_settings_read')) : hasPermission('email_settings_read'))
+                            @if (hasPermission('email_settings_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['settings.mail-setting']) }}">
                                     <a
                                         href="{{ safeRoute('settings.mail-setting') }}">{{ ___('settings.email_settings') }}</a>
+                                </li>
+                            @endif
+
+                            @if (hasPermission('email_settings_read'))
+                                <li class="sidebar-menu-item {{ set_menu(['settings.notification-settings']) }}">
+                                    <a
+                                        href="{{ safeRoute('settings.notification-settings') }}">{{ ___('settings.notification_setting') }}</a>
                                 </li>
                             @endif
 

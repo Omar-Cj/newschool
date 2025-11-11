@@ -389,3 +389,38 @@ require __DIR__ . '/parent_deposits.php';
 // Include report routes
 require __DIR__ . '/report.php';
 require __DIR__ . '/reports.php';
+
+// Debug route for feature access inspection (TEMPORARY - Remove after debugging)
+Route::get('/debug/feature-access', function () {
+    if (!Auth::check()) {
+        return response()->json(['error' => 'Not authenticated'], 401);
+    }
+
+    $user = Auth::user();
+    $school = $user->school;
+
+    return response()->json([
+        'user' => [
+            'id' => $user->id,
+            'email' => $user->email,
+            'role_id' => $user->role_id,
+            'school_id' => $user->school_id,
+        ],
+        'school' => $school ? [
+            'id' => $school->id,
+            'name' => $school->school_name ?? null,
+            'package_id' => $school->package_id,
+            'has_package_relation' => $school->package !== null,
+            'package_name' => $school->package?->name,
+        ] : null,
+        'allowed_features' => $school?->getAllowedFeatures()->toArray() ?? [],
+        'feature_checks' => [
+            'online_admission' => hasFeature('online_admission'),
+            'student_info' => hasFeature('student_info'),
+            'academic' => hasFeature('academic'),
+            'fees' => hasFeature('fees'),
+            'library' => hasFeature('library'),
+            'online_examination' => hasFeature('online_examination'),
+        ],
+    ], 200, [], JSON_PRETTY_PRINT);
+})->middleware('auth');

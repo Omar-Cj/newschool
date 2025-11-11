@@ -9,7 +9,7 @@
     <div class="row ">
 
         {{-- Counter --}}
-        @if (hasPermission('counter_read') && hasFeature('student_info'))
+        @if (hasPermission('counter_read') && (hasFeatureAccess('student_management') || isSuperAdmin()))
             <div class="col-xl-3 col-lg-3 col-md-6">
                <a href="{{ route('student.index') }}">
                     <div class="ot_crm_summeryBox2 d-flex align-items-center mb-24">
@@ -65,7 +65,7 @@
         @endif
 
         {{-- Fees collesction --}}
-        @if (hasPermission('fees_collesction_read') && hasFeature('fees'))
+        @if (hasPermission('fees_collesction_read') && (hasFeatureAccess('fees_management') || isSuperAdmin()))
             <div class="col-xxl-8 col-xl-12 ">
                 <div class="ot-card chart-card2 ot_heightFull mb-24">
 
@@ -84,7 +84,7 @@
         @endif
 
         {{-- Revenue --}}
-        @if (hasPermission('revenue_read') && hasFeature('accounts'))
+        @if (hasPermission('revenue_read') && (hasFeatureAccess('accounts') || isSuperAdmin()))
             <div class="col-12 col-lg-12 col-xl-6 col-xxl-4">
                 <div class="ot-card ot_heightFull mb-24">
                     <div class="card-header d-flex justify-content-between">

@@ -8,6 +8,7 @@ use App\Models\Staff\Staff;
 use App\Models\Staff\Designation;
 use App\Models\StudentInfo\Student;
 use Laravel\Sanctum\HasApiTokens;
+use Modules\MainApp\Entities\School;
 use Modules\LiveChat\Entities\Message;
 use Illuminate\Notifications\Notifiable;
 use App\Models\StudentInfo\ParentGuardian;
@@ -79,6 +80,16 @@ class User extends Authenticatable
     public function designation(): BelongsTo
     {
         return $this->belongsTo(Designation::class);
+    }
+
+    /**
+     * Get the school that the user belongs to.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function school(): BelongsTo
+    {
+        return $this->belongsTo(School::class, 'school_id', 'id');
     }
 
     public function userGender()

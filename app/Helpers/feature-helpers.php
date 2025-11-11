@@ -169,9 +169,12 @@ if (!function_exists('hasAllFeatures')) {
 
 if (!function_exists('isSuperAdmin')) {
     /**
-     * Check if current user is super admin (role_id = 1)
+     * Check if current user is system admin (super admin)
      *
-     * @return bool True if super admin
+     * System admins have no school_id (null), granting full platform access.
+     * School admins have role_id = 1 but school_id != null, and must follow feature restrictions.
+     *
+     * @return bool True if system admin with no school context
      */
     function isSuperAdmin(): bool
     {
@@ -179,7 +182,28 @@ if (!function_exists('isSuperAdmin')) {
             return false;
         }
 
-        return Auth::user()->role_id === 1;
+        // Only users without school_id are true system admins
+        return Auth::user()->school_id === null;
+    }
+}
+
+if (!function_exists('isSchoolAdmin')) {
+    /**
+     * Check if current user is a school admin
+     *
+     * School admins have role_id = 1 AND school_id != null.
+     * They have admin privileges within their school but must follow package feature restrictions.
+     *
+     * @return bool True if school admin
+     */
+    function isSchoolAdmin(): bool
+    {
+        if (!Auth::check()) {
+            return false;
+        }
+
+        $user = Auth::user();
+        return $user->role_id === 1 && $user->school_id !== null;
     }
 }
 

@@ -661,29 +661,151 @@ function activeSubscriptionExpiryDate()
     return true;
 }
 
+/**
+ * @deprecated This function is deprecated and should not be used.
+ * It was using a broken global cache that returned ANY school's subscription features.
+ * Use Auth::user()->school->hasFeatureAccess($feature) or hasFeature() helper instead.
+ *
+ * Kept for backward compatibility only - returns empty array.
+ */
 function activeSubscriptionFeatures()
 {
-    if (env('APP_SAAS')) {
-        return cache()->rememberForever('activeSubscriptionFeatures', function () {
-            return Subscription::active()->first()?->features;
-        });
-    }
-
-    return null;
+    // Return empty array to prevent breaking existing code
+    // All feature checks should now use the school-aware hasFeature() function
+    return [];
 }
 
 
-// Feature check
+// Feature check - School-aware feature access with package-based restrictions
 if (!function_exists('hasFeature')) {
-    function hasFeature($keyword)
+    /**
+     * Check if current user's school has access to a feature
+     *
+     * This function uses package-based detection to determine if feature
+     * restrictions should apply. Schools WITHOUT a package get all features
+     * (single-school mode), while schools WITH a package have restrictions
+     * enforced based on their package's permission features.
+     *
+     * @param string $keyword Feature attribute identifier
+     * @return bool True if user has access to feature
+     */
+    function hasFeature(string $keyword): bool
     {
-        if (!env('APP_SAAS')) {
+        // LOG POINT 1: Function entry
+        Log::channel('feature_access')->debug('hasFeature() called', [
+            'feature_keyword' => $keyword,
+            'timestamp' => now()->toDateTimeString(),
+            'request_url' => request()->url(),
+            'request_method' => request()->method(),
+        ]);
+
+        // User must be authenticated
+        if (!Auth::check()) {
+            // LOG POINT 2: Unauthenticated access
+            Log::channel('feature_access')->warning('hasFeature() - No authenticated user', [
+                'feature_keyword' => $keyword,
+                'result' => false,
+            ]);
+            return false;
+        }
+
+        $user = Auth::user();
+
+        // LOG POINT 3: User context
+        Log::channel('feature_access')->debug('hasFeature() - User context', [
+            'feature_keyword' => $keyword,
+            'user_id' => $user->id,
+            'user_email' => $user->email,
+            'user_role_id' => $user->role_id,
+            'user_school_id' => $user->school_id,
+        ]);
+
+        // System admins (school_id === null) have full access
+        if ($user->school_id === null) {
+            // LOG POINT 4: System admin access
+            Log::channel('feature_access')->info('hasFeature() - System admin detected', [
+                'feature_keyword' => $keyword,
+                'user_id' => $user->id,
+                'user_role_id' => $user->role_id,
+                'user_school_id' => $user->school_id,
+                'result' => true,
+                'reason' => 'system_admin_full_access',
+            ]);
             return true;
         }
-        // if (in_array($keyword, Setting('features') ?? [])) {
-        if (in_array($keyword, activeSubscriptionFeatures() ?? [])) {
+
+        // LOG POINT 5: School relationship check
+        $hasSchoolRelation = $user->school !== null;
+        Log::channel('feature_access')->debug('hasFeature() - School relationship', [
+            'feature_keyword' => $keyword,
+            'user_id' => $user->id,
+            'has_school_relation' => $hasSchoolRelation,
+            'school_id_from_user' => $user->school_id,
+        ]);
+
+        // School users without a package get all features (single-school mode)
+        // This allows the system to work in both single-school and multi-school modes
+        if (!$user->school || $user->school->package_id === null) {
+            // LOG POINT 6: Single-school mode access
+            Log::channel('feature_access')->info('hasFeature() - Single-school mode', [
+                'feature_keyword' => $keyword,
+                'user_id' => $user->id,
+                'user_school_id' => $user->school_id,
+                'school_exists' => $user->school !== null,
+                'school_package_id' => $user->school?->package_id,
+                'result' => true,
+                'reason' => 'single_school_mode_no_package',
+            ]);
             return true;
         }
+
+        // LOG POINT 7: Package-based restriction enforcement
+        Log::channel('feature_access')->info('hasFeature() - Package restriction check', [
+            'feature_keyword' => $keyword,
+            'user_id' => $user->id,
+            'user_role_id' => $user->role_id,
+            'school_id' => $user->school->id,
+            'school_package_id' => $user->school->package_id,
+            'package_name' => $user->school->package?->name,
+        ]);
+
+        // School users WITH a package: enforce package-based feature restrictions
+        $hasAccess = $user->school->hasFeatureAccess($keyword);
+
+        // LOG POINT 8: Final result
+        Log::channel('feature_access')->info('hasFeature() - Final result', [
+            'feature_keyword' => $keyword,
+            'user_id' => $user->id,
+            'school_id' => $user->school->id,
+            'school_package_id' => $user->school->package_id,
+            'has_access' => $hasAccess,
+            'reason' => $hasAccess ? 'package_allows_feature' : 'package_denies_feature',
+        ]);
+
+        return $hasAccess;
+    }
+}
+
+/**
+ * Check if user has access to ANY of the provided features.
+ * Useful for checking feature group access (e.g., if user has any fees-related feature).
+ *
+ * @param array $featureKeywords Array of feature keywords to check
+ * @return bool True if user has access to at least one feature
+ */
+if (!function_exists('hasAnyFeature')) {
+    function hasAnyFeature(array $featureKeywords): bool
+    {
+        if (empty($featureKeywords)) {
+            return false;
+        }
+
+        foreach ($featureKeywords as $keyword) {
+            if (hasFeature($keyword)) {
+                return true;
+            }
+        }
+
         return false;
     }
 }
@@ -915,13 +1037,22 @@ if (!function_exists('hasModule')) {
 }
 
 if (!function_exists('isSuperAdmin')) {
-    function isSuperAdmin()
+    /**
+     * Check if current user is system admin (super admin)
+     *
+     * System admins have no school_id (null), granting full platform access.
+     * School admins have role_id = 1 but school_id != null, and must follow feature restrictions.
+     *
+     * @return bool True if system admin with no school context
+     */
+    function isSuperAdmin(): bool
     {
-        $role = auth()->user()?->role_id;
-        if ($role == \App\Enums\RoleEnum::SUPERADMIN) {
-            return true;
+        if (!auth()->check()) {
+            return false;
         }
-        return false;
+
+        // Only users without school_id are true system admins
+        return auth()->user()->school_id === null;
     }
 }
 

@@ -6,6 +6,7 @@ namespace App\Traits;
 
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 
 /**
  * HasFeatureAccess Trait
@@ -25,8 +26,40 @@ trait HasFeatureAccess
      */
     public function hasFeatureAccess(string $featureAttribute): bool
     {
+        // LOG POINT 9: Trait method entry
+        Log::channel('feature_access')->debug('HasFeatureAccess::hasFeatureAccess() called', [
+            'feature_attribute' => $featureAttribute,
+            'model_class' => get_class($this),
+            'model_id' => $this->id,
+            'package_id' => $this->package_id ?? null,
+        ]);
+
         $allowedFeatures = $this->getAllowedFeatures();
-        return $allowedFeatures->contains($featureAttribute);
+
+        // LOG POINT 10: Allowed features retrieved
+        Log::channel('feature_access')->debug('HasFeatureAccess::getAllowedFeatures() result', [
+            'feature_attribute' => $featureAttribute,
+            'model_class' => get_class($this),
+            'model_id' => $this->id,
+            'package_id' => $this->package_id ?? null,
+            'allowed_features_count' => $allowedFeatures->count(),
+            'allowed_features_list' => $allowedFeatures->toArray(),
+            'cache_key' => $this->getFeatureCacheKey(),
+        ]);
+
+        $hasAccess = $allowedFeatures->contains($featureAttribute);
+
+        // LOG POINT 11: Contains check result
+        Log::channel('feature_access')->info('HasFeatureAccess::hasFeatureAccess() result', [
+            'feature_attribute' => $featureAttribute,
+            'model_class' => get_class($this),
+            'model_id' => $this->id,
+            'package_id' => $this->package_id ?? null,
+            'has_access' => $hasAccess,
+            'feature_in_list' => $hasAccess,
+        ]);
+
+        return $hasAccess;
     }
 
     /**
@@ -38,12 +71,36 @@ trait HasFeatureAccess
     {
         $cacheKey = $this->getFeatureCacheKey();
 
-        return Cache::remember($cacheKey, now()->addHours(24), function () {
+        // LOG POINT 12: Cache lookup
+        $isCached = Cache::has($cacheKey);
+        Log::channel('feature_access')->debug('getAllowedFeatures() - Cache lookup', [
+            'model_class' => get_class($this),
+            'model_id' => $this->id,
+            'cache_key' => $cacheKey,
+            'is_cached' => $isCached,
+        ]);
+
+        return Cache::remember($cacheKey, now()->addHours(24), function () use ($cacheKey) {
+            // LOG POINT 13: Package check
+            Log::channel('feature_access')->debug('getAllowedFeatures() - Cache miss, building', [
+                'model_class' => get_class($this),
+                'model_id' => $this->id,
+                'cache_key' => $cacheKey,
+                'has_package' => $this->package !== null,
+                'package_id' => $this->package_id ?? null,
+            ]);
+
             if (!$this->package) {
+                Log::channel('feature_access')->warning('getAllowedFeatures() - No package', [
+                    'model_class' => get_class($this),
+                    'model_id' => $this->id,
+                    'package_id' => $this->package_id ?? null,
+                    'returning_empty_collection' => true,
+                ]);
                 return collect([]);
             }
 
-            return $this->package
+            $features = $this->package
                 ->permissionFeatures()
                 ->active()
                 ->with('permission')
@@ -52,6 +109,20 @@ trait HasFeatureAccess
                 ->filter()
                 ->unique()
                 ->values();
+
+            // LOG POINT 14: Features loaded from database
+            Log::channel('feature_access')->info('getAllowedFeatures() - Features loaded', [
+                'model_class' => get_class($this),
+                'model_id' => $this->id,
+                'package_id' => $this->package_id ?? null,
+                'package_name' => $this->package->name ?? null,
+                'features_count' => $features->count(),
+                'features_list' => $features->toArray(),
+                'cache_key' => $cacheKey,
+                'cached_until' => now()->addHours(24)->toDateTimeString(),
+            ]);
+
+            return $features;
         });
     }
 

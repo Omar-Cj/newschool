@@ -70,6 +70,14 @@ return [
             'days' => 14,
         ],
 
+        'feature_access' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/feature-access.log'),
+            'level' => 'debug',
+            'days' => 7,
+            'permission' => 0664,
+        ],
+
         'slack' => [
             'driver' => 'slack',
             'url' => env('LOG_SLACK_WEBHOOK_URL'),

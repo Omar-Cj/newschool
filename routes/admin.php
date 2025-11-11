@@ -17,45 +17,54 @@ Route::middleware(saasMiddleware())->group(function () {
         Route::group(['middleware' => ['lang', 'CheckSubscription', 'FeatureCheck:account']], function () {
             // auth routes
             Route::group(['middleware' => ['auth.routes', 'AdminPanel']], function () {
-                Route::controller(HomeworkController::class)->group(function () {
-                    Route::get('homework/',                 'index')->name('homework.index')->middleware('PermissionCheck:homework_read');
-                    Route::any('homework/search',           'search')->name('homework.search')->middleware('PermissionCheck:homework_read');
-                    Route::get('homework/create',           'create')->name('homework.create')->middleware('PermissionCheck:homework_create');
-                    Route::post('homework/store',           'store')->name('homework.store')->middleware('PermissionCheck:homework_create', 'DemoCheck');
-                    Route::get('homework/edit/{id}',        'edit')->name('homework.edit')->middleware('PermissionCheck:homework_update');
-                    Route::put('homework/update/{id}',      'update')->name('homework.update')->middleware('PermissionCheck:homework_update', 'DemoCheck');
-                    Route::delete('homework/delete/{id}',   'delete')->name('homework.delete')->middleware('PermissionCheck:homework_delete', 'DemoCheck');
+                // Homework routes with feature protection
+                Route::middleware(['feature.access:homework'])->group(function () {
+                    Route::controller(HomeworkController::class)->group(function () {
+                        Route::get('homework/',                 'index')->name('homework.index')->middleware('PermissionCheck:homework_read');
+                        Route::any('homework/search',           'search')->name('homework.search')->middleware('PermissionCheck:homework_read');
+                        Route::get('homework/create',           'create')->name('homework.create')->middleware('PermissionCheck:homework_create');
+                        Route::post('homework/store',           'store')->name('homework.store')->middleware('PermissionCheck:homework_create', 'DemoCheck');
+                        Route::get('homework/edit/{id}',        'edit')->name('homework.edit')->middleware('PermissionCheck:homework_update');
+                        Route::put('homework/update/{id}',      'update')->name('homework.update')->middleware('PermissionCheck:homework_update', 'DemoCheck');
+                        Route::delete('homework/delete/{id}',   'delete')->name('homework.delete')->middleware('PermissionCheck:homework_delete', 'DemoCheck');
 
-                    Route::POST('homework/students',   'students');
-                    Route::POST('homework/evaluation/submit',   'evaluationSubmit')->name('homework.evaluation.submit');
+                        Route::POST('homework/students',   'students');
+                        Route::POST('homework/evaluation/submit',   'evaluationSubmit')->name('homework.evaluation.submit');
+                    });
                 });
 
-                Route::controller(IdCardController::class)->group(function () {
-                    Route::get('idcard/',                 'index')->name('idcard.index')->middleware('PermissionCheck:id_card_read');
-                    Route::get('idcard/create',           'create')->name('idcard.create')->middleware('PermissionCheck:id_card_create');
-                    Route::post('idcard/store',           'store')->name('idcard.store')->middleware('PermissionCheck:id_card_create');
-                    Route::get('idcard/edit/{id}',           'edit')->name('idcard.edit')->middleware('PermissionCheck:id_card_update');
-                    Route::put('idcard/update/{id}',           'update')->name('idcard.update')->middleware('PermissionCheck:id_card_update');
-                    Route::delete('idcard/delete/{id}',   'delete')->name('idcard.delete')->middleware('PermissionCheck:id_card_delete', 'DemoCheck');
+                // ID Card routes with feature protection (part of student_info feature group)
+                Route::middleware(['feature.access:student_management'])->group(function () {
+                    Route::controller(IdCardController::class)->group(function () {
+                        Route::get('idcard/',                 'index')->name('idcard.index')->middleware('PermissionCheck:id_card_read');
+                        Route::get('idcard/create',           'create')->name('idcard.create')->middleware('PermissionCheck:id_card_create');
+                        Route::post('idcard/store',           'store')->name('idcard.store')->middleware('PermissionCheck:id_card_create');
+                        Route::get('idcard/edit/{id}',           'edit')->name('idcard.edit')->middleware('PermissionCheck:id_card_update');
+                        Route::put('idcard/update/{id}',           'update')->name('idcard.update')->middleware('PermissionCheck:id_card_update');
+                        Route::delete('idcard/delete/{id}',   'delete')->name('idcard.delete')->middleware('PermissionCheck:id_card_delete', 'DemoCheck');
 
-                    Route::POST('idcard/preview',   'preview');
+                        Route::POST('idcard/preview',   'preview');
 
-                    Route::get('idcard/generate',                 'generate')->name('idcard.generate')->middleware('PermissionCheck:id_card_generate_read');
-                    Route::post('idcard/generate',                 'generateSearch')->name('idcard.generate.search')->middleware('PermissionCheck:id_card_generate_read');
+                        Route::get('idcard/generate',                 'generate')->name('idcard.generate')->middleware('PermissionCheck:id_card_generate_read');
+                        Route::post('idcard/generate',                 'generateSearch')->name('idcard.generate.search')->middleware('PermissionCheck:id_card_generate_read');
+                    });
                 });
 
-                Route::controller(CertificateController::class)->group(function () {
-                    Route::get('certificate/',                 'index')->name('certificate.index')->middleware('PermissionCheck:certificate_read');
-                    Route::get('certificate/create',           'create')->name('certificate.create')->middleware('PermissionCheck:certificate_create');
-                    Route::post('certificate/store',           'store')->name('certificate.store')->middleware('PermissionCheck:certificate_create');
-                    Route::get('certificate/edit/{id}',           'edit')->name('certificate.edit')->middleware('PermissionCheck:certificate_update');
-                    Route::put('certificate/update/{id}',           'update')->name('certificate.update')->middleware('PermissionCheck:certificate_update');
-                    Route::delete('certificate/delete/{id}',   'delete')->name('certificate.delete')->middleware('PermissionCheck:certificate_delete', 'DemoCheck');
+                // Certificate routes with feature protection (part of student_info feature group)
+                Route::middleware(['feature.access:student_management'])->group(function () {
+                    Route::controller(CertificateController::class)->group(function () {
+                        Route::get('certificate/',                 'index')->name('certificate.index')->middleware('PermissionCheck:certificate_read');
+                        Route::get('certificate/create',           'create')->name('certificate.create')->middleware('PermissionCheck:certificate_create');
+                        Route::post('certificate/store',           'store')->name('certificate.store')->middleware('PermissionCheck:certificate_create');
+                        Route::get('certificate/edit/{id}',           'edit')->name('certificate.edit')->middleware('PermissionCheck:certificate_update');
+                        Route::put('certificate/update/{id}',           'update')->name('certificate.update')->middleware('PermissionCheck:certificate_update');
+                        Route::delete('certificate/delete/{id}',   'delete')->name('certificate.delete')->middleware('PermissionCheck:certificate_delete', 'DemoCheck');
 
-                    Route::POST('certificate/preview',   'preview');
+                        Route::POST('certificate/preview',   'preview');
 
-                    Route::get('certificate/generate',                 'generate')->name('certificate.generate')->middleware('PermissionCheck:certificate_read');
-                    Route::post('certificate/generate',                 'generateSearch')->name('certificate.generate.search')->middleware('PermissionCheck:certificate_read');
+                        Route::get('certificate/generate',                 'generate')->name('certificate.generate')->middleware('PermissionCheck:certificate_read');
+                        Route::post('certificate/generate',                 'generateSearch')->name('certificate.generate.search')->middleware('PermissionCheck:certificate_read');
+                    });
                 });
 
                 Route::controller(GmeetController::class)->group(function () {
@@ -69,24 +78,30 @@ Route::middleware(saasMiddleware())->group(function () {
                     Route::any('liveclass/gmeet/search',           'search')->name('gmeet.search')->middleware('PermissionCheck:gmeet_read');
                 });
 
-                Route::controller(NoticeBoardController::class)->group(function () {
-                    Route::get('communication/notice-board/',                 'index')->name('notice-board.index')->middleware('PermissionCheck:notice_board_read');
-                    Route::get('communication/notice-board/create',           'create')->name('notice-board.create')->middleware('PermissionCheck:notice_board_create');
-                    Route::post('communication/notice-board/store',           'store')->name('notice-board.store')->middleware('PermissionCheck:notice_board_create');
-                    Route::get('communication/notice-board/edit/{id}',        'edit')->name('notice-board.edit')->middleware('PermissionCheck:notice_board_update');
-                    Route::put('communication/notice-board/update/{id}',      'update')->name('notice-board.update')->middleware('PermissionCheck:notice_board_update');
-                    Route::delete('communication/notice-board/delete/{id}',   'delete')->name('notice-board.delete')->middleware('PermissionCheck:notice_board_delete', 'DemoCheck');
-                    Route::get('/translate/{id}',                'translate')->name('notice-board.translate')->middleware('PermissionCheck:notice_board_update');
-                    Route::put('/translate/update/{id}',                'translateUpdate')->name('notice-board.translate.update')->middleware('PermissionCheck:notice_board_update');
+                // Notice Board routes with feature protection (part of settings/communication)
+                Route::middleware(['feature.access:settings'])->group(function () {
+                    Route::controller(NoticeBoardController::class)->group(function () {
+                        Route::get('communication/notice-board/',                 'index')->name('notice-board.index')->middleware('PermissionCheck:notice_board_read');
+                        Route::get('communication/notice-board/create',           'create')->name('notice-board.create')->middleware('PermissionCheck:notice_board_create');
+                        Route::post('communication/notice-board/store',           'store')->name('notice-board.store')->middleware('PermissionCheck:notice_board_create');
+                        Route::get('communication/notice-board/edit/{id}',        'edit')->name('notice-board.edit')->middleware('PermissionCheck:notice_board_update');
+                        Route::put('communication/notice-board/update/{id}',      'update')->name('notice-board.update')->middleware('PermissionCheck:notice_board_update');
+                        Route::delete('communication/notice-board/delete/{id}',   'delete')->name('notice-board.delete')->middleware('PermissionCheck:notice_board_delete', 'DemoCheck');
+                        Route::get('/translate/{id}',                'translate')->name('notice-board.translate')->middleware('PermissionCheck:notice_board_update');
+                        Route::put('/translate/update/{id}',                'translateUpdate')->name('notice-board.translate.update')->middleware('PermissionCheck:notice_board_update');
+                    });
                 });
 
-                Route::controller(SmsMailTemplateController::class)->group(function () {
-                    Route::get('communication/template/',                 'index')->name('template.index')->middleware('PermissionCheck:sms_mail_template_read');
-                    Route::get('communication/template/create',           'create')->name('template.create')->middleware('PermissionCheck:sms_mail_template_create');
-                    Route::post('communication/template/store',           'store')->name('template.store')->middleware('PermissionCheck:sms_mail_template_create');
-                    Route::get('communication/template/edit/{id}',        'edit')->name('template.edit')->middleware('PermissionCheck:sms_mail_template_update');
-                    Route::put('communication/template/update/{id}',      'update')->name('template.update')->middleware('PermissionCheck:sms_mail_template_update');
-                    Route::delete('communication/template/delete/{id}',   'delete')->name('template.delete')->middleware('PermissionCheck:sms_mail_template_delete', 'DemoCheck');
+                // SMS/Mail Template routes with feature protection (part of settings)
+                Route::middleware(['feature.access:settings'])->group(function () {
+                    Route::controller(SmsMailTemplateController::class)->group(function () {
+                        Route::get('communication/template/',                 'index')->name('template.index')->middleware('PermissionCheck:sms_mail_template_read');
+                        Route::get('communication/template/create',           'create')->name('template.create')->middleware('PermissionCheck:sms_mail_template_create');
+                        Route::post('communication/template/store',           'store')->name('template.store')->middleware('PermissionCheck:sms_mail_template_create');
+                        Route::get('communication/template/edit/{id}',        'edit')->name('template.edit')->middleware('PermissionCheck:sms_mail_template_update');
+                        Route::put('communication/template/update/{id}',      'update')->name('template.update')->middleware('PermissionCheck:sms_mail_template_update');
+                        Route::delete('communication/template/delete/{id}',   'delete')->name('template.delete')->middleware('PermissionCheck:sms_mail_template_delete', 'DemoCheck');
+                    });
                 });
 
                 Route::controller(SmsMailLogController::class)->group(function () {

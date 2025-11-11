@@ -17,7 +17,8 @@ use Modules\MainApp\Entities\Feature;
  *
  * Handles all feature access control logic with zero-trust security model
  * - Deny by default
- * - Super admin bypass (role_id = 1)
+ * - System admin bypass (role_id = 1 AND school_id = null)
+ * - School admins (role_id = 1 AND school_id != null) go through feature checks
  * - School isolation for multi-tenant safety
  * - Comprehensive audit logging
  */
@@ -29,7 +30,8 @@ class FeatureAccessService
     private const CACHE_TTL = 3600;
 
     /**
-     * Super admin role ID with full access bypass
+     * Super admin role ID (system admins only - school_id must be null)
+     * School admins have role_id = 1 but school_id != null
      */
     private const SUPER_ADMIN_ROLE_ID = 1;
 
@@ -42,9 +44,9 @@ class FeatureAccessService
      */
     public function checkAccess(User $user, string $featureAttribute): bool
     {
-        // Super admin bypass - full access
+        // System admin bypass - full platform access (school_id = null)
         if ($this->isSuperAdmin($user)) {
-            $this->logAccessAttempt($user, $featureAttribute, true, 'super_admin_bypass');
+            $this->logAccessAttempt($user, $featureAttribute, true, 'system_admin_bypass');
             return true;
         }
 
@@ -116,8 +118,8 @@ class FeatureAccessService
         bool $granted,
         ?string $reason = null
     ): void {
-        // Only log denials and super admin access for security audits
-        if (!$granted || $reason === 'super_admin_bypass') {
+        // Only log denials and system admin access for security audits
+        if (!$granted || $reason === 'system_admin_bypass') {
             Log::channel('daily')->info('Feature Access Attempt', [
                 'user_id' => $user->id,
                 'school_id' => $user->school_id,
@@ -237,14 +239,18 @@ class FeatureAccessService
     }
 
     /**
-     * Check if user is super admin
+     * Check if user is system admin (super admin)
+     *
+     * System admins have no school_id (null), allowing full platform access.
+     * School admins have role_id = 1 but school_id != null, and must follow feature restrictions.
      *
      * @param User $user User to check
-     * @return bool True if super admin
+     * @return bool True if system admin with no school context
      */
     private function isSuperAdmin(User $user): bool
     {
-        return $user->role_id === self::SUPER_ADMIN_ROLE_ID;
+        // Only users without school_id are true system admins
+        return $user->school_id === null;
     }
 
     /**

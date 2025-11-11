@@ -230,24 +230,30 @@ class CashTransferRepository
                 'relationships' => ['journal', 'transferredBy', 'approvedBy']
             ]);
 
-            // Super admins see all transfers, regular users only see their own transfers
-            if (!isSuperAdmin()) {
-                $query->where('transferred_by', auth()->id());
-                \Log::info('🔒 [CASH-TRANSFER-REPO] User Filter Applied', [
-                    'user_id' => auth()->id()
-                ]);
-            } else {
-                // Super admin: filter by their current branch (set via global branch switching)
-                $currentBranchId = auth()->user()->branch_id;
-                if ($currentBranchId) {
-                    $query->where('branch_id', $currentBranchId);
-                    \Log::info('🏢 [CASH-TRANSFER-REPO] Super Admin Branch Filter Applied', [
-                        'branch_id' => $currentBranchId,
-                        'filter_type' => 'user_branch'
+            // School Super Admin (role_id=1) OR Regular Admin (role_id=2) see all school transfers
+            if (in_array(auth()->user()->role_id, [1, 2])) {
+                // See ALL school transfers (school_id filtering handled by global scope)
+                // Optionally filter by branch_id if user has a specific branch
+                if ($branchId = auth()->user()->branch_id) {
+                    $query->where('branch_id', $branchId);
+                    \Log::info('🏢 [CASH-TRANSFER-REPO] Admin Branch Filter Applied', [
+                        'role_id' => auth()->user()->role_id,
+                        'branch_id' => $branchId,
                     ]);
                 } else {
-                    \Log::info('🌐 [CASH-TRANSFER-REPO] Super Admin - All Branches (no branch assigned)');
+                    \Log::info('🌐 [CASH-TRANSFER-REPO] Admin - All School Transfers', [
+                        'role_id' => auth()->user()->role_id,
+                        'school_id' => auth()->user()->school_id
+                    ]);
                 }
+            }
+            // Other roles (parent, teacher, student - role_id > 2) see only their own transfers
+            else {
+                $query->where('transferred_by', auth()->id());
+                \Log::info('🔒 [CASH-TRANSFER-REPO] User Filter Applied', [
+                    'user_id' => auth()->id(),
+                    'role_id' => auth()->user()->role_id
+                ]);
             }
 
             // Apply filters from request

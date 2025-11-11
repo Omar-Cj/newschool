@@ -15,8 +15,13 @@ class CashTransferPolicy
      */
     public function viewAny(User $user): bool
     {
-        // Users with permission to view cash transfers
-        return hasPermission('cash_transfer_read') || $user->role_id == 1;
+        // System admins (school_id === null) have full access
+        if ($user->school_id === null) {
+            return true;
+        }
+
+        // School users need permission
+        return hasPermission('cash_transfer_read');
     }
 
     /**
@@ -24,8 +29,13 @@ class CashTransferPolicy
      */
     public function view(User $user, CashTransfer $transfer): bool
     {
-        // User can view if they have permission and it belongs to their branch
-        return (hasPermission('cash_transfer_read') || $user->role_id == 1)
+        // System admins (school_id === null) have full access
+        if ($user->school_id === null) {
+            return true;
+        }
+
+        // School users need permission and branch match
+        return hasPermission('cash_transfer_read')
             && $user->branch_id === $transfer->journal->branch_id;
     }
 
@@ -34,8 +44,13 @@ class CashTransferPolicy
      */
     public function create(User $user): bool
     {
-        // Users with permission to create cash transfers
-        return hasPermission('cash_transfer_create') || $user->role_id == 1;
+        // System admins (school_id === null) have full access
+        if ($user->school_id === null) {
+            return true;
+        }
+
+        // School users need permission
+        return hasPermission('cash_transfer_create');
     }
 
     /**
@@ -43,8 +58,13 @@ class CashTransferPolicy
      */
     public function approve(User $user, CashTransfer $transfer): bool
     {
-        // Only super admins (role_id = 1) or users with approve permission can approve
-        return (hasPermission('cash_transfer_approve') || $user->role_id == 1)
+        // System admins (school_id === null) have full access
+        if ($user->school_id === null) {
+            return $transfer->status === 'pending';
+        }
+
+        // School users need permission, branch match, and pending status
+        return hasPermission('cash_transfer_approve')
             && $user->branch_id === $transfer->journal->branch_id
             && $transfer->status === 'pending';
     }
@@ -54,8 +74,13 @@ class CashTransferPolicy
      */
     public function reject(User $user, CashTransfer $transfer): bool
     {
-        // Only super admins (role_id = 1) or users with reject permission can reject
-        return (hasPermission('cash_transfer_reject') || $user->role_id == 1)
+        // System admins (school_id === null) have full access
+        if ($user->school_id === null) {
+            return $transfer->status === 'pending';
+        }
+
+        // School users need permission, branch match, and pending status
+        return hasPermission('cash_transfer_reject')
             && $user->branch_id === $transfer->journal->branch_id
             && $transfer->status === 'pending';
     }
@@ -65,8 +90,13 @@ class CashTransferPolicy
      */
     public function delete(User $user, CashTransfer $transfer): bool
     {
-        // User can delete if they have permission and transfer is pending
-        return (hasPermission('cash_transfer_delete') || $user->role_id == 1)
+        // System admins (school_id === null) have full access
+        if ($user->school_id === null) {
+            return $transfer->status === 'pending';
+        }
+
+        // School users need permission, branch match, and pending status
+        return hasPermission('cash_transfer_delete')
             && $user->branch_id === $transfer->journal->branch_id
             && $transfer->status === 'pending';
     }
@@ -76,7 +106,12 @@ class CashTransferPolicy
      */
     public function viewStatistics(User $user): bool
     {
-        // Users with permission to view statistics or super admins
-        return hasPermission('cash_transfer_statistics') || $user->role_id == 1;
+        // System admins (school_id === null) have full access
+        if ($user->school_id === null) {
+            return true;
+        }
+
+        // School users need permission
+        return hasPermission('cash_transfer_statistics');
     }
 }
