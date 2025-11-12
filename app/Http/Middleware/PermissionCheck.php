@@ -44,7 +44,7 @@ class PermissionCheck
                 ]);
 
                 // Check if permission exists in user's permissions array
-                if (in_array($permission, Auth::user()->permissions)) {
+                if (in_array($permission, Auth::user()->permissions ?? [])) {
                     Log::info('✅ MIDDLEWARE: Admin permission granted', [
                         'role_id' => Auth::user()->role_id,
                         'permission' => $permission
@@ -91,7 +91,7 @@ class PermissionCheck
                 ]);
 
                 // School admins (roles 1 and 2) need permission in array
-                if (in_array($permission, Auth::user()->permissions)) {
+                if (in_array($permission, Auth::user()->permissions ?? [])) {
                     Log::info('✅ MIDDLEWARE: Admin permission granted', [
                         'role_id' => Auth::user()->role_id,
                         'permission' => $permission
@@ -121,16 +121,21 @@ class PermissionCheck
 
         $user = Auth::user();
 
+        // Super Admin (role_id = 1) bypass - full access to all features
+        if ($user->role_id == 1) {
+            return $next($request);
+        }
+
         // System admin (school_id === null): Check permission only
         if ($user->school_id === null) {
-            if (in_array($permission, $user->permissions)) {
+            if (in_array($permission, $user->permissions ?? [])) {
                 return $next($request);
             }
             return abort(403, 'Access Denied - Insufficient permissions');
         }
 
         // School admin (has school_id): Require BOTH permission AND feature (AND logic)
-        $hasPermission = in_array($permission, $user->permissions);
+        $hasPermission = in_array($permission, $user->permissions ?? []);
 
         // Determine feature name
         if ($featureName === null) {

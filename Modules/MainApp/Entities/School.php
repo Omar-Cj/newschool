@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 
 class School extends Model
 {
@@ -69,12 +70,69 @@ class School extends Model
     {
         $cacheKey = "school_features_{$this->id}";
 
-        return Cache::remember($cacheKey, now()->addHours(24), function () {
+        // LOG POINT A: Cache lookup
+        $cacheHit = Cache::has($cacheKey);
+        try {
+            Log::info('[SCHOOL] getAllowedFeatures() - Cache lookup', [
+                'school_id' => $this->id,
+                'school_name' => $this->name,
+                'package_id' => $this->package_id,
+                'cache_key' => $cacheKey,
+                'cache_hit' => $cacheHit,
+            ]);
+        } catch (\Exception $e) {
+            // Silently ignore logging errors
+        }
+
+        return Cache::remember($cacheKey, now()->addHours(24), function () use ($cacheKey) {
+            // LOG POINT B: Cache miss - building features
+            try {
+                Log::info('[SCHOOL] getAllowedFeatures() - Cache miss, building features', [
+                    'school_id' => $this->id,
+                    'school_name' => $this->name,
+                    'package_id' => $this->package_id,
+                    'has_package_relationship' => $this->package !== null,
+                ]);
+            } catch (\Exception $e) {}
+
             if (!$this->package) {
+                // LOG POINT C: No package - returning empty
+                try {
+                    Log::warning('[SCHOOL] getAllowedFeatures() - No package found', [
+                        'school_id' => $this->id,
+                        'school_name' => $this->name,
+                        'package_id' => $this->package_id,
+                        'result' => 'empty_array',
+                    ]);
+                } catch (\Exception $e) {}
                 return collect([]);
             }
 
-            return $this->package->getAllowedPermissions();
+            // LOG POINT D: Package found, calling getAllowedPermissions()
+            try {
+                Log::info('[SCHOOL] getAllowedFeatures() - Package found, fetching permissions', [
+                    'school_id' => $this->id,
+                    'school_name' => $this->name,
+                    'package_id' => $this->package->id,
+                    'package_name' => $this->package->name,
+                ]);
+            } catch (\Exception $e) {}
+
+            $permissions = $this->package->getAllowedPermissions();
+
+            // LOG POINT E: Results from package
+            try {
+                Log::info('[SCHOOL] getAllowedFeatures() - Permissions received from package', [
+                    'school_id' => $this->id,
+                    'school_name' => $this->name,
+                    'package_id' => $this->package->id,
+                    'package_name' => $this->package->name,
+                    'permission_count' => $permissions->count(),
+                    'sample_permissions' => $permissions->take(10)->toArray(),
+                ]);
+            } catch (\Exception $e) {}
+
+            return $permissions;
         });
     }
 

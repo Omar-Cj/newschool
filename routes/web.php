@@ -399,7 +399,26 @@ Route::get('/debug/feature-access', function () {
     $user = Auth::user();
     $school = $user->school;
 
-    return response()->json([
+    // Enhanced diagnostics
+    // Get all parent features checked in sidebar
+    $sidebarParentFeatures = [
+        'online_admission',
+        'student_info',
+        'academic',
+        'attendance',
+        'fees',
+        'examination',
+        'library',
+        'online_examination',
+        'homework',
+        'transport',
+    ];
+
+    // Get allowed features for current school
+    $allowedFeatures = $school?->getAllowedFeatures()->toArray() ?? [];
+    sort($allowedFeatures);
+
+    $diagnostics = [
         'user' => [
             'id' => $user->id,
             'email' => $user->email,
@@ -413,14 +432,140 @@ Route::get('/debug/feature-access', function () {
             'has_package_relation' => $school->package !== null,
             'package_name' => $school->package?->name,
         ] : null,
-        'allowed_features' => $school?->getAllowedFeatures()->toArray() ?? [],
-        'feature_checks' => [
-            'online_admission' => hasFeature('online_admission'),
-            'student_info' => hasFeature('student_info'),
-            'academic' => hasFeature('academic'),
-            'fees' => hasFeature('fees'),
-            'library' => hasFeature('library'),
-            'online_examination' => hasFeature('online_examination'),
+        'allowed_features' => $allowedFeatures,
+        'allowed_features_count' => count($allowedFeatures),
+        'parent_feature_checks' => [],
+        'sidebar_section_visibility' => [],
+    ];
+
+    // Check each parent feature
+    foreach ($sidebarParentFeatures as $parentFeature) {
+        $hasAccess = hasFeature($parentFeature);
+        $existsInArray = in_array($parentFeature, $allowedFeatures);
+
+        $diagnostics['parent_feature_checks'][$parentFeature] = [
+            'hasFeature_result' => $hasAccess,
+            'exists_in_allowed_features' => $existsInArray,
+            'status' => $hasAccess ? 'PASS' : 'FAIL',
+        ];
+    }
+
+    // Analyze sidebar section visibility
+    $diagnostics['sidebar_section_visibility'] = [
+        'student_info' => [
+            'required_features' => ['student', 'admission', 'parent', 'promote_students', 'disabled_students', 'student_category'],
+            'has_any' => false,
         ],
-    ], 200, [], JSON_PRETTY_PRINT);
+        'academic' => [
+            'required_features' => ['class', 'section', 'class_routine', 'subject', 'assign_subject', 'assign_class_teacher'],
+            'has_any' => false,
+        ],
+        'fees' => [
+            'required_features' => ['fees_group', 'fees_type', 'fees_master', 'fees_collect'],
+            'has_any' => false,
+        ],
+        'attendance' => [
+            'required_features' => ['student_attendance', 'staff_attendance'],
+            'has_any' => false,
+        ],
+        'examination' => [
+            'required_features' => ['exam_setup', 'marks_register', 'marks_grade', 'exam_settings'],
+            'has_any' => false,
+        ],
+    ];
+
+    // Check if school has any of the required features for each section
+    foreach ($diagnostics['sidebar_section_visibility'] as $section => &$sectionData) {
+        foreach ($sectionData['required_features'] as $feature) {
+            if (in_array($feature, $allowedFeatures)) {
+                $sectionData['has_any'] = true;
+                break;
+            }
+        }
+        $sectionData['will_render'] = $sectionData['has_any'] ? 'YES' : 'NO';
+    }
+
+    // ENHANCED: Cache diagnostics
+    if ($school) {
+        $schoolCacheKey = "school_features_{$school->id}";
+        $packageCacheKey = $school->package_id ? "package_allowed_permissions_{$school->package_id}" : null;
+
+        $diagnostics['cache'] = [
+            'school_cache_key' => $schoolCacheKey,
+            'school_cache_exists' => Cache::has($schoolCacheKey),
+            'school_cache_count' => Cache::has($schoolCacheKey) ? (is_array(Cache::get($schoolCacheKey)) ? count(Cache::get($schoolCacheKey)) : Cache::get($schoolCacheKey)->count()) : 0,
+            'package_cache_key' => $packageCacheKey,
+            'package_cache_exists' => $packageCacheKey ? Cache::has($packageCacheKey) : false,
+            'package_cache_count' => $packageCacheKey && Cache::has($packageCacheKey) ? (is_array(Cache::get($packageCacheKey)) ? count(Cache::get($packageCacheKey)) : Cache::get($packageCacheKey)->count()) : 0,
+        ];
+
+        // ENHANCED: Package details
+        if ($school->package) {
+            $ppfCount = DB::table('package_permission_features')
+                ->where('package_id', $school->package->id)
+                ->count();
+
+            $activeCount = DB::table('package_permission_features as ppf')
+                ->join('permission_features as pf', 'ppf.permission_feature_id', '=', 'pf.id')
+                ->where('ppf.package_id', $school->package->id)
+                ->where('pf.status', 1)
+                ->count();
+
+            $validPermissionCount = DB::table('package_permission_features as ppf')
+                ->join('permission_features as pf', 'ppf.permission_feature_id', '=', 'pf.id')
+                ->join('permissions as p', 'pf.permission_id', '=', 'p.id')
+                ->where('ppf.package_id', $school->package->id)
+                ->where('pf.status', 1)
+                ->distinct()
+                ->count('p.attribute');
+
+            // Get all permission keywords from database for this package
+            $dbPermissions = DB::table('package_permission_features as ppf')
+                ->join('permission_features as pf', 'ppf.permission_feature_id', '=', 'pf.id')
+                ->join('permissions as p', 'pf.permission_id', '=', 'p.id')
+                ->where('ppf.package_id', $school->package->id)
+                ->where('pf.status', 1)
+                ->distinct()
+                ->pluck('p.keywords')
+                ->filter()
+                ->flatMap(function($keywords) {
+                    return is_string($keywords) ? json_decode($keywords, true) : $keywords;
+                })
+                ->filter()
+                ->unique()
+                ->sort()
+                ->values()
+                ->toArray();
+
+            $diagnostics['package_diagnostics'] = [
+                'total_permission_features' => $ppfCount,
+                'active_permission_features' => $activeCount,
+                'inactive_permission_features' => $ppfCount - $activeCount,
+                'valid_final_permissions' => $validPermissionCount,
+                'database_keywords' => $dbPermissions,
+                'database_keywords_count' => count($dbPermissions),
+                'cache_vs_db_match' => count($allowedFeatures) === count($dbPermissions),
+                'missing_in_cache' => array_diff($dbPermissions, $allowedFeatures),
+                'extra_in_cache' => array_diff($allowedFeatures, $dbPermissions),
+            ];
+        }
+
+        // ENHANCED: Database integrity check
+        $diagnostics['database_check'] = [
+            'school_exists' => DB::table('schools')->where('id', $school->id)->exists(),
+            'package_exists' => $school->package_id ? DB::table('packages')->where('id', $school->package_id)->exists() : false,
+            'has_package_features' => $school->package_id ? DB::table('package_permission_features')->where('package_id', $school->package_id)->exists() : false,
+        ];
+    }
+
+    // ENHANCED: Logging trigger
+    Log::info('[DEBUG ENDPOINT] Feature access inspection', [
+        'user_id' => $user->id,
+        'school_id' => $user->school_id,
+        'package_id' => $school->package_id ?? null,
+        'allowed_features_count' => count($diagnostics['allowed_features']),
+        'timestamp' => now()->toISOString(),
+    ]);
+
+    return response()->json($diagnostics, 200, [], JSON_PRETTY_PRINT);
 })->middleware('auth');

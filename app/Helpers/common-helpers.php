@@ -426,6 +426,11 @@ if (!function_exists('hasPermission')) {
             return false;
         }
 
+        // Super Admin bypass - role_id 1 has all permissions
+        if (Auth::check() && Auth::user()->role_id == 1) {
+            return true;
+        }
+
         // Default permission check
         if (in_array($keyword, Auth::user()->permissions ?? [])) {
             return true;
@@ -743,20 +748,32 @@ if (!function_exists('hasFeature')) {
             'school_id_from_user' => $user->school_id,
         ]);
 
-        // School users without a package get all features (single-school mode)
-        // This allows the system to work in both single-school and multi-school modes
-        if (!$user->school || $user->school->package_id === null) {
-            // LOG POINT 6: Single-school mode access
-            Log::channel('feature_access')->info('hasFeature() - Single-school mode', [
+        // School users MUST have a valid school and package in SaaS mode
+        // No package = no feature access (enforce subscription-based restrictions)
+        if (!$user->school) {
+            // LOG POINT 6a: No school relationship - deny access
+            Log::channel('feature_access')->info('hasFeature() - No school relationship', [
                 'feature_keyword' => $keyword,
                 'user_id' => $user->id,
                 'user_school_id' => $user->school_id,
-                'school_exists' => $user->school !== null,
-                'school_package_id' => $user->school?->package_id,
-                'result' => true,
-                'reason' => 'single_school_mode_no_package',
+                'result' => false,
+                'reason' => 'no_school_relationship',
             ]);
-            return true;
+            return false;
+        }
+
+        if ($user->school->package_id === null) {
+            // LOG POINT 6b: No package assigned - deny access (SaaS mode)
+            Log::channel('feature_access')->info('hasFeature() - No package assigned', [
+                'feature_keyword' => $keyword,
+                'user_id' => $user->id,
+                'user_school_id' => $user->school_id,
+                'school_id' => $user->school->id,
+                'school_package_id' => null,
+                'result' => false,
+                'reason' => 'no_package_saas_mode',
+            ]);
+            return false;
         }
 
         // LOG POINT 7: Package-based restriction enforcement
