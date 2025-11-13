@@ -127,7 +127,8 @@
                     </li>
                 @endif
 
-                @if (hasPermission('id_card_read') || hasPermission('id_card_generate_read'))
+                @if ((hasPermission('id_card_read') || hasPermission('id_card_generate_read')) &&
+                      hasAnyFeature(['id_card', 'id_card_generate']))
                     <li class="sidebar-menu-item {{ set_menu(['idcard*']) }}">
                         <a class="parent-item-content has-arrow">
                             <i class="las la-swatchbook"></i>
@@ -149,7 +150,8 @@
                     </li>
                 @endif
 
-                @if (hasPermission('certificate_read') || hasPermission('certificate_generate_read'))
+                @if ((hasPermission('certificate_read') || hasPermission('certificate_generate_read')) &&
+                      hasAnyFeature(['certificate', 'certificate_generate']))
                     <li class="sidebar-menu-item {{ set_menu(['certificate*']) }}">
                         <a class="parent-item-content has-arrow">
                             <i class="las la-swatchbook"></i>
@@ -306,22 +308,22 @@
                 {{-- End Attendance --}}
 
 
-                {{-- Start Attendance --}}
-                @if ((hasPermission('attendance_read') || hasPermission('report_attendance_read')) && hasFeature('attendance'))
-                    <li class="sidebar-menu-item {{ set_menu(['attendance*']) }}">
+                {{-- Start Leave --}}
+                @if ((hasPermission('leave_type_read') || hasPermission('leave_request_read')) && hasAnyFeature(['leave_type', 'leave_request']))
+                    <li class="sidebar-menu-item {{ set_menu(['leave-type*', 'leave-request*']) }}">
                         <a class="parent-item-content has-arrow">
                             <i class="las la-pen-nib"></i>
                             <span class="on-half-expanded">{{ ___('leave.Leave') }}</span>
                         </a>
                         <ul class="child-menu-list">
-                            @if (hasPermission('attendance_read'))
+                            @if (auth()->user()->school_id ? (hasFeature('leave_type') && hasPermission('leave_type_read')) : hasPermission('leave_type_read'))
                                 <li
                                     class="sidebar-menu-item {{ set_menu(['leave-type.index', 'leave-type.create', 'leave-type.edit']) }}">
                                     <a href="{{ route('leave-type.index') }}">{{ ___('leave.Type') }}</a>
                                 </li>
                             @endif
 
-                            @if (hasPermission('attendance_read'))
+                            @if (auth()->user()->school_id ? (hasFeature('leave_request') && hasPermission('leave_request_read')) : hasPermission('leave_request_read'))
                                 <li
                                     class="sidebar-menu-item {{ set_menu(['leave-request.index', 'leave-request.edit']) }}">
                                     <a href="{{ route('leave-request.index') }}">{{ ___('leave.Request Log') }}</a>
@@ -333,7 +335,7 @@
                         </ul>
                     </li>
                 @endif
-                {{-- End Attendance --}}
+                {{-- End Leave --}}
 
                 {{-- Start Fees --}}
                 @if (
@@ -415,7 +417,7 @@
                         hasPermission('marks_register_read') ||
                         hasPermission('exam_entry_read') ||
                         hasPermission('exam_setting_read')) &&
-                        hasAnyFeature(['exam_type', 'marks_grade', 'exam_entry', 'terms', 'exam_assign', 'marks_register', 'exam_setting']))
+                        hasAnyFeature(['exam_type', 'marks_grade', 'exam_entry', 'terms_create', 'terms_read', 'terms_update', 'terms_delete', 'exam_assign', 'marks_register', 'exam_setting']))
                     <li
                         class="sidebar-menu-item {{ set_menu(['exam-type*', 'marks-grade*', 'exam-assign*', 'marks-register*', 'examination-settings*', 'terms*', 'exam-entry*']) }}">
                         <a class="parent-item-content has-arrow">
@@ -423,7 +425,7 @@
                             <span class="on-half-expanded">{{ ___('settings.examination') }}</span>
                         </a>
                         <ul class="child-menu-list">
-                            @if (auth()->user()->school_id ? (hasFeature('terms') && hasPermission('terms_read')) : hasPermission('terms_read'))
+                            @if (auth()->user()->school_id ? (hasAnyFeature(['terms_create', 'terms_read', 'terms_update', 'terms_delete']) && hasPermission('terms_read')) : hasPermission('terms_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['terms*']) }}">
                                     <a href="{{ route('terms.index') }}">
                                         {{ ___('academic.terms') }}
@@ -437,33 +439,33 @@
                                     </a>
                                 </li>
                             @endif
-                            @if (hasPermission('exam_type_read'))
+                            @if (auth()->user()->school_id ? (hasFeature('exam_type') && hasPermission('exam_type_read')) : hasPermission('exam_type_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['exam-type*']) }}">
                                     <a href="{{ route('exam-type.index') }}">{{ ___('examination.exam_type') }}</a>
                                 </li>
                             @endif
-                            @if (hasPermission('marks_grade_read'))
+                            @if (auth()->user()->school_id ? (hasFeature('marks_grade') && hasPermission('marks_grade_read')) : hasPermission('marks_grade_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['marks-grade*']) }}">
                                     <a
                                         href="{{ route('marks-grade.index') }}">{{ ___('examination.marks_grade') }}</a>
                                 </li>
                             @endif
 
-                            @if (hasPermission('exam_assign_read'))
+                            @if (auth()->user()->school_id ? (hasFeature('exam_assign') && hasPermission('exam_assign_read')) : hasPermission('exam_assign_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['exam-assign*']) }}">
                                     <a
                                         href="{{ route('exam-assign.index') }}">{{ ___('examination.exam_assign') }}</a>
                                 </li>
                             @endif
 
-                            @if (hasPermission('marks_register_read'))
+                            @if (auth()->user()->school_id ? (hasFeature('marks_register') && hasPermission('marks_register_read')) : hasPermission('marks_register_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['marks-register*']) }}">
                                     <a
                                         href="{{ route('marks-register.index') }}">{{ ___('examination.marks_register') }}</a>
                                 </li>
                             @endif
 
-                            @if (hasPermission('exam_setting_read'))
+                            @if (auth()->user()->school_id ? (hasFeature('exam_setting') && hasPermission('exam_setting_read')) : hasPermission('exam_setting_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['examination-settings*']) }}">
                                     <a
                                         href="{{ route('examination-settings.index') }}">{{ ___('settings.Settings') }}</a>
@@ -512,7 +514,7 @@
                     </li>
                 @endif
                 <!-- Online Examination end -->
-                @if (hasPermission('homework_read'))
+                @if (hasPermission('homework_read') && hasFeature('homework'))
 
                     <li class="sidebar-menu-item {{ set_menu(['homework*']) }}">
                         <a class="parent-item-content has-arrow">
@@ -533,7 +535,8 @@
                     @include('studymaterial::admin_sidebar_menu')
                 @endif
 
-                @if (hasPermission('notice_board_read') || hasPermission('sms_mail_template_read') || hasPermission('sms_mail_read'))
+                @if ((hasPermission('notice_board_read') || hasPermission('sms_mail_template_read') || hasPermission('sms_mail_read')) &&
+                      hasAnyFeature(['notice_board', 'sms_mail_template', 'sms_mail']))
 
                     <li class="sidebar-menu-item {{ set_menu(['communication/*']) }}">
                         <a class="parent-item-content has-arrow">
@@ -635,7 +638,7 @@
                 @endif
 
 
-                @if (hasPermission('gmeet_read'))
+                @if (hasPermission('gmeet_read') && hasFeature('gmeet'))
 
                     <li class="sidebar-menu-item {{ set_menu(['liveclass/gmeet*']) }}">
                         <a class="parent-item-content has-arrow">
@@ -702,14 +705,14 @@
                             <span class="on-half-expanded">{{ ___('account.Accounts') }}</span>
                         </a>
                         <ul class="child-menu-list">
-                            @if (hasPermission('account_head_read'))
+                            @if (auth()->user()->school_id ? (hasFeature('account_head') && hasPermission('account_head_read')) : hasPermission('account_head_read'))
                                 <li
                                     class="sidebar-menu-item {{ set_menu(['account_head.index', 'account_head.create', 'account_head.edit']) }}">
                                     <a
                                         href="{{ route('account_head.index') }}">{{ ___('account.account_head') }}</a>
                                 </li>
                             @endif
-                            @if (hasPermission('income_read'))
+                            @if (auth()->user()->school_id ? (hasFeature('income') && hasPermission('income_read')) : hasPermission('income_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['income*']) }}">
                                     <a href="{{ route('income.index') }}">{{ ___('account.income') }}</a>
                                 </li>
@@ -759,60 +762,61 @@
                             <span class="on-half-expanded">{{ ___('settings.Report') }}</span>
                         </a>
                         <ul class="child-menu-list">
-                            @if (hasPermission('report_marksheet_read') || hasPermission('report_progress_card_read'))
+                            @if ((hasPermission('report_marksheet_read') || hasPermission('report_progress_card_read')) &&
+                                  hasAnyFeature(['marksheet', 'progress_card']))
                                 <li class="sidebar-menu-item {{ set_menu(['report-examination*']) }}">
                                     <a href="{{ route('report-examination.index') }}">{{ ___('settings.examination') }}</a>
                                 </li>
                             @endif
-                            @if (hasPermission('student_reports_read'))
+                            @if (auth()->user()->school_id ? (hasFeature('student_reports_read') && hasPermission('student_reports_read')) : hasPermission('student_reports_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['report-student*']) }}">
                                     <a
                                         href="{{ route('report-student.index') }}">{{ ___('settings.student_report') }}</a>
                                 </li>
                             @endif
-                            @if (hasPermission('billing_reports_read'))
+                            @if (auth()->user()->school_id ? (hasFeature('billing_reports') && hasPermission('billing_reports_read')) : hasPermission('billing_reports_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['report-billing*']) }}">
                                     <a
                                         href="{{ route('report-billing.index') }}">{{ ___('settings.billing_report') }}</a>
                                 </li>
                             @endif
-                            @if (hasPermission('report_merit_list_read'))
+                            @if (auth()->user()->school_id ? (hasFeature('merit_list') && hasPermission('report_merit_list_read')) : hasPermission('report_merit_list_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['report-merit-list*']) }}">
                                     <a
                                         href="{{ route('report-merit-list.index') }}">{{ ___('settings.merit_list') }}</a>
                                 </li>
                             @endif
-                            @if (hasPermission('report_due_fees_read'))
+                            @if (auth()->user()->school_id ? (hasFeature('due_fees') && hasPermission('report_due_fees_read')) : hasPermission('report_due_fees_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['report-due-fees*']) }}">
                                     <a
                                         href="{{ route('report-due-fees.index') }}">{{ ___('settings.due_fees') }}</a>
                                 </li>
                             @endif
-                            @if (hasPermission('report_fees_collection_read'))
+                            @if (auth()->user()->school_id ? (hasFeature('fees_collection') && hasPermission('report_fees_collection_read')) : hasPermission('report_fees_collection_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['report-fees-collection*']) }}">
                                     <a
                                         href="{{ route('report-fees-collection.index') }}">{{ ___('settings.fees_collection') }}</a>
                                 </li>
                             @endif
-                            @if (hasPermission('report_account_read'))
+                            @if (auth()->user()->school_id ? (hasFeature('account') && hasPermission('report_account_read')) : hasPermission('report_account_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['report-account*']) }}">
                                     <a
                                         href="{{ route('report-account.index') }}">{{ ___('settings.Accounts') }}</a>
                                 </li>
                             @endif
-                            @if (hasPermission('class_routine_read'))
+                            @if (auth()->user()->school_id ? (hasFeature('class_routine') && hasPermission('class_routine_read')) : hasPermission('class_routine_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['report-class-routine*']) }}">
                                     <a
                                         href="{{ route('report-class-routine.index') }}">{{ ___('settings.class_routine') }}</a>
                                 </li>
                             @endif
-                            @if (hasPermission('exam_routine_read'))
+                            @if (auth()->user()->school_id ? (hasFeature('exam_routine') && hasPermission('exam_routine_read')) : hasPermission('exam_routine_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['report-exam-routine*']) }}">
                                     <a
                                         href="{{ route('report-exam-routine.index') }}">{{ ___('settings.exam_routine') }}</a>
                                 </li>
                             @endif
-                            @if (hasPermission('report_attendance_read'))
+                            @if (auth()->user()->school_id ? (hasFeature('attendance_report') && hasPermission('report_attendance_read')) : hasPermission('report_attendance_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['report-attendance/report*']) }}">
                                     <a
                                         href="{{ route('report-attendance.report') }}">{{ ___('settings.Attendance') }}</a>
@@ -882,7 +886,7 @@
                     </li>
                 @endif
                 <!-- Subscription layout start -->
-                @if (hasPermission('subscribe_read'))
+                @if (hasPermission('subscribe_read') && hasFeature('subscribe'))
                     <li class="sidebar-menu-item {{ set_menu(['subscribe*']) }}">
                         <a href="{{ route('subscribe.index') }}" class="parent-item-content">
                             <i class="las la-tags"></i>
@@ -894,7 +898,7 @@
 
                 <!-- Subscription layout start -->
 
-                @if (hasPermission('contact_message_read'))
+                @if (hasPermission('contact_message_read') && hasFeature('contact_message'))
                     <li class="sidebar-menu-item {{ set_menu(['contact-message*']) }}">
                         <a href="{{ route('contact-message.index') }}" class="parent-item-content">
                             <i class="las la-sms"></i>
@@ -992,13 +996,13 @@
                         <!-- second layer child menu list start  -->
 
                         <ul class="child-menu-list">
-                            @if (hasPermission('gallery_category_read'))
+                            @if (auth()->user()->school_id ? (hasFeature('gallery_category') && hasPermission('gallery_category_read')) : hasPermission('gallery_category_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['gallery-category*']) }}">
                                     <a
                                         href="{{ route('gallery-category.index') }}">{{ ___('settings.Gallery_category') }}</a>
                                 </li>
                             @endif
-                            @if (hasPermission('gallery_read'))
+                            @if (auth()->user()->school_id ? (hasFeature('gallery') && hasPermission('gallery_read')) : hasPermission('gallery_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['gallery', 'gallery/*']) }}">
                                     <a href="{{ route('gallery.index') }}">{{ ___('settings.Images') }}</a>
                                 </li>
@@ -1009,15 +1013,15 @@
                 <!-- Gallery end -->
 
                 <!-- Live Chat -->
-                @if (hasModule('LiveChat'))
+                @if (hasModule('LiveChat') && hasFeature('livechat'))
                     @include('livechat::menu')
                 @endif
                 <!-- Live Chat end-->
-                <!-- Live Chat -->
-                @if (hasModule('Forums'))
+                <!-- Forums -->
+                @if (hasModule('Forums') && hasFeature('forums'))
                     @include('forums::menus.forums_menu')
                 @endif
-                <!-- Live Chat end-->
+                <!-- Forums end-->
 
                 <!-- Settings layout start -->
                 @if (
@@ -1042,7 +1046,7 @@
 
                         <!-- second layer child menu list start  -->
                         <ul class="child-menu-list">
-                            @if (hasPermission('general_settings_read'))
+                            @if (auth()->user()->school_id ? (hasFeature('general_settings') && hasPermission('general_settings_read')) : hasPermission('general_settings_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['settings.general-settings']) }}">
                                     <a
                                         href="{{ safeRoute('settings.general-settings') }}">{{ ___('settings.general_settings') }}</a>
@@ -1106,7 +1110,7 @@
                             @endif
 
                             <!-- gender layout start -->
-                            @if (hasPermission('gender_read'))
+                            @if (auth()->user()->school_id ? (hasFeature('gender') && hasPermission('gender_read')) : hasPermission('gender_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['genders*']) }}">
                                     <a href="{{ route('genders.index') }}">{{ ___('settings.genders') }}</a>
                                 </li>
@@ -1114,7 +1118,7 @@
                             <!-- gender layout end -->
 
                             <!-- religion layout start -->
-                            @if (hasPermission('religion_read'))
+                            @if (auth()->user()->school_id ? (hasFeature('religion') && hasPermission('religion_read')) : hasPermission('religion_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['religions*']) }}">
                                     <a href="{{ route('religions.index') }}">{{ ___('settings.religions') }}</a>
                                 </li>
@@ -1122,7 +1126,7 @@
                             <!-- religion layout end -->
 
                             <!-- blood_group layout start -->
-                            @if (hasPermission('blood_group_read'))
+                            @if (auth()->user()->school_id ? (hasFeature('blood_group') && hasPermission('blood_group_read')) : hasPermission('blood_group_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['blood-groups*']) }}">
                                     <a
                                         href="{{ route('blood-groups.index') }}">{{ ___('settings.blood_groups') }}</a>
@@ -1131,14 +1135,14 @@
                             <!-- blood_group layout end -->
 
                             <!-- session layout start -->
-                            @if (hasPermission('session_read'))
+                            @if (auth()->user()->school_id ? (hasFeature('session') && hasPermission('session_read')) : hasPermission('session_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['sessions*']) }}">
                                     <a href="{{ route('sessions.index') }}">{{ ___('settings.sessions') }}</a>
                                 </li>
                             @endif
                             <!-- session layout end -->
                             @if(config('app.app_ver') > 2.0)
-                                @if(hasPermission('tax_setup'))
+                                @if (auth()->user()->school_id ? (hasFeature('tax_setup') && hasPermission('tax_setup')) : hasPermission('tax_setup'))
                                     <li class="sidebar-menu-item {{ set_menu(['tax*']) }}">
                                         <a href="{{ route('taxes.index') }}">{{ ___('settings.tax setup') }}</a>
                                     </li>
