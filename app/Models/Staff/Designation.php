@@ -7,7 +7,7 @@ use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
-class Designation extends BaseModel
+class Designation extends Model
 {
     use HasFactory;
 

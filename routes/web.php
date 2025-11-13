@@ -519,18 +519,14 @@ Route::get('/debug/feature-access', function () {
                 ->distinct()
                 ->count('p.attribute');
 
-            // Get all permission keywords from database for this package
+            // Get all permission attributes from database for this package
             $dbPermissions = DB::table('package_permission_features as ppf')
                 ->join('permission_features as pf', 'ppf.permission_feature_id', '=', 'pf.id')
                 ->join('permissions as p', 'pf.permission_id', '=', 'p.id')
                 ->where('ppf.package_id', $school->package->id)
                 ->where('pf.status', 1)
                 ->distinct()
-                ->pluck('p.keywords')
-                ->filter()
-                ->flatMap(function($keywords) {
-                    return is_string($keywords) ? json_decode($keywords, true) : $keywords;
-                })
+                ->pluck('p.attribute')
                 ->filter()
                 ->unique()
                 ->sort()
