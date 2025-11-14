@@ -55,7 +55,7 @@ class BranchParameterService
             'display_order' => -1, // Show first in parameter list
             'placeholder' => 'Select Branch',
             'values' => json_encode([
-                'query' => $this->getBranchOptionsQuery($canViewAllBranches, $user->branch_id ?? 1)
+                'query' => $this->getBranchOptionsQuery($canViewAllBranches, $user->branch_id ?? 1, $user->school_id)
             ])
         ];
     }
@@ -65,20 +65,35 @@ class BranchParameterService
      *
      * @param bool $includeAllOption Whether to include "All Branches" option
      * @param int $userBranchId User's assigned branch ID
+     * @param int|null $userSchoolId User's assigned school ID (NULL for System Admin)
      * @return string SQL query
      */
-    private function getBranchOptionsQuery(bool $includeAllOption, int $userBranchId): string
+    private function getBranchOptionsQuery(bool $includeAllOption, int $userBranchId, ?int $userSchoolId): string
     {
         if ($includeAllOption) {
-            // Super Admin: Show "All Branches" option + all active branches
-            return "SELECT * FROM (
-                        SELECT NULL as value, '-- All Branches --' as label
-                        UNION ALL
-                        SELECT id as value, name as label
-                        FROM branches
-                        WHERE status = " . Status::ACTIVE . "
-                    ) AS branch_options
-                    ORDER BY label ASC";
+            // Users with "All Branches" permission
+            if ($userSchoolId === null) {
+                // System Admin (school_id = NULL): Show all branches from ALL schools
+                return "SELECT * FROM (
+                            SELECT NULL as value, '-- All Branches --' as label
+                            UNION ALL
+                            SELECT id as value, name as label
+                            FROM branches
+                            WHERE status = " . Status::ACTIVE . "
+                        ) AS branch_options
+                        ORDER BY label ASC";
+            } else {
+                // Super Admin (school_id = X): Show all branches from THEIR school only
+                return "SELECT * FROM (
+                            SELECT NULL as value, '-- All Branches --' as label
+                            UNION ALL
+                            SELECT id as value, name as label
+                            FROM branches
+                            WHERE status = " . Status::ACTIVE . "
+                              AND school_id = " . $userSchoolId . "
+                        ) AS branch_options
+                        ORDER BY label ASC";
+            }
         }
 
         // Regular users: Only show their assigned branch

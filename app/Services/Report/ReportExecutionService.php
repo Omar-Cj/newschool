@@ -24,10 +24,12 @@ class ReportExecutionService
      *
      * @param ReportRepository $reportRepository
      * @param BranchParameterService $branchParameterService
+     * @param SchoolParameterService $schoolParameterService
      */
     public function __construct(
         private ReportRepository $reportRepository,
-        private BranchParameterService $branchParameterService
+        private BranchParameterService $branchParameterService,
+        private SchoolParameterService $schoolParameterService
     ) {}
 
     /**
@@ -53,6 +55,19 @@ class ReportExecutionService
         if ($report->status !== 1) {
             throw new \Exception("Report is not active and cannot be executed");
         }
+
+        // AUTO-INJECT SCHOOL PARAMETER (Global Hidden System Parameter)
+        $schoolId = $this->schoolParameterService->getSchoolIdForExecution($parameters);
+        $parameters[SchoolParameterService::SCHOOL_PARAM_NAME] = $schoolId;
+
+        Log::info('School parameter auto-injected', [
+            'report_id' => $reportId,
+            'report_name' => $report->name,
+            'school_id' => $schoolId,
+            'is_all_schools' => $schoolId === null,
+            'user_id' => Auth::id(),
+            'user_school' => Auth::user()->school_id ?? null
+        ]);
 
         // AUTO-INJECT BRANCH PARAMETER (Global System Parameter)
         $branchId = $this->branchParameterService->getBranchIdForExecution($parameters);
@@ -225,17 +240,22 @@ class ReportExecutionService
             $preparedParameters[] = $value;
         }
 
-        // APPEND BRANCH PARAMETER AT THE END (as per stored procedure convention)
-        // Branch parameter is always added as the LAST parameter to all procedures
+        // APPEND SYSTEM PARAMETERS AT THE END (as per stored procedure convention)
+        // System parameters order: branch_id, then school_id (both at the end)
         $branchId = $inputParameters[BranchParameterService::BRANCH_PARAM_NAME] ?? null;
         $preparedParameters[] = $branchId;
+
+        $schoolId = $inputParameters[SchoolParameterService::SCHOOL_PARAM_NAME] ?? null;
+        $preparedParameters[] = $schoolId;
 
         Log::debug('Parameters prepared for stored procedure', [
             'report_id' => $report->id,
             'report_parameters_count' => count($reportParameters),
             'total_parameters_count' => count($preparedParameters),
             'branch_parameter_value' => $branchId,
-            'branch_parameter_position' => 'last'
+            'branch_parameter_position' => 'second-to-last',
+            'school_parameter_value' => $schoolId,
+            'school_parameter_position' => 'last'
         ]);
 
         return $preparedParameters;

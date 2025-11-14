@@ -22,10 +22,12 @@ class DependentParameterService
      *
      * @param ReportRepository $reportRepository
      * @param BranchParameterService $branchParameterService
+     * @param SchoolParameterService $schoolParameterService
      */
     public function __construct(
         private ReportRepository $reportRepository,
-        private BranchParameterService $branchParameterService
+        private BranchParameterService $branchParameterService,
+        private SchoolParameterService $schoolParameterService
     ) {}
 
     /**
@@ -318,7 +320,26 @@ class DependentParameterService
      */
     public function getInitialParameterValues(int $reportId, array $initialValues = []): array
     {
-        // PREPEND BRANCH PARAMETER AS FIRST PARAMETER (System-level global parameter)
+        // PREPEND SCHOOL PARAMETER (Hidden system-level global parameter)
+        $schoolParamDefinition = $this->schoolParameterService->getSchoolParameterDefinition();
+
+        // Build school parameter data (hidden from UI)
+        $schoolParameter = [
+            'id' => -1, // System parameter (not stored in report_parameters table)
+            'name' => $schoolParamDefinition['name'],
+            'label' => $schoolParamDefinition['label'],
+            'type' => $schoolParamDefinition['type'],
+            'placeholder' => $schoolParamDefinition['placeholder'] ?? '',
+            'is_required' => $schoolParamDefinition['is_required'],
+            'default_value' => $schoolParamDefinition['default_value'],
+            'parent_id' => null,
+            'display_order' => $schoolParamDefinition['display_order'],
+            'values' => [], // No values needed for hidden field
+            'is_system_parameter' => true, // Flag to identify system parameters
+            'is_hidden' => true, // Flag to hide from UI
+        ];
+
+        // PREPEND BRANCH PARAMETER AS VISIBLE SYSTEM PARAMETER
         $branchParamDefinition = $this->branchParameterService->getBranchParameterDefinition();
 
         // Get branch options from the query
@@ -389,13 +410,18 @@ class DependentParameterService
             $result[] = $paramData;
         }
 
-        // PREPEND branch parameter as the FIRST parameter in the list
+        // PREPEND system parameters (school and branch) as the FIRST parameters in the list
+        // Order: school (hidden), branch (visible), then user parameters
         array_unshift($result, $branchParameter);
+        array_unshift($result, $schoolParameter);
 
-        Log::debug('Initial parameter values loaded with branch parameter', [
+        Log::debug('Initial parameter values loaded with system parameters', [
             'report_id' => $reportId,
             'total_parameters' => count($result),
-            'branch_parameter_position' => 0,
+            'school_parameter_position' => 0,
+            'school_parameter_hidden' => true,
+            'school_default_value' => $schoolParameter['default_value'],
+            'branch_parameter_position' => 1,
             'branch_default_value' => $branchParameter['default_value'],
             'branch_values_count' => count($branchValues)
         ]);

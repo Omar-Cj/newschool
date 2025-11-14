@@ -273,8 +273,11 @@ export class DynamicReportForm {
         // Register dependencies first
         this.dependencyHandler.registerDependencies(parameters);
 
-        // Render parameters in a grid layout
-        const parametersHtml = parameters.map(param => this.renderParameter(param)).join('');
+        // Render parameters in a grid layout (filter out hidden parameters)
+        const parametersHtml = parameters
+            .filter(param => !param.is_hidden) // Filter hidden parameters from UI
+            .map(param => this.renderParameter(param))
+            .join('');
 
         form.innerHTML = `
             <div class="row g-3">
@@ -594,10 +597,21 @@ export class DynamicReportForm {
         const formData = {};
         const fields = form.querySelectorAll('[data-parameter-name]');
 
+        // Collect visible form fields
         fields.forEach(field => {
             const paramName = field.dataset.parameterName;
             formData[paramName] = this.validator.getFieldValue(field);
         });
+
+        // Collect hidden parameters from currentParameters
+        // Hidden parameters are not rendered in the UI but must be included in submission
+        if (this.currentParameters && Array.isArray(this.currentParameters)) {
+            this.currentParameters
+                .filter(param => param.is_hidden === true)
+                .forEach(param => {
+                    formData[param.name] = param.default_value;
+                });
+        }
 
         return formData;
     }
