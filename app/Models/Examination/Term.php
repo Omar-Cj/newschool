@@ -14,6 +14,7 @@ class Term extends BaseModel
     use HasFactory;
 
     protected $fillable = [
+        'school_id',
         'term_definition_id',
         'session_id',
         'branch_id',

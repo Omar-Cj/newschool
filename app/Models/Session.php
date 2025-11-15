@@ -11,7 +11,11 @@ class Session extends BaseModel
     use HasFactory;
 
     protected $fillable = [
-        'name','start_date','end_date','status'
+        'school_id',
+        'name',
+        'start_date',
+        'end_date',
+        'status'
     ];
 
     public function scopeActive($query)

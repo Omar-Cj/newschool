@@ -24,12 +24,15 @@ class StoreRequest extends FormRequest
     public function rules()
     {
         return [
-            'sub_domain_key' => 'required|max:255|unique:schools,sub_domain_key',
+            'sub_domain_key' => 'nullable|max:255|unique:schools,sub_domain_key',
             'name'           => 'required|max:255|unique:schools,name',
             'package'        => 'required',
             'address'        => 'required',
             'phone'          => 'required',
-            'email'          => 'required'
+            'email'          => 'required',
+            'admin_name'     => 'required|string|max:255',
+            'admin_email'    => 'required|email|unique:users,email',
+            'admin_password' => 'required|string|min:6|confirmed'
         ];
     }
 }

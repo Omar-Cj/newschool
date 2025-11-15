@@ -101,6 +101,16 @@ class UserRepository implements UserInterface
             $user->role_id            = $request->role;
             $user->upload_id          = $this->UploadImageCreate($request->image, 'backend/uploads/users');
             $user->permissions        = $role->permissions;
+
+            // Add username (use email as default)
+            $user->username           = $request->username ?? $request->email;
+
+            // Add school_id from authenticated user
+            $user->school_id          = auth()->user()->school_id ?? null;
+
+            // Add branch_id from authenticated user
+            $user->branch_id          = auth()->user()->branch_id ?? 1;
+
             $user->uuid               = Str::uuid();
             $user->save();
 

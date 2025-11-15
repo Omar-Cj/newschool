@@ -84,7 +84,14 @@ class ParentGuardianRepository implements ParentGuardianInterface
             $user->email_verified_at = now();
             $user->role_id           = $role->id;
             $user->permissions       = $role->permissions;
-            $user->username          = $request->username;
+            $user->username          = $request->username ?? $request->guardian_email;
+
+            // Add school_id from authenticated user
+            $user->school_id         = auth()->user()->school_id ?? null;
+
+            // Add branch_id from authenticated user
+            $user->branch_id         = auth()->user()->branch_id ?? 1;
+
             $user->upload_id         = $this->UploadImageCreate($request->guardian_image, 'backend/uploads/users');
             $user->uuid              = Str::uuid();
             $user->save();

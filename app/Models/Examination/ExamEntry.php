@@ -15,6 +15,7 @@ class ExamEntry extends BaseModel
     use HasFactory;
 
     protected $fillable = [
+        'school_id',
         'session_id',
         'term_id',
         'grade',

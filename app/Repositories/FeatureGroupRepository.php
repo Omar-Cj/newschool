@@ -239,6 +239,83 @@ class FeatureGroupRepository
     {
         return FeatureGroup::withCount('permissionFeatures')
             ->orderBy('position')
-            ->get();
+            ->get()
+            ->map(function ($group) {
+                // Alias permission_features_count to features_count for view compatibility
+                $group->features_count = $group->permission_features_count;
+                return $group;
+            });
+    }
+
+    // ========================================
+    // Alias Methods for Controller Compatibility
+    // ========================================
+
+    /**
+     * Create a new feature group (alias for createGroup).
+     *
+     * @param array<string, mixed> $data
+     * @return \App\Models\FeatureGroup
+     * @throws \Exception
+     */
+    public function create(array $data): FeatureGroup
+    {
+        return $this->createGroup($data);
+    }
+
+    /**
+     * Find a feature group by ID (alias for find).
+     *
+     * @param int $id
+     * @return \App\Models\FeatureGroup|null
+     */
+    public function findById(int $id): ?FeatureGroup
+    {
+        return $this->find($id);
+    }
+
+    /**
+     * Get active feature groups (alias for getActiveGroups).
+     *
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function getActive(): Collection
+    {
+        return $this->getActiveGroups();
+    }
+
+    /**
+     * Update an existing feature group (alias for updateGroup).
+     *
+     * @param int $id
+     * @param array<string, mixed> $data
+     * @return \App\Models\FeatureGroup
+     * @throws \Exception
+     */
+    public function update(int $id, array $data): FeatureGroup
+    {
+        return $this->updateGroup($id, $data);
+    }
+
+    /**
+     * Delete a feature group (alias for deleteGroup).
+     *
+     * @param int $id
+     * @return bool
+     * @throws \Exception
+     */
+    public function delete(int $id): bool
+    {
+        return $this->deleteGroup($id);
+    }
+
+    /**
+     * Get the maximum position value for auto-positioning.
+     *
+     * @return int
+     */
+    public function getMaxPosition(): int
+    {
+        return FeatureGroup::max('position') ?? 0;
     }
 }

@@ -70,6 +70,11 @@ class SchoolRepository implements SchoolInterface
 
     protected function storeSchool($request, $source)
     {
+        // Auto-generate sub_domain_key from school name if not provided
+        if (empty($request['sub_domain_key'])) {
+            $request['sub_domain_key'] = $this->generateSubDomainKey($request['name']);
+        }
+
         $school = School::where('sub_domain_key', $request['sub_domain_key'])->first();
         if (!$school) {
             $school                    = new School();
@@ -82,7 +87,11 @@ class SchoolRepository implements SchoolInterface
             $school->status             = Status::INACTIVE;
             $school->save();
 
-            $this->createSchoolAdminUser($school, $request);
+            // Create default branch for the school FIRST
+            $branch = $this->createDefaultBranch($school);
+
+            // Create admin user with correct branch_id
+            $this->createSchoolAdminUser($school, $request, $branch);
         }
         return $school;
 
@@ -194,19 +203,98 @@ class SchoolRepository implements SchoolInterface
         }
     }
 
-    protected function createSchoolAdminUser($school, $request)
+    protected function createSchoolAdminUser($school, $request, $branch = null)
     {
         try {
             User::create([
                 'name' => $request['admin_name'],
                 'email' => $request['admin_email'],
                 'password' => Hash::make($request['admin_password']),
+                'username' => $request['admin_email'],
                 'school_id' => $school->id,
-                'role_id' => 2, // ADMIN role
-                'status' => 1, // Active
+                'role_id' => 1, // Super Admin role
+                'branch_id' => $branch ? $branch->id : 1,
+                'email_verified_at' => now(),
+                'status' => 1,
             ]);
         } catch (\Throwable $th) {
             \Log::error('Failed to create school admin user: ' . $th->getMessage());
         }
+    }
+
+    /**
+     * Create default branch for newly created school
+     *
+     * @param School $school
+     * @return void
+     */
+    protected function createDefaultBranch($school)
+    {
+        try {
+            // Check if MultiBranch module is active
+            if (class_exists('\Modules\MultiBranch\Entities\Branch')) {
+                $branchClass = '\Modules\MultiBranch\Entities\Branch';
+
+                // Get fillable fields to avoid mass assignment errors
+                $branchData = [
+                    'name' => 'Main Branch',
+                    'address' => $school->address,
+                    'phone' => $school->phone,
+                    'email' => $school->email,
+                    'status' => 1, // Active
+                ];
+
+                // Add optional fields if they exist in the schema
+                $model = new $branchClass;
+                $fillable = $model->getFillable();
+
+                if (in_array('school_id', $fillable)) {
+                    $branchData['school_id'] = $school->id;
+                }
+                if (in_array('code', $fillable)) {
+                    $branchData['code'] = 'MAIN';
+                }
+                if (in_array('is_default', $fillable)) {
+                    $branchData['is_default'] = true;
+                }
+                if (in_array('country_id', $fillable)) {
+                    $branchData['country_id'] = 1; // Default country
+                }
+
+                $branch = $branchClass::create($branchData);
+
+                \Log::info('Created default branch for school: ' . $school->name);
+
+                return $branch;
+            }
+        } catch (\Throwable $th) {
+            \Log::error('Failed to create default branch: ' . $th->getMessage());
+            // Don't throw - allow school creation to succeed even if branch fails
+        }
+
+        return null;
+    }
+
+    /**
+     * Generate a unique subdomain key from school name
+     *
+     * @param string $schoolName
+     * @return string
+     */
+    protected function generateSubDomainKey(string $schoolName): string
+    {
+        // Convert to lowercase and replace spaces/special chars with hyphens
+        $baseKey = Str::slug($schoolName);
+
+        // Ensure uniqueness by appending number if needed
+        $subDomainKey = $baseKey;
+        $counter = 1;
+
+        while (School::where('sub_domain_key', $subDomainKey)->exists()) {
+            $subDomainKey = $baseKey . '-' . $counter;
+            $counter++;
+        }
+
+        return $subDomainKey;
     }
 }

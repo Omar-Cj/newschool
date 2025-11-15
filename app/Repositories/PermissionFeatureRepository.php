@@ -41,6 +41,7 @@ class PermissionFeatureRepository
 
     /**
      * Get all permission features grouped by feature group.
+     * Returns array keyed by group name for view compatibility.
      *
      * @return \Illuminate\Support\Collection
      */
@@ -50,14 +51,11 @@ class PermissionFeatureRepository
             ->ordered()
             ->get()
             ->groupBy('feature_group_id')
-            ->map(function ($features, $groupId) {
+            ->mapWithKeys(function ($features, $groupId) {
                 $group = $features->first()->featureGroup;
-                return [
-                    'group' => $group,
-                    'features' => $features
-                ];
-            })
-            ->values();
+                // Use group name as key for view compatibility
+                return [$group ? $group->name : 'Ungrouped' => $features];
+            });
     }
 
     /**
@@ -287,5 +285,101 @@ class PermissionFeatureRepository
             DB::rollBack();
             throw new Exception("Failed to reorder features: " . $e->getMessage());
         }
+    }
+
+    // ========================================
+    // Alias Methods for Controller Compatibility
+    // ========================================
+
+    /**
+     * Create a new permission feature (alias for createFeature).
+     *
+     * @param array<string, mixed> $data
+     * @return \App\Models\PermissionFeature
+     * @throws \Exception
+     */
+    public function create(array $data): PermissionFeature
+    {
+        return $this->createFeature($data);
+    }
+
+    /**
+     * Find a permission feature by ID (alias for find).
+     *
+     * @param int $id
+     * @return \App\Models\PermissionFeature|null
+     */
+    public function findById(int $id): ?PermissionFeature
+    {
+        return $this->find($id);
+    }
+
+    /**
+     * Update an existing permission feature (alias for updateFeature).
+     *
+     * @param int $id
+     * @param array<string, mixed> $data
+     * @return \App\Models\PermissionFeature
+     * @throws \Exception
+     */
+    public function update(int $id, array $data): PermissionFeature
+    {
+        return $this->updateFeature($id, $data);
+    }
+
+    /**
+     * Delete a permission feature (alias for deleteFeature).
+     * Returns array with status and message for controller compatibility.
+     *
+     * @param int $id
+     * @return array{status: bool, message: string}
+     * @throws \Exception
+     */
+    public function delete(int $id): array
+    {
+        try {
+            $success = $this->deleteFeature($id);
+            return [
+                'status' => $success,
+                'message' => $success ?
+                    ___('common.Permission feature deleted successfully') :
+                    ___('common.Failed to delete permission feature')
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'message' => $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Get the maximum position value within a feature group for auto-positioning.
+     *
+     * @param int $groupId
+     * @return int
+     */
+    public function getMaxPositionInGroup(int $groupId): int
+    {
+        return PermissionFeature::where('feature_group_id', $groupId)
+            ->max('position') ?? 0;
+    }
+
+    /**
+     * Check if a permission feature exists by permission ID.
+     *
+     * @param int $permissionId
+     * @param int|null $excludeId Optional feature ID to exclude from check
+     * @return bool
+     */
+    public function existsByPermission(int $permissionId, ?int $excludeId = null): bool
+    {
+        $query = PermissionFeature::where('permission_id', $permissionId);
+
+        if ($excludeId !== null) {
+            $query->where('id', '!=', $excludeId);
+        }
+
+        return $query->exists();
     }
 }

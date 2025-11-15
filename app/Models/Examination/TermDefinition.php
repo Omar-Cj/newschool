@@ -2,19 +2,22 @@
 
 namespace App\Models\Examination;
 
+use App\Models\BaseModel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 
 /**
- * TermDefinition - Shared templates across all branches
- * Note: Does not extend BaseModel to avoid branch filtering
- * Templates are institution-wide and reusable across all branches
+ * TermDefinition - School-specific term templates
+ *
+ * Each school defines its own term structure (e.g., 2-term, 3-term, 4-term year).
+ * Term definitions are school-scoped but shared across all branches within a school.
+ * This allows consistent academic calendar structure across the school's branches.
  */
-class TermDefinition extends Model
+class TermDefinition extends BaseModel
 {
     use HasFactory;
 
     protected $fillable = [
+        'school_id',
         'name',
         'code',
         'sequence',

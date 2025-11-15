@@ -30,7 +30,16 @@ class PermissionFeatureController extends Controller
         $groupId = $request->get('group_id');
 
         if ($groupId) {
-            $data['permission_features'] = $this->repository->getByGroup($groupId);
+            // Get features for specific group
+            $features = $this->repository->getByGroup($groupId);
+
+            // Wrap in grouped structure matching getAllGrouped() format
+            if ($features->isNotEmpty()) {
+                $groupName = $features->first()->featureGroup->name ?? 'Ungrouped';
+                $data['permission_features'] = collect([$groupName => $features]);
+            } else {
+                $data['permission_features'] = collect();
+            }
         } else {
             $data['permission_features'] = $this->repository->getAllGrouped();
         }
@@ -48,7 +57,7 @@ class PermissionFeatureController extends Controller
     public function create()
     {
         $data['feature_groups'] = $this->featureGroupRepository->getActive();
-        $data['permissions'] = Permission::orderBy('name')->get();
+        $data['permissions'] = Permission::orderBy('attribute')->get();
         $data['title'] = ___('common.Create Permission Feature');
 
         return view('backend.features.permissions.form', compact('data'));
@@ -79,7 +88,7 @@ class PermissionFeatureController extends Controller
         // Auto-generate name from permission if not provided
         if (empty($validated['name'])) {
             $permission = Permission::find($validated['permission_id']);
-            $validated['name'] = ucwords(str_replace('_', ' ', $permission->name));
+            $validated['name'] = ucwords(str_replace('_', ' ', $permission->attribute));
         }
 
         $result = $this->repository->create($validated);
@@ -109,7 +118,7 @@ class PermissionFeatureController extends Controller
         }
 
         $data['feature_groups'] = $this->featureGroupRepository->getActive();
-        $data['permissions'] = Permission::orderBy('name')->get();
+        $data['permissions'] = Permission::orderBy('attribute')->get();
         $data['title'] = ___('common.Edit Permission Feature');
 
         return view('backend.features.permissions.form', compact('data'));
@@ -143,7 +152,7 @@ class PermissionFeatureController extends Controller
         // Auto-generate name from permission if not provided
         if (empty($validated['name'])) {
             $permission = Permission::find($validated['permission_id']);
-            $validated['name'] = ucwords(str_replace('_', ' ', $permission->name));
+            $validated['name'] = ucwords(str_replace('_', ' ', $permission->attribute));
         }
 
         $result = $this->repository->update($id, $validated);
@@ -213,7 +222,7 @@ class PermissionFeatureController extends Controller
             $data = [
                 'permission_id' => $permissionId,
                 'feature_group_id' => $validated['feature_group_id'],
-                'name' => ucwords(str_replace('_', ' ', $permission->name)),
+                'name' => ucwords(str_replace('_', ' ', $permission->attribute)),
                 'is_premium' => $validated['is_premium'] ?? false,
                 'position' => $index,
                 'status' => true,

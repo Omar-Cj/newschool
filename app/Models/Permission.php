@@ -14,4 +14,15 @@ class Permission extends Model
     protected $casts = [
         'keywords' => 'array',
     ];
+
+    /**
+     * Backwards compatibility accessor for 'name' attribute.
+     * Maps to the 'attribute' column.
+     *
+     * @return string
+     */
+    public function getNameAttribute(): string
+    {
+        return $this->attributes['attribute'] ?? '';
+    }
 }

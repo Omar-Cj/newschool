@@ -181,7 +181,14 @@ class StudentRepository implements StudentInterface
             $user->role_id           = $role->id;
             $user->permissions       = $role->permissions;
             $user->date_of_birth     = $request->date_of_birth != "" ? $request->date_of_birth : NULL;
-            $user->username          = $request->username;
+            $user->username          = $request->username ?? $request->email;
+
+            // Add school_id from authenticated user
+            $user->school_id         = auth()->user()->school_id ?? null;
+
+            // Add branch_id from authenticated user
+            $user->branch_id         = auth()->user()->branch_id ?? 1;
+
             $user->upload_id         = $this->UploadImageCreate($request->image, 'backend/uploads/students');
             $user->uuid              = Str::uuid();
             $user->save();

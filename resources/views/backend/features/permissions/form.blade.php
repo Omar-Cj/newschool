@@ -45,9 +45,9 @@
                             <option value="">{{ ___('common.Select permission') }}</option>
                             @foreach($data['permissions'] as $permission)
                                 <option value="{{ $permission->id }}"
-                                        data-keywords="{{ $permission->name }}"
+                                        data-keywords="{{ $permission->attribute }}"
                                         {{ old('permission_id', $data['permission_feature']->permission_id ?? '') == $permission->id ? 'selected' : '' }}>
-                                    {{ $permission->name }}
+                                    {{ $permission->attribute }}
                                 </option>
                             @endforeach
                         </select>

@@ -62,7 +62,7 @@
                 </div>
             @endif
 
-            @if($data['permission_features'] instanceof \Illuminate\Database\Eloquent\Collection && $data['permission_features']->isNotEmpty())
+            @if(isset($data['permission_features']) && $data['permission_features']->isNotEmpty())
                 @foreach($data['permission_features'] as $groupName => $features)
                     <div class="feature-group-section mb-4">
                         <h5 class="mb-3">
@@ -84,8 +84,8 @@
                                 <tbody class="tbody">
                                     @foreach($features as $feature)
                                     <tr>
-                                        <td><strong>{{ $feature->name ?: $feature->permission->name }}</strong></td>
-                                        <td><code>{{ $feature->permission->name }}</code></td>
+                                        <td><strong>{{ $feature->name ?: $feature->permission->attribute }}</strong></td>
+                                        <td><code>{{ $feature->permission->attribute }}</code></td>
                                         <td>{{ Str::limit($feature->description, 60) }}</td>
                                         <td class="text-center">
                                             @if($feature->is_premium)

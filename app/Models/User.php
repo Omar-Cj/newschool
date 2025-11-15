@@ -43,6 +43,9 @@ class User extends Authenticatable
         'designation_id',
         'status',
         'reset_password_otp',
+        'school_id',
+        'role_id',
+        'branch_id',
     ];
 
     /**
