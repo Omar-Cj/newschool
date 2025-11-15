@@ -426,6 +426,24 @@ if (!function_exists('hasPermission')) {
             return false;
         }
 
+        // Special handling for cash_transfer_approve - only roles 1 and 2
+        if ($keyword === 'cash_transfer_approve') {
+            if (Auth::check() && in_array(Auth::user()->role_id, [1, 2])) {
+                // Both Super Admin and Regular Admin need permission in array
+                return in_array($keyword, Auth::user()->permissions ?? []);
+            }
+            return false;
+        }
+
+        // Special handling for cash_transfer_delete - only roles 1 and 2
+        if ($keyword === 'cash_transfer_delete') {
+            if (Auth::check() && in_array(Auth::user()->role_id, [1, 2])) {
+                // Both Super Admin and Regular Admin need permission in array
+                return in_array($keyword, Auth::user()->permissions ?? []);
+            }
+            return false;
+        }
+
         // Super Admin bypass - role_id 1 has all permissions
         if (Auth::check() && Auth::user()->role_id == 1) {
             return true;

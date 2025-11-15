@@ -246,8 +246,8 @@
         buttons += `<li><a href="#" class="dropdown-item view-transfer" data-id="${row.id}">`;
         buttons += `<span class="icon mr-8"><i class="fa-solid fa-eye"></i></span> ${config.translations.view}</a></li>`;
 
-        // Super admin actions for pending transfers
-        if (config.isSuperAdmin && row.status === 'pending') {
+        // Admin actions for pending transfers (Super Admin role 1 and Regular Admin role 2)
+        if (config.isAdmin && row.status === 'pending') {
 
             if (config.canApprove) {
                 buttons += `<li><a href="#" class="dropdown-item approve-transfer" data-id="${row.id}">`;

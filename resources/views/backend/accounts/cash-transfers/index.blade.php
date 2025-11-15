@@ -164,7 +164,7 @@
             canApprove: {{ hasPermission('cash_transfer_approve') ? 'true' : 'false' }},
             canReject: {{ hasPermission('cash_transfer_reject') ? 'true' : 'false' }},
             canDelete: {{ hasPermission('cash_transfer_delete') ? 'true' : 'false' }},
-            isSuperAdmin: {{ auth()->user()->role_id == 1 ? 'true' : 'false' }},
+            isAdmin: {{ in_array(auth()->user()->role_id, [1, 2]) ? 'true' : 'false' }}, // Super Admin (1) and Regular Admin (2)
             translations: {
                 pending: '{{ ___('cash_transfer.pending') }}',
                 approved: '{{ ___('cash_transfer.approved') }}',
