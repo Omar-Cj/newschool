@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Academic\Classes;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class ClassesStoreRequest extends FormRequest
 {
@@ -23,8 +24,17 @@ class ClassesStoreRequest extends FormRequest
      */
     public function rules()
     {
+        $schoolId = $this->user()->school_id;
+
         return [
-            'name' => 'required|max:255|unique:classes',
+            'name' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('classes')->where(function ($query) use ($schoolId) {
+                    return $query->where('school_id', $schoolId);
+                }),
+            ],
             'status' => 'required',
             'academic_level' => 'required|in:kg,primary,secondary,high_school'
         ];

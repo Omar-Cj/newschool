@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Examination\Type;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class ExamTypeStoreRequest extends FormRequest
 {
@@ -23,8 +24,17 @@ class ExamTypeStoreRequest extends FormRequest
      */
     public function rules()
     {
+        $schoolId = $this->user()->school_id;
+
         return [
-            'name'      => 'required|max:255|unique:exam_types',
+            'name' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('exam_types')->where(function ($query) use ($schoolId) {
+                    return $query->where('school_id', $schoolId);
+                }),
+            ],
             'status'    => 'required'
         ];
     }

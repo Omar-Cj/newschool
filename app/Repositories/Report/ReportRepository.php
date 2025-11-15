@@ -287,6 +287,13 @@ class ReportRepository
      */
     private function prepareQueryBindings(string $query, array $parameterValues): array
     {
+        // Inject authenticated user context parameters
+        if (auth()->check()) {
+            $parameterValues['user_id'] = $parameterValues['user_id'] ?? auth()->id();
+            $parameterValues['branch_id'] = $parameterValues['branch_id'] ?? (auth()->user()->branch_id ?? null);
+            $parameterValues['p_school_id'] = $parameterValues['p_school_id'] ?? (auth()->user()->school_id ?? null);
+        }
+
         $bindings = [];
 
         // Extract ALL :placeholder occurrences (including duplicates)
@@ -486,8 +493,15 @@ class ReportRepository
             return $this->getParameterValues($parameter, $parentValues);
         }
 
-        // Cache static or independent dynamic values
+        // Cache static or independent dynamic values with tenant isolation
         $cacheKey = "report_parameter_values_{$parameterId}";
+
+        // Add user context to cache key for tenant isolation
+        if (auth()->check()) {
+            $branchId = auth()->user()->branch_id ?? 'global';
+            $schoolId = auth()->user()->school_id ?? 'global';
+            $cacheKey .= ":{$branchId}:{$schoolId}";
+        }
 
         return Cache::remember($cacheKey, $ttl, function () use ($parameter, $parentValues) {
             return $this->getParameterValues($parameter, $parentValues);

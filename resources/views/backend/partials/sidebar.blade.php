@@ -1110,7 +1110,7 @@
                             @endif
 
                             <!-- gender layout start -->
-                            @if (auth()->user()->school_id ? (hasFeature('gender') && hasPermission('gender_read')) : hasPermission('gender_read'))
+                            @if (auth()->user()->school_id ? (hasFeature('genders') && hasPermission('gender_read')) : hasPermission('gender_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['genders*']) }}">
                                     <a href="{{ route('genders.index') }}">{{ ___('settings.genders') }}</a>
                                 </li>
@@ -1126,7 +1126,7 @@
                             <!-- religion layout end -->
 
                             <!-- blood_group layout start -->
-                            @if (auth()->user()->school_id ? (hasFeature('blood_group') && hasPermission('blood_group_read')) : hasPermission('blood_group_read'))
+                            @if (auth()->user()->school_id ? (hasFeature('blood_groups') && hasPermission('blood_group_read')) : hasPermission('blood_group_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['blood-groups*']) }}">
                                     <a
                                         href="{{ route('blood-groups.index') }}">{{ ___('settings.blood_groups') }}</a>
@@ -1135,7 +1135,7 @@
                             <!-- blood_group layout end -->
 
                             <!-- session layout start -->
-                            @if (auth()->user()->school_id ? (hasFeature('session') && hasPermission('session_read')) : hasPermission('session_read'))
+                            @if (auth()->user()->school_id ? (hasFeature('sessions') && hasPermission('session_read')) : hasPermission('session_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['sessions*']) }}">
                                     <a href="{{ route('sessions.index') }}">{{ ___('settings.sessions') }}</a>
                                 </li>

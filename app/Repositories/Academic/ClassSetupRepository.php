@@ -74,28 +74,84 @@ class ClassSetupRepository implements ClassSetupInterface
 
     public function store($request)
     {
+        // Log incoming request data
+        \Log::info('ClassSetup store called', [
+            'request_data' => $request->all(),
+            'user' => auth()->check() ? auth()->user()->only(['id', 'name', 'school_id', 'branch_id']) : 'Not authenticated',
+            'session_setting' => setting('session')
+        ]);
+
         // dd('sfdsf');
         DB::beginTransaction();
         try {
 
             if($this->model::where('session_id', setting('session'))->where('classes_id', $request->classes)->first()) {
+                \Log::info('ClassSetup duplicate check failed', [
+                    'session_id' => setting('session'),
+                    'classes_id' => $request->classes
+                ]);
                 return $this->responseWithError(___('alert.there_is_already_a_class_for_this_session'), []);
             }
+
+            \Log::info('ClassSetup duplicate check passed, creating new setup', [
+                'session_id' => setting('session'),
+                'classes_id' => $request->classes,
+                'auth_school_id' => auth()->check() ? auth()->user()->school_id : null
+            ]);
 
             $setup              = new $this->model;
             $setup->session_id  = setting('session');
             $setup->classes_id    = $request->classes;
+
+            \Log::info('Saving ClassSetup', [
+                'setup_data' => $setup->toArray()
+            ]);
+
             $setup->save();
+
+            \Log::info('ClassSetup saved successfully', [
+                'setup_id' => $setup->id,
+                'setup_school_id' => $setup->school_id ?? 'not set'
+            ]);
+
             foreach ($request->sections ?? [] as $key => $item) {
+                \Log::info('Creating ClassSetupChildren', [
+                    'iteration' => $key,
+                    'class_setup_id' => $setup->id,
+                    'section_id' => $item
+                ]);
+
                 $row = new ClassSetupChildren();
                 $row->class_setup_id = $setup->id;
                 $row->section_id     = $item;
                 $row->save();
+
+                \Log::info('ClassSetupChildren saved', [
+                    'child_id' => $row->id,
+                    'child_school_id' => $row->school_id ?? 'not set'
+                ]);
             }
+
             DB::commit();
+            \Log::info('ClassSetup transaction committed successfully');
             return $this->responseWithSuccess(___('alert.created_successfully'), []);
         } catch (\Throwable $th) {
             DB::rollback();
+
+            // Log full exception details
+            \Log::error('ClassSetup store failed - FULL EXCEPTION DETAILS', [
+                'exception_class' => get_class($th),
+                'message' => $th->getMessage(),
+                'code' => $th->getCode(),
+                'file' => $th->getFile(),
+                'line' => $th->getLine(),
+                'sql' => $th instanceof \Illuminate\Database\QueryException ? $th->getSql() : null,
+                'bindings' => $th instanceof \Illuminate\Database\QueryException ? $th->getBindings() : null,
+                'trace' => $th->getTraceAsString(),
+                'request_data' => $request->all(),
+                'user' => auth()->check() ? auth()->user()->only(['id', 'school_id', 'branch_id']) : null
+            ]);
+
             return $this->responseWithError(___('alert.something_went_wrong_please_try_again'), []);
         }
     }

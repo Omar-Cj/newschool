@@ -356,6 +356,7 @@ class ParameterValueResolver
         if (auth()->check()) {
             $parameters['user_id'] = auth()->id();
             $parameters['branch_id'] = auth()->user()->branch_id ?? null;
+            $parameters['p_school_id'] = auth()->user()->school_id ?? null;
         }
 
         return $parameters;
@@ -379,7 +380,8 @@ class ParameterValueResolver
         // Add user context to cache key for tenant isolation
         if (auth()->check()) {
             $branchId = auth()->user()->branch_id ?? 'global';
-            $key .= ":{$branchId}";
+            $schoolId = auth()->user()->school_id ?? 'global';
+            $key .= ":{$branchId}:{$schoolId}";
         }
 
         return $key;
