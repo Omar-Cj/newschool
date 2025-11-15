@@ -15,6 +15,7 @@ class PaymentTransaction extends BaseModel
     protected $fillable = [
         'fees_collect_id',
         'student_id',
+        'school_id', // Multi-tenant scoping
         'transaction_number',
         'payment_date',
         'amount',
@@ -130,22 +131,60 @@ class PaymentTransaction extends BaseModel
         return $this->journal?->display_name ?? 'No Journal';
     }
 
-    // Generate unique transaction number
+    /**
+     * Generate unique transaction number (school-scoped for multi-tenancy)
+     *
+     * CRITICAL: Each school has independent transaction number sequences
+     * Format: PAY-YYYY-XXXXXX (e.g., PAY-2025-000001)
+     *
+     * @return string The generated transaction number
+     * @throws \Exception If school context is unavailable
+     */
     public static function generateTransactionNumber(): string
     {
-        $prefix = 'PAY-' . date('Y') . '-';
-        $lastTransaction = static::where('transaction_number', 'like', $prefix . '%')
-            ->orderBy('id', 'desc')
-            ->first();
+        return \DB::transaction(function () {
+            // Get school ID from authenticated user
+            $schoolId = auth()->user()->school_id ?? null;
 
-        if ($lastTransaction) {
-            $lastNumber = (int) substr($lastTransaction->transaction_number, strlen($prefix));
-            $newNumber = $lastNumber + 1;
-        } else {
-            $newNumber = 1;
-        }
+            if (!$schoolId) {
+                \Log::error('Cannot generate transaction number without school context', [
+                    'user_id' => auth()->id(),
+                    'authenticated' => auth()->check()
+                ]);
+                throw new \Exception('School context required for transaction number generation');
+            }
 
-        return $prefix . str_pad($newNumber, 6, '0', STR_PAD_LEFT);
+            $prefix = 'PAY-' . date('Y') . '-';
+
+            // Get maximum sequence number from existing transaction_numbers for this school
+            // Use lockForUpdate to ensure thread safety
+            $maxSequenceNum = static::where('school_id', $schoolId)
+                ->lockForUpdate()
+                ->get()
+                ->map(function ($transaction) use ($prefix) {
+                    // Extract numeric part from transaction_number
+                    // e.g., "PAY-2025-000005" -> 5
+                    $numberPart = str_replace($prefix, '', $transaction->transaction_number);
+                    return (int) $numberPart;
+                })
+                ->max();
+
+            // If no records exist for this school, start from 1
+            $nextSequence = ($maxSequenceNum ?? 0) + 1;
+
+            // Generate the transaction number in the requested format
+            $transactionNumber = $prefix . str_pad($nextSequence, 6, '0', STR_PAD_LEFT);
+
+            \Log::info('Generated new transaction number (school-scoped)', [
+                'transaction_number' => $transactionNumber,
+                'sequence' => $nextSequence,
+                'school_id' => $schoolId,
+                'max_existing_sequence' => $maxSequenceNum,
+                'user_id' => auth()->id()
+            ]);
+
+            return $transactionNumber;
+        });
     }
 
     // Boot method to auto-generate transaction number

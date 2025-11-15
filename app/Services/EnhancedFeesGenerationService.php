@@ -383,13 +383,34 @@ class EnhancedFeesGenerationService
             $query->whereIn('gender_id', $criteria['gender_ids']);
         }
 
+        // Log before applying studentServices filter
+        $beforeServicesCount = $query->count();
+        \Log::debug('Enhanced Service - Before studentServices filter', [
+            'count' => $beforeServicesCount,
+            'criteria_school_id' => $criteria['school_id'] ?? 'not set',
+            'criteria_academic_year_id' => $criteria['academic_year_id'] ?? 'not set'
+        ]);
+
         // Only include students with active service subscriptions
         $query->whereHas('studentServices', function ($q) use ($criteria) {
+            // Add explicit school_id filter for multi-tenant isolation
+            if (isset($criteria['school_id']) && $criteria['school_id'] !== null) {
+                $q->where('school_id', $criteria['school_id']);
+            }
+
             if (isset($criteria['academic_year_id']) && $criteria['academic_year_id'] !== null) {
                 $q->where('academic_year_id', $criteria['academic_year_id']);
             }
+
             $q->where('is_active', true);
         });
+
+        // Log after applying studentServices filter
+        $afterServicesCount = $query->count();
+        \Log::debug('Enhanced Service - After studentServices filter', [
+            'count' => $afterServicesCount,
+            'excluded_by_services_filter' => $beforeServicesCount - $afterServicesCount
+        ]);
 
         $result = $query->get();
 
@@ -1161,14 +1182,40 @@ class EnhancedFeesGenerationService
         \Log::debug('Enhanced Service - Converting Legacy Filters', [
             'input_filters' => $filters,
             'has_grades' => !empty($filters['grades']),
-            'selection_method' => $filters['selection_method'] ?? 'not_set'
+            'selection_method' => $filters['selection_method'] ?? 'not_set',
+            'user_school_id' => auth()->user()->school_id ?? 'not_authenticated'
         ]);
 
-        // Get academic year ID, fallback to session ID 1 if not available
-        $academicYearId = $filters['academic_year_id'] ?? session('academic_year_id') ?? 1;
+        // CRITICAL FIX: Always use school-specific session setting
+        // Do NOT trust frontend's academic_year_id as it may be from wrong school
+        $schoolSession = setting('session'); // School-specific session from settings table
+        $requestedAcademicYear = $filters['academic_year_id'] ?? null;
+
+        // Validate if frontend sent wrong academic year
+        if ($requestedAcademicYear && $requestedAcademicYear != $schoolSession) {
+            \Log::warning('Academic year mismatch - using school session instead', [
+                'frontend_sent' => $requestedAcademicYear,
+                'school_session' => $schoolSession,
+                'school_id' => auth()->user()->school_id ?? null,
+                'user_id' => auth()->id()
+            ]);
+        }
+
+        // Always use school's session, ignore frontend value
+        $academicYearId = $schoolSession;
+
+        \Log::debug('Enhanced Service - Academic Year Resolution', [
+            'from_filters' => $requestedAcademicYear,
+            'from_session' => session('academic_year_id') ?? null,
+            'from_settings' => $schoolSession,
+            'resolved_academic_year_id' => $academicYearId,
+            'school_id' => auth()->user()->school_id ?? null,
+            'override_applied' => $requestedAcademicYear != $schoolSession
+        ]);
 
         $criteria = [
             'academic_year_id' => $academicYearId,
+            'school_id' => auth()->user()->school_id ?? null, // Add explicit school context
             'include_one_time_fees' => true
         ];
 
@@ -1230,9 +1277,33 @@ class EnhancedFeesGenerationService
             'selection_method' => $data['selection_method'] ?? 'not_set'
         ]);
 
-        // Get academic year ID, fallback to session ID 1 if not available
-        $academicYearId = $data['academic_year_id'] ?? session('academic_year_id') ?? 1;
-        
+        // CRITICAL FIX: Always use school-specific session setting
+        // Do NOT trust data's academic_year_id as it may be from wrong school
+        $schoolSession = setting('session'); // School-specific session from settings table
+        $requestedAcademicYear = $data['academic_year_id'] ?? null;
+
+        // Validate if data has wrong academic year
+        if ($requestedAcademicYear && $requestedAcademicYear != $schoolSession) {
+            \Log::warning('Generation: Academic year mismatch - using school session instead', [
+                'data_sent' => $requestedAcademicYear,
+                'school_session' => $schoolSession,
+                'school_id' => auth()->user()->school_id ?? null,
+                'user_id' => auth()->id()
+            ]);
+        }
+
+        // Always use school's session, ignore data value
+        $academicYearId = $schoolSession;
+
+        \Log::debug('Enhanced Service - Generation Academic Year Resolution', [
+            'from_data' => $requestedAcademicYear,
+            'from_session' => session('academic_year_id') ?? null,
+            'from_settings' => $schoolSession,
+            'resolved_academic_year_id' => $academicYearId,
+            'school_id' => auth()->user()->school_id ?? null,
+            'override_applied' => $requestedAcademicYear != $schoolSession
+        ]);
+
         $criteria = [
             'batch_id' => $data['batch_id'] ?? $this->batchIdService->generateBatchId(),
             'academic_year_id' => $academicYearId,

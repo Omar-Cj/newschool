@@ -112,6 +112,7 @@ class FeesGenerationController extends Controller
                 'sections.*' => ['exists:sections,id'],
                 'grades' => ['nullable', 'array'],
                 'grades.*' => [Rule::in(Student::getAllGrades())],
+                'academic_year_id' => ['nullable', 'integer'],
                 'month' => 'required|integer|between:1,12',
                 'year' => 'required|integer|in:' . date('Y'),
                 'fees_groups' => ['nullable', 'array'],
@@ -132,6 +133,33 @@ class FeesGenerationController extends Controller
             $filters['sections'] = $filters['sections'] ?? [];
             $filters['grades'] = $filters['grades'] ?? [];
             $filters['fees_groups'] = $filters['fees_groups'] ?? [];
+
+            // CRITICAL FIX: Always use school-specific session
+            // Override frontend's academic_year_id to prevent multi-tenant issues
+            $schoolSession = setting('session');
+            $requestedAcademicYear = $request->input('academic_year_id');
+
+            if ($requestedAcademicYear && $requestedAcademicYear != $schoolSession) {
+                \Log::warning('Preview: Frontend sent wrong academic_year_id', [
+                    'requested' => $requestedAcademicYear,
+                    'school_session' => $schoolSession,
+                    'school_id' => auth()->user()->school_id
+                ]);
+            }
+
+            // Always use school's session
+            $filters['academic_year_id'] = $schoolSession;
+
+            \Log::info('Fee Generation Preview Request', [
+                'user_id' => auth()->id(),
+                'school_id' => auth()->user()->school_id,
+                'selection_method' => $selectionMethod,
+                'academic_year_id' => $filters['academic_year_id'],
+                'requested_academic_year' => $requestedAcademicYear,
+                'override_applied' => $requestedAcademicYear != $schoolSession,
+                'grades' => $filters['grades'],
+                'classes' => $filters['classes']
+            ]);
 
             $preview = $this->service->generatePreview($filters);
 
@@ -160,6 +188,7 @@ class FeesGenerationController extends Controller
                 'sections.*' => ['exists:sections,id'],
                 'grades' => ['nullable', 'array'],
                 'grades.*' => [Rule::in(Student::getAllGrades())],
+                'academic_year_id' => ['nullable', 'integer'],
                 'month' => 'required|integer|between:1,12',
                 'year' => 'required|integer|in:' . date('Y'),
                 'fees_groups' => ['nullable', 'array'],
@@ -185,9 +214,36 @@ class FeesGenerationController extends Controller
             $data['fees_groups'] = $data['fees_groups'] ?? [];
             $data['selected_students'] = $data['selected_students'] ?? [];
 
+            // CRITICAL FIX: Always use school-specific session
+            // Override frontend's academic_year_id to prevent multi-tenant issues
+            $schoolSession = setting('session');
+            $requestedAcademicYear = $request->input('academic_year_id');
+
+            if ($requestedAcademicYear && $requestedAcademicYear != $schoolSession) {
+                \Log::warning('Generate: Frontend sent wrong academic_year_id', [
+                    'requested' => $requestedAcademicYear,
+                    'school_session' => $schoolSession,
+                    'school_id' => auth()->user()->school_id
+                ]);
+            }
+
+            // Always use school's session
+            $data['academic_year_id'] = $schoolSession;
+
+            \Log::info('Fee Generation Request', [
+                'user_id' => auth()->id(),
+                'school_id' => auth()->user()->school_id,
+                'selection_method' => $selectionMethod,
+                'academic_year_id' => $data['academic_year_id'],
+                'requested_academic_year' => $requestedAcademicYear,
+                'override_applied' => $requestedAcademicYear != $schoolSession,
+                'grades' => $data['grades'],
+                'classes' => $data['classes']
+            ]);
+
             // Generate batch ID using BatchIdService
             $batchId = $this->batchIdService->generateBatchId();
-            
+
             // Add batch ID and creator info
             $data['batch_id'] = $batchId;
             $data['created_by'] = auth()->id();

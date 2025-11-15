@@ -1323,16 +1323,87 @@ function generateStudentAvatar($firstName, $lastName, $size = '40px')
 
 /**
  * Get the current active academic year ID
+ *
+ * CRITICAL: Always returns tenant-specific session, never hardcoded fallback
+ * For multi-tenant systems, each school has its own session settings
  */
 if (!function_exists('activeAcademicYear')) {
     function activeAcademicYear()
     {
         try {
             return \Cache::remember('active_academic_year', 60, function () {
-                return setting('session') ?? 1; // Default to session ID 1 if not set
+                // Get school-specific session from settings
+                $sessionId = setting('session');
+
+                if (!$sessionId) {
+                    // Log warning for missing session configuration
+                    \Log::warning('Active academic year not set in settings - using database fallback', [
+                        'user_id' => auth()->id() ?? null,
+                        'authenticated' => auth()->check()
+                    ]);
+
+                    // Fallback: Get the currently active session from database
+                    $activeSession = \App\Models\Session::where('status', 1)
+                        ->orderBy('id', 'desc')
+                        ->value('id');
+
+                    if ($activeSession) {
+                        \Log::info('Using active session from database', [
+                            'session_id' => $activeSession
+                        ]);
+                        return $activeSession;
+                    }
+
+                    // Last resort: Get any session (with warning)
+                    $anySession = \App\Models\Session::orderBy('id', 'desc')->value('id');
+
+                    if ($anySession) {
+                        \Log::warning('No active session found - using latest session', [
+                            'session_id' => $anySession
+                        ]);
+                        return $anySession;
+                    }
+
+                    // Critical: No sessions exist at all
+                    \Log::error('No academic sessions exist in database');
+                    throw new \Exception('No academic sessions configured. Please contact administrator.');
+                }
+
+                return $sessionId;
             });
         } catch (\Exception $e) {
-            return 1; // Fallback to ID 1
+            \Log::error('Failed to get active academic year', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            // Try direct database query as final fallback
+            try {
+                $fallbackSession = \App\Models\Session::where('status', 1)
+                    ->orderBy('id', 'desc')
+                    ->value('id');
+
+                if ($fallbackSession) {
+                    \Log::warning('Using database fallback after cache error', [
+                        'session_id' => $fallbackSession
+                    ]);
+                    return $fallbackSession;
+                }
+
+                // Absolute last resort: get any session
+                $anySession = \App\Models\Session::orderBy('id', 'desc')->value('id');
+                if ($anySession) {
+                    return $anySession;
+                }
+            } catch (\Exception $fallbackError) {
+                \Log::critical('Complete failure to retrieve academic year', [
+                    'original_error' => $e->getMessage(),
+                    'fallback_error' => $fallbackError->getMessage()
+                ]);
+            }
+
+            // Only if absolutely everything fails
+            throw new \Exception('Unable to determine academic year. Please contact administrator.');
         }
     }
 }

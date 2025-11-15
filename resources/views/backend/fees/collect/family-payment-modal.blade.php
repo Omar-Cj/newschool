@@ -6,6 +6,11 @@
                 <h5 class="modal-title" id="familyPaymentModalLabel">
                     <i class="fas fa-users me-2"></i>
                     {{ ___('fees.Family Payment') }} - <span id="family-student-name">{{ ___('common.student') }}</span>
+                    <small class="text-white-50 ms-3" style="font-size: 0.85rem;">
+                        <i class="fas fa-calendar-alt me-1"></i>
+                        {{ ___('fees.Academic Year') }}:
+                        <span class="fw-bold">{{ setting('session_year') ?? ___('fees.Not Set') }}</span>
+                    </small>
                 </h5>
                 <button type="button" class="m-0 btn-close d-flex justify-content-center align-items-center"
                         data-bs-dismiss="modal" aria-label="Close">

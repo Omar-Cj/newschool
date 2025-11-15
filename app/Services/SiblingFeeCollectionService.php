@@ -37,10 +37,33 @@ class SiblingFeeCollectionService extends EnhancedFeeCollectionService
             throw new Exception('Parent/Guardian not found for student');
         }
 
+        // CRITICAL: Validate academic year before querying fees
+        // This ensures we're loading fees for the correct academic year
+        $academicYearId = activeAcademicYear();
+        $academicYear = \App\Models\Session::find($academicYearId);
+
+        if (!$academicYear) {
+            \Log::error('Invalid academic year ID in sibling fee data', [
+                'academic_year_id' => $academicYearId,
+                'student_id' => $student->id,
+                'parent_id' => $parent->id
+            ]);
+            throw new Exception('Invalid academic year. Please contact administrator.');
+        }
+
+        \Log::info('Loading sibling fees for family payment', [
+            'academic_year_id' => $academicYearId,
+            'academic_year_name' => $academicYear->name ?? 'N/A',
+            'student_id' => $student->id,
+            'student_name' => $student->full_name,
+            'parent_id' => $parent->id,
+            'parent_name' => $parent->full_name ?? 'N/A'
+        ]);
+
         // Get all siblings including the original student
         $siblings = $parent->children()
-            ->with(['feesCollects' => function($query) {
-                $query->where('academic_year_id', activeAcademicYear())
+            ->with(['feesCollects' => function($query) use ($academicYearId) {
+                $query->where('academic_year_id', $academicYearId)
                       ->where('payment_status', '!=', 'paid')
                       ->with('feeType');
             }])
@@ -195,6 +218,22 @@ class SiblingFeeCollectionService extends EnhancedFeeCollectionService
         return DB::transaction(function () use ($paymentData) {
             // Generate unique payment session ID for grouping related transactions
             $paymentSessionId = 'FAM_' . time() . '_' . uniqid();
+
+            // CRITICAL: Log academic year being used for payment processing
+            // This helps debug if payments are being applied to wrong academic year
+            $academicYearId = activeAcademicYear();
+            $academicYear = \App\Models\Session::find($academicYearId);
+
+            \Log::info('Processing sibling payment transaction', [
+                'payment_session_id' => $paymentSessionId,
+                'academic_year_id' => $academicYearId,
+                'academic_year_name' => $academicYear->name ?? 'N/A',
+                'payment_mode' => $paymentData['payment_mode'] ?? 'direct',
+                'sibling_count' => count($paymentData['sibling_payments'] ?? []),
+                'processed_by_user_id' => auth()->id(),
+                'has_discount' => isset($paymentData['discount_type']) && ($paymentData['discount_amount'] ?? 0) > 0,
+                'timestamp' => now()->toDateTimeString()
+            ]);
 
             $paymentMode = $paymentData['payment_mode'] ?? 'direct'; // 'deposit' | 'direct'
             $siblingPayments = $paymentData['sibling_payments'] ?? [];
