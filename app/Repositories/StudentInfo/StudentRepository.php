@@ -218,6 +218,7 @@ class StudentRepository implements StudentInterface
             $row->place_of_birth = $request->place_of_birth;
             $row->residance_address = $request->residance_address;
             $row->grade = $request->grade; // Add the grade field assignment
+            $row->bus_id = $request->bus_id; // Add the bus_id field assignment
 
             $row->status               = $request->status;
             $row->siblings_discount   = $request->siblings_discount;
@@ -381,6 +382,7 @@ class StudentRepository implements StudentInterface
             $row->place_of_birth = $request->place_of_birth;
             $row->residance_address = $request->residance_address;
             $row->grade = $request->grade; // Update the grade field
+            $row->bus_id = $request->bus_id; // Save bus assignment on edit
 
             $row->status               = $request->status;
             $row->upload_documents     = $row->upload_documents ?? $this->uploadDocuments($request, $row->upload_documents);

@@ -31,7 +31,7 @@ if (calendar.length) {
         headers: {
             'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
         },
-        url: '/events-current-month',
+        url: window.baseUrl + '/events-current-month',
         success: function (data) {
             showFullCalendar(data);
         },

@@ -138,7 +138,9 @@ class PermissionSeeder extends Seeder
             'forum_comment'        => ['read' => 'forum_comment_list', 'create' => 'forum_comment_create', 'update' => 'forum_comment_update', 'delete' => 'forum_comment_delete'],
             // Memories
             'memories'             => ['read' => 'memory_list', 'create' => 'memory_create', 'update' => 'memory_update', 'delete' => 'memory_delete'],
-
+            // Transportation
+            'bus'                  => ['read' => 'bus_read', 'create' => 'bus_create', 'update' => 'bus_update', 'delete' => 'bus_delete'],
+            'expense_category'     => ['read' => 'expense_category_read', 'create' => 'expense_category_create', 'update' => 'expense_category_update', 'delete' => 'expense_category_delete'],
 
         ];
 

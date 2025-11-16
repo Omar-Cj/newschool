@@ -439,6 +439,34 @@
                                         class="email form-control ot-input mb_30" type="text">
                                 </div>
 
+                                <!-- Bus Selection (Optional Transportation) -->
+                                <div class="col-md-3 mb-3">
+                                    <label for="busSelect" class="form-label">
+                                        {{ ___('transportation.bus_area') }}
+                                        <span class="text-muted">({{ ___('common.optional') }})</span>
+                                    </label>
+                                    <select class="nice-select niceSelect bordered_style wide @error('bus_id') is-invalid @enderror"
+                                        name="bus_id" id="busSelect">
+                                        <option value="">{{ ___('transportation.no_bus') }}</option>
+                                        @foreach($data['buses'] ?? [] as $bus)
+                                            <option value="{{ $bus->id }}" {{ old('bus_id') == $bus->id ? 'selected' : '' }}>
+                                                {{ $bus->area_name }}
+                                                @if($bus->capacity)
+                                                    ({{ $bus->students_count }}/{{ $bus->capacity }})
+                                                    @if($bus->isAtCapacity())
+                                                        - {{ ___('transportation.full') }}
+                                                    @endif
+                                                @endif
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    @error('bus_id')
+                                        <div id="validationServer04Feedback" class="invalid-feedback">
+                                            {{ $message }}
+                                        </div>
+                                    @enderror
+                                </div>
+
 
 
 

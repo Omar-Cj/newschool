@@ -33,6 +33,10 @@ class DashboardController extends Controller
     public function index()
     {
         $data = $this->repo->index();
+        $data['genderDistribution'] = $this->repo->genderDistribution();
+        $data['categoryDistribution'] = $this->repo->categoryDistribution();
+        $data['shiftDistribution'] = $this->repo->shiftDistribution();
+        $data['gradeDistribution'] = $this->repo->gradeDistribution();
         return view('backend.dashboard', compact('data'));
     }
 
@@ -57,6 +61,11 @@ class DashboardController extends Controller
     public function todayAttendance()
     {
         return $this->repo->attendance();
+    }
+
+    public function transportationDistribution()
+    {
+        return response()->json($this->repo->transportationDistribution());
     }
 
     public function eventsCurrentMonth()

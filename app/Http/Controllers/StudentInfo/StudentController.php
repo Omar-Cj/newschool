@@ -27,6 +27,7 @@ use App\Repositories\Examination\ExamAssignRepository;
 use App\Interfaces\StudentInfo\StudentCategoryInterface;
 use App\Repositories\StudentInfo\ParentGuardianRepository;
 use App\Repositories\StudentInfo\StudentCategoryRepository;
+use App\Repositories\Transportation\BusRepository;
 use Maatwebsite\Excel\Exceptions\ImportValidationException;
 use App\Http\Requests\StudentInfo\Student\StudentStoreRequest;
 use App\Http\Requests\StudentInfo\Student\StudentImportRequest;
@@ -46,6 +47,7 @@ class StudentController extends Controller
     private $parentGuardianRepo;
     private $feesAssignedRepo;
     private $serviceManager;
+    private $busRepo;
 
     function __construct(
         StudentRepository $repo,
@@ -59,6 +61,7 @@ class StudentController extends Controller
         ParentGuardianRepository     $parentGuardianRepo,
         FeesCollectInterface         $feesAssignedRepo,
         StudentServiceManager        $serviceManager,
+        BusRepository                $busRepo
     ) {
         $this->repo               = $repo;
         $this->classRepo          = $classRepo;
@@ -71,6 +74,7 @@ class StudentController extends Controller
         $this->parentGuardianRepo = $parentGuardianRepo;
         $this->feesAssignedRepo   = $feesAssignedRepo;
         $this->serviceManager     = $serviceManager;
+        $this->busRepo            = $busRepo;
     }
 
     public function index()
@@ -109,6 +113,7 @@ class StudentController extends Controller
         $data['genders']         = $this->genderRepo->all();
         $data['categories']      = $this->categoryRepo->all();
         $data['parentGuardians'] = $this->parentGuardianRepo->get();
+        $data['buses']           = $this->busRepo->getActiveBuses();
 
         // Load only optional fee types for manual selection
         // Mandatory services are automatically assigned based on student's grade level
@@ -186,10 +191,11 @@ class StudentController extends Controller
         $data['genders']               = $this->genderRepo->all();
         $data['categories']            = $this->categoryRepo->all();
         $data['parentGuardians']       = $this->parentGuardianRepo->get();
-        
+        $data['buses']                 = $this->busRepo->getActiveBuses();
+
         // Load fee types and student services for service management
         $data['fee_types'] = \App\Models\Fees\FeesType::all();
-        
+
         // Load student services with relationships
         $student = $data['student'];
         $student->load(['studentServices.feeType']);

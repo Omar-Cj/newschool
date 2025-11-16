@@ -73,6 +73,7 @@ class StudentStoreRequest extends FormRequest
             'password' => 'min:6',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'previous_school_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'bus_id' => 'nullable|exists:buses,id',
 
             // Service validation rules
             'services' => 'nullable|array',

@@ -565,9 +565,10 @@
                     </li>
                 @endif
 
-                @if (hasModule('VehicleTracker'))
+                {{-- Transportation Menu: Shows for schools with 'bus' feature OR VehicleTracker module --}}
+                @if (hasFeature('bus') || hasModule('VehicleTracker'))
                     <li
-                        class="sidebar-menu-item {{ set_menu(['vehicles', 'vehicles/*', 'vehicle/routes', 'vehicle/routes/*', 'drivers', 'drivers/*', 'route/stoppages', 'route/stoppages/*', 'driver/duty-schedule', 'driver/duty-schedule/*', 'student/route/enrollments', 'student/route/enrollments/*']) }}">
+                        class="sidebar-menu-item {{ set_menu(['bus', 'bus/*', 'vehicles', 'vehicles/*', 'vehicle/routes', 'vehicle/routes/*', 'drivers', 'drivers/*', 'route/stoppages', 'route/stoppages/*', 'driver/duty-schedule', 'driver/duty-schedule/*', 'student/route/enrollments', 'student/route/enrollments/*', 'student/route/fees', 'student/route/fees/*']) }}">
                         <a class="parent-item-content has-arrow">
                             <i class="las la-bus"></i>
                             <span class="on-half-expanded">{{ ___('common.Transportation') }}
@@ -578,61 +579,71 @@
 
                         </a>
                         <ul class="child-menu-list">
-                            @if (hasPermission('driver_read'))
-                                <li class="sidebar-menu-item {{ set_menu(['drivers', 'drivers/*']) }}">
-                                    <a href="{{ route('drivers.index') }}">{{ ___('common.Drivers') }}</a>
+                            {{-- Buses: Core transportation feature --}}
+                            @if (hasFeature('bus') && hasPermission('bus_read'))
+                                <li class="sidebar-menu-item {{ set_menu(['bus', 'bus/*']) }}">
+                                    <a href="{{ route('bus.index') }}">{{ ___('transportation.buses') }}</a>
                                 </li>
                             @endif
 
-                            @if (hasPermission('vehicle_read'))
-                                <li class="sidebar-menu-item {{ set_menu(['vehicles', 'vehicles/*']) }}">
-                                    <a href="{{ route('vehicles.index') }}">{{ ___('common.Vehicles') }}</a>
-                                </li>
-                            @endif
+                            {{-- VehicleTracker Module Items: Only show when module is enabled --}}
+                            @if (hasModule('VehicleTracker'))
+                                @if (hasPermission('driver_read'))
+                                    <li class="sidebar-menu-item {{ set_menu(['drivers', 'drivers/*']) }}">
+                                        <a href="{{ route('drivers.index') }}">{{ ___('common.Drivers') }}</a>
+                                    </li>
+                                @endif
 
-                            @if (hasPermission('route_stoppage_read'))
-                                <li
-                                    class="sidebar-menu-item {{ set_menu(['route/stoppages', 'route/stoppages/*']) }}">
-                                    <a
-                                        href="{{ route('route.stoppages.index') }}">{{ ___('common.Stoppages') }}</a>
-                                </li>
-                            @endif
+                                @if (hasPermission('vehicle_read'))
+                                    <li class="sidebar-menu-item {{ set_menu(['vehicles', 'vehicles/*']) }}">
+                                        <a href="{{ route('vehicles.index') }}">{{ ___('common.Vehicles') }}</a>
+                                    </li>
+                                @endif
 
-                            @if (hasPermission('vehicle_route_read'))
-                                <li class="sidebar-menu-item {{ set_menu(['vehicle/routes', 'vehicle/routes/*']) }}">
-                                    <a
-                                        href="{{ route('vehicle.routes.index') }}">{{ ___('common.Vehicle Routes') }}</a>
-                                </li>
-                            @endif
+                                @if (hasPermission('route_stoppage_read'))
+                                    <li
+                                        class="sidebar-menu-item {{ set_menu(['route/stoppages', 'route/stoppages/*']) }}">
+                                        <a
+                                            href="{{ route('route.stoppages.index') }}">{{ ___('common.Stoppages') }}</a>
+                                    </li>
+                                @endif
 
-                            @if (hasPermission('duty_schedule_read'))
-                                <li
-                                    class="sidebar-menu-item {{ set_menu(['driver/duty-schedule', 'driver/duty-schedule/*']) }}">
-                                    <a
-                                        href="{{ route('driver.duty-schedule.index') }}">{{ ___('common.Driver Schedule') }}</a>
-                                </li>
-                            @endif
+                                @if (hasPermission('vehicle_route_read'))
+                                    <li class="sidebar-menu-item {{ set_menu(['vehicle/routes', 'vehicle/routes/*']) }}">
+                                        <a
+                                            href="{{ route('vehicle.routes.index') }}">{{ ___('common.Vehicle Routes') }}</a>
+                                    </li>
+                                @endif
 
-                            @if (hasPermission('student_route_enrollment_read'))
-                                <li
-                                    class="sidebar-menu-item {{ set_menu(['student/route/enrollments', 'student/route/enrollments/*']) }}">
-                                    <a
-                                        href="{{ route('student.route-enrollments.index') }}">{{ ___('common.Student Enrollments') }}</a>
-                                </li>
-                            @endif
+                                @if (hasPermission('duty_schedule_read'))
+                                    <li
+                                        class="sidebar-menu-item {{ set_menu(['driver/duty-schedule', 'driver/duty-schedule/*']) }}">
+                                        <a
+                                            href="{{ route('driver.duty-schedule.index') }}">{{ ___('common.Driver Schedule') }}</a>
+                                    </li>
+                                @endif
 
-                            @if (hasPermission('student_route_enrollment_read'))
-                                <li
-                                    class="sidebar-menu-item {{ set_menu(['student/route/fees', 'student/route/fees/*']) }}">
-                                    <a
-                                        href="{{ route('student.route-fees.index') }}">{{ ___('common.Fees Management') }}</a>
-                                </li>
+                                @if (hasPermission('student_route_enrollment_read'))
+                                    <li
+                                        class="sidebar-menu-item {{ set_menu(['student/route/enrollments', 'student/route/enrollments/*']) }}">
+                                        <a
+                                            href="{{ route('student.route-enrollments.index') }}">{{ ___('common.Student Enrollments') }}</a>
+                                    </li>
+                                @endif
+
+                                @if (hasPermission('student_route_enrollment_read'))
+                                    <li
+                                        class="sidebar-menu-item {{ set_menu(['student/route/fees', 'student/route/fees/*']) }}">
+                                        <a
+                                            href="{{ route('student.route-fees.index') }}">{{ ___('common.Fees Management') }}</a>
+                                    </li>
+                                @endif
+                                <!-- Live Tracking Start -->
+                                @if (hasModule('LiveTracking'))
+                                    @include('livetracking::menu')
+                                @endif
+                                <!-- Live Tracking End -->
                             @endif
-                            <!-- Live Tracking Start -->
-                            @if (hasModule('LiveTracking'))
-                                @include('livetracking::menu')
-                            @endif
-                            <!-- Live Tracking End -->
                         </ul>
                     </li>
                 @endif

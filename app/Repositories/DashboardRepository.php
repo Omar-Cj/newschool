@@ -156,4 +156,142 @@ class DashboardRepository implements DashboardInterface
         return response()->json($data, 200);
     }
 
+    /**
+     * Get student distribution by gender for current session
+     */
+    public function genderDistribution()
+    {
+        $currentSessionId = setting('session');
+
+        return SessionClassStudent::with(['student.gender'])
+            ->where('session_id', $currentSessionId)
+            ->whereHas('student', function($q) {
+                $q->where('status', \App\Enums\Status::ACTIVE);
+            })
+            ->get()
+            ->pluck('student')
+            ->filter()
+            ->groupBy('gender_id')
+            ->map(function($students) {
+                return [
+                    'name' => $students->first()->gender->name ?? 'Unknown',
+                    'count' => $students->count(),
+                ];
+            })
+            ->values();
+    }
+
+    /**
+     * Get student distribution by category for current session
+     */
+    public function categoryDistribution()
+    {
+        $currentSessionId = setting('session');
+
+        return SessionClassStudent::with(['student.studentCategory'])
+            ->where('session_id', $currentSessionId)
+            ->whereHas('student', function($q) {
+                $q->where('status', \App\Enums\Status::ACTIVE)
+                  ->whereNotNull('student_category_id');
+            })
+            ->get()
+            ->pluck('student')
+            ->filter()
+            ->groupBy('student_category_id')
+            ->map(function($students) {
+                return [
+                    'name' => $students->first()->studentCategory->name,
+                    'count' => $students->count()
+                ];
+            })
+            ->values();
+    }
+
+    /**
+     * Get student distribution by shift
+     */
+    public function shiftDistribution()
+    {
+        return SessionClassStudent::with(['shift', 'student'])
+            ->where('session_id', setting('session'))
+            ->whereHas('student', function($q) {
+                $q->where('status', \App\Enums\Status::ACTIVE);
+            })
+            ->get()
+            ->groupBy('shift_id')
+            ->map(function($items) {
+                return [
+                    'name' => $items->first()->shift->name ?? 'No Shift',
+                    'count' => $items->count()
+                ];
+            })
+            ->filter(fn($item) => $item['name'] !== 'No Shift')
+            ->values();
+    }
+
+    /**
+     * Get student distribution by grade for current session
+     */
+    public function gradeDistribution()
+    {
+        $currentSessionId = setting('session');
+
+        $students = SessionClassStudent::with('student')
+            ->where('session_id', $currentSessionId)
+            ->whereHas('student', function($q) {
+                $q->where('status', \App\Enums\Status::ACTIVE)
+                  ->whereNotNull('grade');
+            })
+            ->get()
+            ->pluck('student')
+            ->filter()
+            ->groupBy('grade')
+            ->map(function($items, $grade) {
+                return [
+                    'grade' => $grade,
+                    'count' => $items->count()
+                ];
+            })
+            ->sortBy(function($item) {
+                $gradeOrder = ['KG-1', 'KG-2', 'Grade1', 'Grade2', 'Grade3', 'Grade4', 'Grade5', 'Grade6', 'Grade7', 'Grade8', 'Form1', 'Form2', 'Form3', 'Form4'];
+                $index = array_search($item['grade'], $gradeOrder);
+                return $index !== false ? $index : 999;
+            })
+            ->values();
+
+        return $students;
+    }
+
+    /**
+     * Get student distribution by transportation area for current session
+     */
+    public function transportationDistribution()
+    {
+        $currentSessionId = setting('session');
+
+        $studentsByBus = SessionClassStudent::with('student.bus')
+            ->where('session_id', $currentSessionId)
+            ->whereHas('student', function($q) {
+                $q->where('status', \App\Enums\Status::ACTIVE)
+                  ->whereNotNull('bus_id');
+            })
+            ->get()
+            ->pluck('student')
+            ->filter(fn($student) => $student && $student->bus)
+            ->groupBy('bus_id')
+            ->map(function($students, $busId) {
+                $bus = $students->first()->bus;
+                return [
+                    'area_name' => $bus->area_name,
+                    'count' => $students->count()
+                ];
+            })
+            ->values();
+
+        return [
+            'areas' => $studentsByBus->pluck('area_name')->toArray(),
+            'counts' => $studentsByBus->pluck('count')->toArray()
+        ];
+    }
+
 }

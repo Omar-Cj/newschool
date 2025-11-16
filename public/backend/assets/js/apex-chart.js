@@ -1244,7 +1244,7 @@ $.ajax({
     headers: {
         'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
     },
-    url: '/fees-collection-current-month',
+    url: window.baseUrl + '/fees-collection-current-month',
     success: function (data) {
         dates  = data.dates;
         collection  = data.collection;
@@ -1352,7 +1352,7 @@ $.ajax({
     headers: {
         'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
     },
-    url: '/income-expense-current-month',
+    url: window.baseUrl + '/income-expense-current-month',
     success: function (data) {
         dates    = data.dates;
         incomes  = data.incomes;
@@ -1466,7 +1466,7 @@ $.ajax({
     headers: {
         'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
     },
-    url: '/today-attendance',
+    url: window.baseUrl + '/today-attendance',
     success: function (data) {
         classes  = data.classes;
         present  = data.present;
@@ -1570,6 +1570,84 @@ function getTodayAttendance() {
 }
 // end today's attendance chart
 
+
+// transportation distribution chart
+if($("#transportation_distribution_chart").length){
+    $.ajax({
+        url: window.baseUrl + '/transportation-distribution',
+        type: 'GET',
+        dataType: 'json',
+        success: function(response) {
+            var options = {
+                series: [{
+                    name: 'Students',
+                    data: response.counts
+                }],
+                chart: {
+                    type: 'bar',
+                    height: 400,
+                    toolbar: {
+                        show: false
+                    }
+                },
+                plotOptions: {
+                    bar: {
+                        horizontal: false,
+                        columnWidth: '55%',
+                        endingShape: 'rounded',
+                        borderRadius: 4
+                    }
+                },
+                dataLabels: {
+                    enabled: true,
+                    style: {
+                        fontSize: '12px',
+                        colors: ['#fff']
+                    }
+                },
+                stroke: {
+                    show: true,
+                    width: 2,
+                    colors: ['transparent']
+                },
+                xaxis: {
+                    categories: response.areas,
+                    labels: {
+                        style: {
+                            fontSize: '12px'
+                        }
+                    }
+                },
+                yaxis: {
+                    title: {
+                        text: 'Number of Students'
+                    }
+                },
+                fill: {
+                    opacity: 1,
+                    colors: ['#10B981']
+                },
+                tooltip: {
+                    y: {
+                        formatter: function (val) {
+                            return val + " students"
+                        }
+                    }
+                },
+                grid: {
+                    borderColor: '#f1f1f1'
+                }
+            };
+
+            var chart = new ApexCharts(document.querySelector("#transportation_distribution_chart"), options);
+            chart.render();
+        },
+        error: function(xhr, status, error) {
+            console.error('Error loading transportation distribution:', error);
+        }
+    });
+}
+// end transportation distribution chart
 
 
 // new crm chart here

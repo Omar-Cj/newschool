@@ -111,6 +111,8 @@ use App\Repositories\StudentPanel\ClassRoutineRepository as StudentPanelClassRou
 use App\Repositories\StudentPanel\Homework\HomeworkRepository as StudentPanelHomeworkRepository;
 use App\Repositories\ParentPanel\Homework\HomeworkInterface as ParentPanelHomeworkInterface;
 use App\Repositories\ParentPanel\Homework\HomeworkRepository as ParentPanelHomeworkRepository;
+use App\Interfaces\Transportation\BusInterface;
+use App\Repositories\Transportation\BusRepository;
 
 
 class RepositoryServiceProvider extends ServiceProvider
@@ -196,6 +198,9 @@ class RepositoryServiceProvider extends ServiceProvider
         // Online examination
         $this->app->bind(StudentPanelHomeworkInterface::class,    StudentPanelHomeworkRepository::class);
         $this->app->bind(ParentPanelHomeworkInterface::class,    ParentPanelHomeworkRepository::class);
+
+        // Transportation
+        $this->app->bind(BusInterface::class,                     BusRepository::class);
 
     }
 

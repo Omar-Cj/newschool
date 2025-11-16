@@ -387,6 +387,34 @@
                                         value="{{ old('residance_address', @$data['student']->residance_address) }}">
                                 </div>
 
+                                <!-- Bus Selection (Optional Transportation) -->
+                                <div class="col-md-3 mb-3">
+                                    <label for="busSelect" class="form-label">
+                                        {{ ___('transportation.bus_area') }}
+                                        <span class="text-muted">({{ ___('common.optional') }})</span>
+                                    </label>
+                                    <select class="nice-select niceSelect bordered_style wide @error('bus_id') is-invalid @enderror"
+                                        name="bus_id" id="busSelect">
+                                        <option value="">{{ ___('transportation.no_bus') }}</option>
+                                        @foreach($data['buses'] ?? [] as $bus)
+                                            <option value="{{ $bus->id }}" {{ old('bus_id', $data['student']->bus_id ?? '') == $bus->id ? 'selected' : '' }}>
+                                                {{ $bus->area_name }}
+                                                @if($bus->capacity)
+                                                    ({{ $bus->students_count }}/{{ $bus->capacity }})
+                                                    @if($bus->isAtCapacity())
+                                                        - {{ ___('transportation.full') }}
+                                                    @endif
+                                                @endif
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    @error('bus_id')
+                                        <div id="validationServer04Feedback" class="invalid-feedback">
+                                            {{ $message }}
+                                        </div>
+                                    @enderror
+                                </div>
+
                                 <div class="col-md-3">
 
                                     <label for="validationServer04" class="form-label">{{ ___('common.status') }} <span

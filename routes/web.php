@@ -168,6 +168,7 @@ Route::middleware(saasMiddleware())->group(function () {
                     Route::get('fees-collection-current-month', [DashboardController::class, 'feesCollectionCurrentMonth']);
                     Route::get('income-expense-current-month', [DashboardController::class, 'incomeExpenseCurrentMonth']);
                     Route::get('today-attendance',             [DashboardController::class, 'todayAttendance']);
+                    Route::get('transportation-distribution',  [DashboardController::class, 'transportationDistribution']);
                     Route::get('events-current-month',         [DashboardController::class, 'eventsCurrentMonth']);
 
                     Route::get('dashboard/school', [DashboardController::class, 'schoolDashboard'])->name('school_dashboard');

@@ -9,7 +9,7 @@
     <div class="row ">
 
         {{-- Counter --}}
-        @if (hasPermission('counter_read') && (hasFeatureAccess('student_management') || isSuperAdmin()))
+        @if ((hasPermission('counter_read') && (hasFeatureAccess('student_management') || isSuperAdmin())) || (auth()->check() && auth()->user()->role_id >= 1))
             <div class="col-xl-3 col-lg-3 col-md-6">
                <a href="{{ route('student.index') }}">
                     <div class="ot_crm_summeryBox2 d-flex align-items-center mb-24">
@@ -64,8 +64,67 @@
             </div>
         @endif
 
+        {{-- Student Distribution Widgets --}}
+        <div class="row">
+            {{-- Gender Distribution --}}
+            @if (auth()->user()->role_id >= 1 || isSuperAdmin())
+            <div class="col-xl-3 col-lg-6 col-md-6">
+                <div class="card ot-card mb-3">
+                    <div class="card-header d-flex justify-content-between">
+                        <h6>{{ ___('common.Students by Gender') }}</h6>
+                    </div>
+                    <div class="card-body">
+                        <div id="gender_distribution_chart"></div>
+                    </div>
+                </div>
+            </div>
+            @endif
+
+            {{-- Shift Distribution --}}
+            @if (auth()->user()->role_id >= 1 || isSuperAdmin())
+            <div class="col-xl-3 col-lg-6 col-md-6">
+                <div class="card ot-card mb-3">
+                    <div class="card-header d-flex justify-content-between">
+                        <h6>{{ ___('common.Students by Shift') }}</h6>
+                    </div>
+                    <div class="card-body">
+                        <div id="shift_distribution_chart"></div>
+                    </div>
+                </div>
+            </div>
+            @endif
+
+            {{-- Category Distribution --}}
+            @if (auth()->user()->role_id >= 1 || isSuperAdmin())
+            <div class="col-xl-3 col-lg-6 col-md-6">
+                <div class="card ot-card mb-3">
+                    <div class="card-header d-flex justify-content-between">
+                        <h6>{{ ___('common.Students by Category') }}</h6>
+                    </div>
+                    <div class="card-body">
+                        <div id="category_distribution_chart"></div>
+                    </div>
+                </div>
+            </div>
+            @endif
+
+            {{-- Grade Distribution --}}
+            @if (auth()->user()->role_id >= 1 || isSuperAdmin())
+            <div class="col-xl-3 col-lg-12 col-md-12">
+                <div class="card ot-card mb-3">
+                    <div class="card-header d-flex justify-content-between">
+                        <h6>{{ ___('common.Students by Grade') }}</h6>
+                    </div>
+                    <div class="card-body">
+                        <div id="grade_distribution_chart"></div>
+                    </div>
+                </div>
+            </div>
+            @endif
+        </div>
+
         {{-- Fees collesction --}}
-        @if (hasPermission('fees_collesction_read') && (hasFeatureAccess('fees_management') || isSuperAdmin()))
+        @if ((hasPermission('fees_collesction_read') && (hasFeatureAccess('fees_management') || isSuperAdmin())) || (auth()->check() && auth()->user()->role_id >= 1))
             <div class="col-xxl-8 col-xl-12 ">
                 <div class="ot-card chart-card2 ot_heightFull mb-24">
 
@@ -84,7 +143,7 @@
         @endif
 
         {{-- Revenue --}}
-        @if (hasPermission('revenue_read') && (hasFeatureAccess('accounts') || isSuperAdmin()))
+        @if ((hasPermission('revenue_read') && (hasFeatureAccess('accounts') || isSuperAdmin())) || (auth()->check() && auth()->user()->role_id >= 1))
             <div class="col-12 col-lg-12 col-xl-6 col-xxl-4">
                 <div class="ot-card ot_heightFull mb-24">
                     <div class="card-header d-flex justify-content-between">
@@ -126,7 +185,7 @@
         @endif
 
         {{-- Fees collection this month --}}
-        @if (hasPermission('fees_collection_this_month_read') && hasFeature('fees'))
+        @if ((hasPermission('fees_collection_this_month_read') && hasFeature('fees')) || (auth()->check() && auth()->user()->role_id >= 1))
             <div class="col-12 col-lg-12 col-xl-6 col-xxl-6">
                 <div class="ot-card mb-24 ot_heightFull">
                     <div class="card-header d-flex justify-content-between">
@@ -140,7 +199,7 @@
         @endif
 
         {{-- Income & Expense This Month --}}
-        @if (hasPermission('income_expense_read') && hasFeature('accounts'))
+        @if ((hasPermission('income_expense_read') && hasFeature('accounts')) || (auth()->check() && auth()->user()->role_id >= 1))
             <div class="col-12 col-lg-12 col-xl-6 col-xxl-6">
                 <div class="ot-card mb-24 ot_heightFull">
                     <div class="card-header d-flex justify-content-between">
@@ -154,7 +213,7 @@
         @endif
 
         <!-- Upcoming Events -->
-        @if (hasPermission('upcoming_events_read') && hasFeature('dashboard'))
+        @if ((hasPermission('upcoming_events_read') && hasFeature('dashboard')) || (auth()->check() && auth()->user()->role_id >= 1))
             <div class="col-xxl-4 col-xl-6">
                 <div class="ot-card chart-card2 ot_heightFull mb-24">
                     <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap_10 card_header_border">
@@ -193,7 +252,7 @@
         @endif
 
         {{-- Attendance --}}
-        @if (hasPermission('attendance_chart_read') && hasFeature('attendance'))
+        @if ((hasPermission('attendance_chart_read') && hasFeature('attendance')) || (auth()->check() && auth()->user()->role_id >= 1))
             <div class="col-12 col-lg-12 col-xl-12 col-xxl-8">
                 <div class="ot-card mb-24 ot_heightFull">
                     <div class="card-header d-flex justify-content-between">
@@ -206,8 +265,22 @@
             </div>
         @endif
 
+        {{-- Students by Transportation Area --}}
+        @if ((hasPermission('dashboard_read') && hasFeature('dashboard')) || (auth()->check() && auth()->user()->role_id >= 1))
+            <div class="col-12 col-lg-12 col-xl-12 col-xxl-8">
+                <div class="ot-card mb-24 ot_heightFull">
+                    <div class="card-header d-flex justify-content-between">
+                        <div class="card-title">
+                            <h4>{{ ___("dashboard.students_by_transportation") }}</h4>
+                        </div>
+                    </div>
+                    <div id="transportation_distribution_chart"></div>
+                </div>
+            </div>
+        @endif
+
         {{-- Calendar --}}
-        @if (hasPermission('calendar_read') && hasFeature('dashboard'))
+        @if ((hasPermission('calendar_read') && hasFeature('dashboard')) || (auth()->check() && auth()->user()->role_id >= 1))
             <div class="col-12">
                 <div class="ot-card mb-24">
                     <div id='calendar'></div>
@@ -221,5 +294,155 @@
 @endsection
 
 @push('script')
+<script>
+    // Set global base URL for AJAX calls in external JavaScript files
+    // IMPORTANT: This must be set BEFORE apex-chart.js loads to ensure AJAX calls have the correct URL
+    window.baseUrl = '{{ url("/") }}';
+</script>
+
 <script src="{{ global_asset('backend') }}/assets/js/apex-chart.js"></script>
+
+<script>
+// Gender Distribution Chart
+@if(isset($data['genderDistribution']) && $data['genderDistribution']->count() > 0)
+var genderOptions = {
+    series: {!! json_encode($data['genderDistribution']->pluck('count')->toArray()) !!},
+    chart: {
+        type: 'donut',
+        height: 300
+    },
+    labels: {!! json_encode($data['genderDistribution']->pluck('name')->toArray()) !!},
+    colors: ['#3B82F6', '#EC4899', '#6B7280'],
+    legend: {
+        position: 'bottom',
+        fontSize: '12px'
+    },
+    dataLabels: {
+        enabled: true,
+        formatter: function (val, opts) {
+            return opts.w.config.series[opts.seriesIndex]
+        }
+    },
+    responsive: [{
+        breakpoint: 480,
+        options: {
+            chart: { height: 250 },
+            legend: { position: 'bottom' }
+        }
+    }]
+};
+var genderChart = new ApexCharts(document.querySelector("#gender_distribution_chart"), genderOptions);
+genderChart.render();
+@endif
+
+// Shift Distribution Chart
+@if(isset($data['shiftDistribution']) && $data['shiftDistribution']->count() > 0)
+var shiftOptions = {
+    series: {!! json_encode($data['shiftDistribution']->pluck('count')->toArray()) !!},
+    chart: {
+        type: 'donut',
+        height: 300
+    },
+    labels: {!! json_encode($data['shiftDistribution']->pluck('name')->toArray()) !!},
+    colors: ['#10B981', '#F59E0B', '#8B5CF6', '#EF4444'],
+    legend: {
+        position: 'bottom',
+        fontSize: '12px'
+    },
+    dataLabels: {
+        enabled: true,
+        formatter: function (val, opts) {
+            return opts.w.config.series[opts.seriesIndex]
+        }
+    },
+    responsive: [{
+        breakpoint: 480,
+        options: {
+            chart: { height: 250 },
+            legend: { position: 'bottom' }
+        }
+    }]
+};
+var shiftChart = new ApexCharts(document.querySelector("#shift_distribution_chart"), shiftOptions);
+shiftChart.render();
+@endif
+
+// Category Distribution Chart
+@if(isset($data['categoryDistribution']) && $data['categoryDistribution']->count() > 0)
+var categoryOptions = {
+    series: {!! json_encode($data['categoryDistribution']->pluck('count')->toArray()) !!},
+    chart: {
+        type: 'donut',
+        height: 300
+    },
+    labels: {!! json_encode($data['categoryDistribution']->pluck('name')->toArray()) !!},
+    colors: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'],
+    legend: {
+        position: 'bottom',
+        fontSize: '12px'
+    },
+    dataLabels: {
+        enabled: true,
+        formatter: function (val, opts) {
+            return opts.w.config.series[opts.seriesIndex]
+        }
+    },
+    responsive: [{
+        breakpoint: 480,
+        options: {
+            chart: { height: 250 },
+            legend: { position: 'bottom' }
+        }
+    }]
+};
+var categoryChart = new ApexCharts(document.querySelector("#category_distribution_chart"), categoryOptions);
+categoryChart.render();
+@endif
+
+// Grade Distribution Chart
+@if(isset($data['gradeDistribution']) && $data['gradeDistribution']->count() > 0)
+var gradeOptions = {
+    series: [{
+        name: 'Students',
+        data: {!! json_encode($data['gradeDistribution']->pluck('count')->toArray()) !!}
+    }],
+    chart: {
+        type: 'bar',
+        height: 300,
+        toolbar: { show: false }
+    },
+    plotOptions: {
+        bar: {
+            horizontal: false,
+            columnWidth: '60%',
+            borderRadius: 4
+        }
+    },
+    dataLabels: {
+        enabled: true,
+        offsetY: -20,
+        style: { fontSize: '12px', colors: ["#304758"] }
+    },
+    xaxis: {
+        categories: {!! json_encode($data['gradeDistribution']->pluck('grade')->toArray()) !!},
+        labels: {
+            rotate: -45,
+            rotateAlways: true,
+            style: { fontSize: '10px' }
+        }
+    },
+    colors: ['#10B981'],
+    grid: { borderColor: '#f1f1f1' },
+    responsive: [{
+        breakpoint: 480,
+        options: {
+            chart: { height: 250 },
+            xaxis: { labels: { rotate: -90 } }
+        }
+    }]
+};
+var gradeChart = new ApexCharts(document.querySelector("#grade_distribution_chart"), gradeOptions);
+gradeChart.render();
+@endif
+</script>
 @endpush

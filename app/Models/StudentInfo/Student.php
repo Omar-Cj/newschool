@@ -53,7 +53,8 @@ class Student extends BaseModel
         'previous_school_info',
         'previous_school_image_id',
         'place_of_birth',
-        'residance_address'
+        'residance_address',
+        'bus_id',
     ];
 
     protected $casts = [
@@ -148,6 +149,15 @@ class Student extends BaseModel
         return $this->hasOne(EnrollmentReport::class, 'student_id', 'id')->where('type', 'drop');
     }
 
+    /**
+     * Get the bus that the student is assigned to.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function bus(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Transportation\Bus::class, 'bus_id', 'id');
+    }
 
     public function feesAssignChild()
     {
