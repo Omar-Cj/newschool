@@ -173,6 +173,9 @@ class AppServiceProvider extends ServiceProvider
 
         if (hasModule('MultiBranch') && Schema::hasTable('branches')) {
             view()->composer(['backend.partials.header'], function ($view) {
+                // Branch data is automatically filtered by SchoolScope in Branch model
+                // Super admins (school_id = null) see all branches
+                // School admins (school_id != null) see only their school's branches
                 $branches = Branch::pluck('name', 'id');
                 $view->with(['branches' => $branches]);
             });

@@ -23,18 +23,26 @@
                             <span class="on-half-expanded">{{ ___('mainapp_schools.Schools') }}</span>
                         </a>
                     </li>
-                    <li class="sidebar-menu-item {{ set_menu(['subscription*']) }}">
+                    <li class="sidebar-menu-item {{ set_menu(['subscription.index']) }}">
                         <a href="{{ route('subscription.index') }}" class="parent-item-content">
                             <i class="las la-globe"></i>
                             <span class="on-half-expanded">{{ ___('mainapp_subscriptions.Subscriptions') }}</span>
                         </a>
                     </li>
+                    <li class="sidebar-menu-item {{ set_menu(['subscription-payments*']) }}">
+                        <a href="{{ route('subscription-payments.index') }}" class="parent-item-content">
+                            <i class="las la-money-check-alt"></i>
+                            <span class="on-half-expanded">{{ ___('mainapp_subscriptions.Subscription Payments') }}</span>
+                        </a>
+                    </li>
+                    {{-- Hidden: Features menu item
                     <li class="sidebar-menu-item {{ set_menu(['feature*']) }}">
                         <a href="{{ route('feature.index') }}" class="parent-item-content">
                             <i class="las la-braille"></i>
                             <span class="on-half-expanded">{{ ___('common.Features') }}</span>
                         </a>
                     </li>
+                    --}}
                     <li class="sidebar-menu-item {{ set_menu(['package*']) }}">
                         <a href="{{ route('package.index') }}" class="parent-item-content">
                             <i class="las la-bolt"></i>
@@ -55,6 +63,34 @@
                     </li>
                 @endif
                 @if(isSuperAdmin())
+                    {{-- Reports Submenu --}}
+                    <li class="sidebar-menu-item has-dropdown {{ set_menu(['reports*']) }}">
+                        <a href="javascript:void(0)" class="parent-item-content has-arrow">
+                            <i class="las la-chart-bar"></i>
+                            <span class="on-half-expanded">{{ ___('common.Reports') }}</span>
+                        </a>
+                        <ul class="child-menu-list">
+                            <li class="sidebar-menu-item {{ set_menu(['reports.payment-collection']) }}">
+                                <a href="{{ route('reports.payment-collection') }}">
+                                    <i class="las la-file-invoice-dollar"></i>
+                                    <span>{{ ___('common.Payment Collection') }}</span>
+                                </a>
+                            </li>
+                            <li class="sidebar-menu-item {{ set_menu(['reports.school-growth']) }}">
+                                <a href="{{ route('reports.school-growth') }}">
+                                    <i class="las la-chart-line"></i>
+                                    <span>{{ ___('common.School Growth') }}</span>
+                                </a>
+                            </li>
+                            <li class="sidebar-menu-item {{ set_menu(['reports.outstanding-payments']) }}">
+                                <a href="{{ route('reports.outstanding-payments') }}">
+                                    <i class="las la-exclamation-triangle"></i>
+                                    <span>{{ ___('common.Outstanding Payments') }}</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    {{-- Hidden: Payment report, Testimonials, FAQ, Contacts, Subscribes, Sections
                     <li class="sidebar-menu-item {{ set_menu(['payment-report*']) }}">
                         <a href="{{ route('payment.report.index') }}" class="parent-item-content">
                             <i class="las la-bolt"></i>
@@ -91,6 +127,7 @@
                             <span class="on-half-expanded">{{ ___('common.Sections') }}</span>
                         </a>
                     </li>
+                    --}}
                     <li class="sidebar-menu-item {{ set_menu(['languages*']) }}">
                         <a href="{{ route('languages.index') }}" class="parent-item-content">
                             <i class="las la-language"></i>

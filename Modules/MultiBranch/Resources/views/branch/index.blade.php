@@ -18,7 +18,8 @@
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h4 class="mb-0 text-capitalize">{{ $title }}</h4>
-                    @if (hasPermission('user_create'))
+                    {{-- Only Super Admins can create branches. School admins can view/edit but not create --}}
+                    @if (hasPermission('user_create') && isSuperAdmin())
                         <a href="{{ route('branch.create') }}" class="btn btn-lg ot-btn-primary">
                             <span><i class="fa-solid fa-plus"></i> </span>
                             <span class="">{{ ___('common.add') }}</span>
@@ -56,7 +57,7 @@
                                             <span class="badge-basic-danger-text">{{ ___('common.inactive') }}</span>
                                         @endif
                                     </td>
-                                    @if (hasPermission('user_update') || hasPermission('user_delete'))
+                                    @if (hasPermission('user_update') || (hasPermission('user_delete') && isSuperAdmin()))
                                         <td class="action">
                                             <div class="dropdown dropdown-action">
                                                 <button type="button" class="btn-dropdown" data-bs-toggle="dropdown"
@@ -74,7 +75,8 @@
                                                             </a>
                                                         </li>
                                                     @endif
-                                                    @if (hasPermission('user_delete'))
+                                                    {{-- Only Super Admins can delete branches. School admins can edit but not delete --}}
+                                                    @if (hasPermission('user_delete') && isSuperAdmin())
                                                         <li>
                                                             <a class="dropdown-item" href="javascript:void(0);"
                                                                onclick="delete_row('branches/delete', {{ $row->id }})">

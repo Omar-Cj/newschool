@@ -87,8 +87,16 @@ class UserRepository implements UserInterface
         DB::beginTransaction();
         try {
 
-            if(User::whereNotIn('role_id', [6,7])->count() >= activeSubscriptionStaffLimit() && env('APP_SAAS'))
-                return 2;
+            // Staff Limit Enforcement (School-ID Based Multi-Tenancy)
+            $branchId = auth()->user()->branch_id ?? 1;
+            $branch = \Modules\MultiBranch\Entities\Branch::find($branchId);
+
+            if ($branch && $branch->school_id) {
+                $staffLimit = activeSubscriptionStaffLimit();
+                if ($staffLimit && User::whereNotIn('role_id', [6,7])->count() >= $staffLimit) {
+                    return 2;
+                }
+            }
 
             $role                     = Role::find($request->role);
 

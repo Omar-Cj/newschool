@@ -35,6 +35,81 @@
 
 
             <div class="card-body">
+                @if(isset($data['branch_student_limit']) && $data['branch_student_limit'] > 0 && $data['branch_student_limit'] < 99999999)
+                    @php
+                        $percentUsed = $data['branch_student_limit'] > 0
+                            ? ($data['branch_current_count'] / $data['branch_student_limit']) * 100
+                            : 0;
+
+                        // Color coding: green if >20% remaining, yellow if 10-20%, red if <10%
+                        $percentRemaining = 100 - $percentUsed;
+                        if ($percentRemaining > 20) {
+                            $alertClass = 'alert-success';
+                            $iconClass = 'fa-circle-check';
+                        } elseif ($percentRemaining >= 10) {
+                            $alertClass = 'alert-warning';
+                            $iconClass = 'fa-triangle-exclamation';
+                        } else {
+                            $alertClass = 'alert-danger';
+                            $iconClass = 'fa-circle-exclamation';
+                        }
+
+                        $atLimit = $data['branch_current_count'] >= $data['branch_student_limit'];
+                    @endphp
+
+                    <div class="alert {{ $alertClass }} alert-dismissible fade show mb-4" role="alert">
+                        <div class="d-flex align-items-start">
+                            <i class="fa-solid {{ $iconClass }} me-3 mt-1" style="font-size: 1.5rem;"></i>
+                            <div class="flex-grow-1">
+                                <h5 class="alert-heading mb-2">
+                                    <i class="fa-solid fa-building me-2"></i>{{ $data['branch_name'] }} - Student Enrollment Status
+                                </h5>
+                                <div class="mb-2">
+                                    <strong>Package:</strong> {{ $data['package_name'] }}
+                                </div>
+                                <div class="mb-2">
+                                    <strong>Students Enrolled:</strong>
+                                    <span class="badge bg-primary">{{ $data['branch_current_count'] }} / {{ $data['branch_student_limit'] }}</span>
+                                </div>
+                                <div class="mb-2">
+                                    <strong>Remaining Slots:</strong>
+                                    <span class="badge {{ $atLimit ? 'bg-danger' : 'bg-success' }}">
+                                        {{ $data['branch_remaining_slots'] }}
+                                    </span>
+                                </div>
+                                <div class="progress mt-2" style="height: 25px;">
+                                    <div class="progress-bar {{ $atLimit ? 'bg-danger' : ($percentRemaining < 20 ? 'bg-warning' : 'bg-success') }}"
+                                         role="progressbar"
+                                         style="width: {{ $percentUsed }}%;"
+                                         aria-valuenow="{{ $percentUsed }}"
+                                         aria-valuemin="0"
+                                         aria-valuemax="100">
+                                        {{ number_format($percentUsed, 1) }}% Used
+                                    </div>
+                                </div>
+                                @if($atLimit)
+                                    <div class="mt-3 p-3 bg-light border-start border-danger border-4">
+                                        <p class="mb-0">
+                                            <i class="fa-solid fa-ban me-2"></i>
+                                            <strong>Enrollment Limit Reached:</strong> This branch has reached its maximum student capacity.
+                                            To enroll more students, please <a href="#" class="alert-link">upgrade to a higher package</a> or contact support.
+                                        </p>
+                                    </div>
+                                @elseif($percentRemaining < 10)
+                                    <div class="mt-3 p-3 bg-light border-start border-warning border-4">
+                                        <p class="mb-0">
+                                            <i class="fa-solid fa-exclamation-triangle me-2"></i>
+                                            <strong>Low Capacity Warning:</strong> Less than 10% of student slots remaining.
+                                            Consider upgrading your package to avoid enrollment interruptions.
+                                        </p>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                @endif
+
                 <form action="{{ route('student.store') }}" enctype="multipart/form-data" method="post" id="visitForm">
                     @csrf
                     <input type="hidden" id="url" value="{{ url('') }}">
@@ -678,8 +753,15 @@
                             <div class="row">
                                 <div class="col-md-12 mt-24">
                                     <div class="text-end">
-                                        <button class="btn btn-lg ot-btn-primary"><span><i class="fa-solid fa-save"></i>
-                                            </span>{{ ___('common.submit') }}</button>
+                                        <button
+                                            class="btn btn-lg ot-btn-primary"
+                                            id="studentSubmitBtn"
+                                            @if(isset($data['branch_current_count']) && isset($data['branch_student_limit']) && $data['branch_current_count'] >= $data['branch_student_limit'] && $data['branch_student_limit'] > 0 && $data['branch_student_limit'] < 99999999)
+                                                disabled
+                                            @endif
+                                        >
+                                            <span><i class="fa-solid fa-save"></i></span>{{ ___('common.submit') }}
+                                        </button>
                                     </div>
                                 </div>
                             </div>

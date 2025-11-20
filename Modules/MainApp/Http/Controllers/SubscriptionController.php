@@ -35,6 +35,8 @@ class SubscriptionController extends Controller
     {
         $data['subscriptions'] = $this->repo->getAll();
         $data['title']         = ___('settings.Subscriptions');
+        $data['schools']       = $this->schoolRepo->getAll();
+        $data['packages']      = $this->packageRepo->all();
 
         return view('mainapp::subscription.index', compact('data'));
     }

@@ -103,6 +103,22 @@ if (true) { // Single database multi-tenant architecture
                 Route::post('/store',           'store')->name('subscription.store');
             });
 
+            // Subscription Payment Routes
+            Route::controller(\Modules\MainApp\Http\Controllers\SubscriptionPaymentController::class)
+                ->prefix('subscription-payments')
+                ->name('subscription-payments.')
+                ->group(function () {
+                    Route::get('/',                             'index')->name('index');
+                    Route::get('school/{schoolId}/history',    'history')->name('history');
+                    Route::get('create/{schoolId}',            'create')->name('create');
+                    Route::post('store',                       'store')->name('store');
+                    Route::post('{id}/approve',                'approve')->name('approve');
+                    Route::post('{id}/reject',                 'reject')->name('reject');
+                    Route::get('{id}/receipt',                 'downloadReceipt')->name('receipt');
+                    Route::delete('{id}/delete',               'delete')->name('delete');
+                    Route::get('report',                       'report')->name('report');
+                });
+
             Route::controller(FeatureController::class)->prefix('feature')->group(function () {
                 Route::get('/',                 'index')->name('feature.index');
                 // Route::get('/create',           'create')->name('feature.create');
@@ -143,6 +159,28 @@ if (true) { // Single database multi-tenant architecture
             Route::controller(ReportController::class)->prefix('payment-report')->group(function () {
                 Route::get('/',                 'index')->name('payment.report.index');
                 Route::any('/search',                'search')->name('payment.report.search');
+            });
+
+            // Enhanced Reporting Routes
+            Route::controller(ReportController::class)->prefix('reports')->name('reports.')->group(function () {
+                // Report Views
+                Route::get('/payment-collection',       'paymentCollection')->name('payment-collection');
+                Route::get('/school-growth',            'schoolGrowth')->name('school-growth');
+                Route::get('/outstanding-payments',     'outstandingPayments')->name('outstanding-payments');
+
+                // Export Endpoints
+                Route::get('/export/payment-collection/{format}',  'exportPaymentCollection')
+                    ->name('payment-collection.export')
+                    ->where('format', 'excel|pdf');
+                Route::get('/export/school-growth/{format}',       'exportSchoolGrowth')
+                    ->name('school-growth.export')
+                    ->where('format', 'excel|pdf');
+                Route::get('/export/outstanding/{format}',         'exportOutstanding')
+                    ->name('outstanding-payments.export')
+                    ->where('format', 'excel|pdf');
+
+                // AJAX Chart Data Endpoint
+                Route::post('/chart-data',              'chartData')->name('chart-data');
             });
 
             Route::controller(SectionsController::class)->prefix('sections')->group(function () {

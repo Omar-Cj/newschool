@@ -71,9 +71,18 @@ class OnlineAdmissionRepository implements OnlineAdmissionInterface
         DB::beginTransaction();
         try {
 
-            // if(Student::count() >= setting('student_limit'))
-            if(Student::count() >= activeSubscriptionStudentLimit() && env('APP_SAAS'))
-                return $this->responseWithError(___('alert.Your student limit is over.'), []);
+            // Per-Branch Student Limit Enforcement (School-ID Based Multi-Tenancy)
+            $branchId = auth()->user()->branch_id ?? 1;
+            $branch = \Modules\MultiBranch\Entities\Branch::find($branchId);
+
+            if ($branch && $branch->school_id) {
+                $branchLimit = getBranchStudentLimit($branchId);
+                $branchCurrentCount = getBranchCurrentStudentCount($branchId);
+
+                if ($branchLimit > 0 && $branchLimit < 99999999 && $branchCurrentCount >= $branchLimit) {
+                    return $this->responseWithError('Your package student limit is reached kindly contact Telesom Sales for upgrade.', []);
+                }
+            }
 
             $super_admin_ids = User::where('role_id',1)->pluck('id')->toArray();
             $admission = OnlineAdmission::find($request->online_admission_id);

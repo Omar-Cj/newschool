@@ -94,9 +94,53 @@ class StudentRepository implements StudentInterface
     {
         DB::beginTransaction();
         try {
-            // if($this->model->count() >= setting('student_limit'))
-            if ($this->model->count() >= activeSubscriptionStudentLimit() && env('APP_SAAS'))
-                return $this->responseWithError(___('alert.Student limit is over.'), []);
+            // Per-Branch Student Limit Enforcement (School-ID Based Multi-Tenancy)
+            // Check if the target branch belongs to a school (not main dashboard)
+            $branchId = auth()->user()->branch_id ?? 1;
+            $branch = \Modules\MultiBranch\Entities\Branch::find($branchId);
+
+            if ($branch && $branch->school_id) {
+                $branchLimit = getBranchStudentLimit($branchId);
+                $branchCurrentCount = getBranchCurrentStudentCount($branchId);
+
+                // Log limit check values for debugging
+                Log::info('Student enrollment limit check', [
+                    'branch_id' => $branchId,
+                    'school_id' => $branch->school_id,
+                    'current_student_count' => $branchCurrentCount,
+                    'student_limit' => $branchLimit,
+                    'remaining_slots' => max(0, $branchLimit - $branchCurrentCount),
+                    'will_block' => ($branchLimit > 0 && $branchLimit < 99999999 && $branchCurrentCount >= $branchLimit)
+                ]);
+
+                // Check if branch has reached its student limit (for prepaid packages)
+                if ($branchLimit > 0 && $branchLimit < 99999999 && $branchCurrentCount >= $branchLimit) {
+                    $branchName = getBranchName($branchId);
+                    $packageName = getActivePackageName();
+
+                    $errorMessage = 'Your package student limit is reached kindly contact Telesom Sales for upgrade.';
+
+                    Log::warning('Branch student limit exceeded during enrollment attempt', [
+                        'branch_id' => $branchId,
+                        'branch_name' => $branchName,
+                        'school_id' => $branch->school_id,
+                        'current_count' => $branchCurrentCount,
+                        'limit' => $branchLimit,
+                        'package' => $packageName,
+                        'attempted_by' => auth()->id()
+                    ]);
+
+                    return $this->responseWithError($errorMessage, [
+                        'error_code' => 'BRANCH_STUDENT_LIMIT_EXCEEDED',
+                        'branch_id' => $branchId,
+                        'branch_name' => $branchName,
+                        'school_id' => $branch->school_id,
+                        'current_count' => $branchCurrentCount,
+                        'limit' => $branchLimit,
+                        'remaining' => 0
+                    ]);
+                }
+            }
 
             // Handle parent creation if creating inline
             $parentGuardianId = null;
@@ -282,6 +326,21 @@ class StudentRepository implements StudentInterface
                 $this->createStudentServices($row, $request->services);
             }
 
+            // Clear branch student count cache after successful enrollment
+            $branchId = auth()->user()->branch_id ?? 1;
+            $branch = \Modules\MultiBranch\Entities\Branch::find($branchId);
+
+            if ($branch && $branch->school_id) {
+                \Cache::forget("branch_student_count_{$branchId}");
+
+                Log::info('Student enrolled successfully - cache cleared', [
+                    'student_id' => $row->id,
+                    'branch_id' => $branchId,
+                    'school_id' => $branch->school_id,
+                    'student_name' => $row->first_name . ' ' . $row->last_name
+                ]);
+            }
+
             DB::commit();
             return $this->responseWithSuccess(___('alert.created_successfully'), ['student_id' => $row->id]);
         } catch (\Throwable $th) {
@@ -436,6 +495,22 @@ class StudentRepository implements StudentInterface
             }
             SessionClassStudent::where('student_id', $row->id)->delete();
             $row->delete();
+
+            // Clear branch student count cache after deletion
+            if ($user) {
+                $branchId = $user->branch_id ?? 1;
+                $branch = \Modules\MultiBranch\Entities\Branch::find($branchId);
+
+                if ($branch && $branch->school_id) {
+                    \Cache::forget("branch_student_count_{$branchId}");
+
+                    Log::info('Student deleted - cache cleared', [
+                        'student_id' => $id,
+                        'branch_id' => $branchId,
+                        'school_id' => $branch->school_id
+                    ]);
+                }
+            }
 
             DB::commit();
             return $this->responseWithSuccess(___('alert.deleted_successfully'), []);

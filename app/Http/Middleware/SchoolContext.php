@@ -49,6 +49,28 @@ class SchoolContext
             // Determine current school context
             $currentSchool = $this->getCurrentSchool($schoolId, $isAdmin);
 
+            // CRITICAL FIX: Only exempt TRUE system admins (role_id=0 with school_id=NULL)
+            // School-level admins (role_id=1,2) MUST respect their school's subscription status
+            $isTrueSystemAdmin = (
+                $user->role_id === RoleEnum::MAIN_SYSTEM_ADMIN &&
+                $user->school_id === null
+            );
+
+            // Check subscription status for ALL school users (including school-level admins)
+            if (!$isTrueSystemAdmin && $schoolId) {
+                $subscriptionCheck = $this->checkSubscriptionStatus($schoolId);
+                if ($subscriptionCheck['blocked']) {
+                    Auth::logout();
+                    return redirect()->route('login')
+                        ->with('subscription_expired', $subscriptionCheck['message']);
+                }
+
+                // Share subscription warning if in grace period
+                if ($subscriptionCheck['in_grace_period']) {
+                    View::share('subscription_warning', $subscriptionCheck['warning_message']);
+                }
+            }
+
             // Share context with all views
             View::share([
                 'school_id' => $schoolId,
@@ -309,6 +331,141 @@ class SchoolContext
                     session()->forget('admin_school_context');
                 }
             }
+        }
+    }
+
+    /**
+     * Check school subscription status and determine access permissions.
+     *
+     * Validates if school has active subscription and enforces grace period rules.
+     * Blocks access if grace period has expired, allows with warning during grace period.
+     *
+     * @param int $schoolId
+     * @return array ['blocked' => bool, 'in_grace_period' => bool, 'message' => string, 'warning_message' => string]
+     */
+    protected function checkSubscriptionStatus(int $schoolId): array
+    {
+        // VERIFICATION LOGGING: Log subscription check execution
+        \Log::info('🔍 Subscription check executing', [
+            'school_id' => $schoolId,
+            'user_id' => Auth::id(),
+            'user_role' => Auth::user()->role_id ?? null,
+            'user_school_id' => Auth::user()->school_id ?? null,
+            'timestamp' => now()->toDateTimeString(),
+            'route' => request()->path(),
+        ]);
+
+        try {
+            // Get active subscription for the school
+            $subscription = \DB::table('subscriptions')
+                ->where('school_id', $schoolId)
+                ->where('status', 1) // Active status
+                ->orderBy('expiry_date', 'desc')
+                ->first();
+
+            \Log::info('📊 Subscription data retrieved', [
+                'school_id' => $schoolId,
+                'subscription_found' => $subscription !== null,
+                'expiry_date' => $subscription->expiry_date ?? null,
+                'grace_expiry_date' => $subscription->grace_expiry_date ?? null,
+            ]);
+
+            // No subscription found - block access
+            if (!$subscription) {
+                \Log::warning('⛔ Subscription check: NO SUBSCRIPTION FOUND - blocking access', [
+                    'school_id' => $schoolId,
+                    'user_id' => Auth::id(),
+                ]);
+
+                return [
+                    'blocked' => true,
+                    'in_grace_period' => false,
+                    'message' => 'Your school does not have an active subscription. Please contact Telesom Sales to subscribe.',
+                    'warning_message' => null,
+                ];
+            }
+
+            $now = now();
+            $expiryDate = \Carbon\Carbon::parse($subscription->expiry_date);
+            $graceExpiryDate = $subscription->grace_expiry_date
+                ? \Carbon\Carbon::parse($subscription->grace_expiry_date)
+                : null;
+
+            // Check if subscription is still active (before expiry date)
+            if ($now->lte($expiryDate)) {
+                \Log::info('✅ Subscription check: ACTIVE - allowing access', [
+                    'school_id' => $schoolId,
+                    'expiry_date' => $expiryDate->toDateTimeString(),
+                    'days_until_expiry' => $now->diffInDays($expiryDate),
+                ]);
+
+                return [
+                    'blocked' => false,
+                    'in_grace_period' => false,
+                    'message' => null,
+                    'warning_message' => null,
+                ];
+            }
+
+            // Check if within grace period
+            if ($graceExpiryDate && $now->lte($graceExpiryDate)) {
+                $daysRemaining = $now->diffInDays($graceExpiryDate);
+                $hoursRemaining = $now->diffInHours($graceExpiryDate);
+
+                \Log::warning('⚠️ Subscription check: IN GRACE PERIOD - allowing with warning', [
+                    'school_id' => $schoolId,
+                    'expiry_date' => $expiryDate->toDateTimeString(),
+                    'grace_expiry_date' => $graceExpiryDate->toDateTimeString(),
+                    'days_remaining' => $daysRemaining,
+                    'hours_remaining' => $hoursRemaining,
+                ]);
+
+                $warningMessage = $daysRemaining > 0
+                    ? "Your subscription expired on {$expiryDate->format('M d, Y')}. You have {$daysRemaining} day(s) remaining in the grace period. Please contact Telesom Sales to renew."
+                    : "Your subscription expired on {$expiryDate->format('M d, Y')}. You have {$hoursRemaining} hour(s) remaining in the grace period. Please contact Telesom Sales to renew immediately!";
+
+                return [
+                    'blocked' => false,
+                    'in_grace_period' => true,
+                    'message' => null,
+                    'warning_message' => $warningMessage,
+                ];
+            }
+
+            // Grace period expired - block access
+            $graceEndDate = $graceExpiryDate ? $graceExpiryDate->format('M d, Y') : 'N/A';
+
+            \Log::warning('⛔ Subscription check: EXPIRED - blocking access', [
+                'school_id' => $schoolId,
+                'user_id' => Auth::id(),
+                'expiry_date' => $expiryDate->toDateTimeString(),
+                'grace_expiry_date' => $graceExpiryDate ? $graceExpiryDate->toDateTimeString() : null,
+                'days_since_grace_expired' => $graceExpiryDate ? $graceExpiryDate->diffInDays($now) : null,
+            ]);
+
+            return [
+                'blocked' => true,
+                'in_grace_period' => false,
+                'message' => "Your subscription has expired. Subscription ended on: {$expiryDate->format('M d, Y')}. Grace period expired on: {$graceEndDate}. Please contact Telesom Sales to renew your subscription.",
+                'warning_message' => null,
+                'expiry_date' => $expiryDate->toDateTimeString(),
+                'grace_expiry_date' => $graceExpiryDate ? $graceExpiryDate->toDateTimeString() : null,
+            ];
+
+        } catch (\Exception $e) {
+            // Log error but don't block access on errors
+            \Log::error('Subscription check failed', [
+                'school_id' => $schoolId,
+                'error' => $e->getMessage(),
+            ]);
+
+            // Allow access but log the issue
+            return [
+                'blocked' => false,
+                'in_grace_period' => false,
+                'message' => null,
+                'warning_message' => null,
+            ];
         }
     }
 }

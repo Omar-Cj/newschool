@@ -65,6 +65,9 @@
         @include('backend.partials.sidebar')
         <!-- end sidebar -->
 
+        <!-- Subscription grace period warning -->
+        @include('backend.includes.subscription-warning')
+
         <main class="main-content ph-24 ph-lg-32 pt-100 mt-4">
             <!-- start main content -->
             @yield('content')

@@ -65,19 +65,31 @@ class SubscriptionRepository implements SubscriptionInterface
             $this->saasSchool->cacheForget();
             $subscription = $this->model->find($id);
 
+            // Initialize school from subscription to avoid null reference error
+            if (!$subscription) {
+                return $this->responseWithError(___('alert.subscription_not_found'), []);
+            }
+
+            $this->school = $subscription->school;
+
+            if (!$this->school) {
+                return $this->responseWithError(___('alert.school_not_found'), []);
+            }
+
             // $this->updateSchoolStatus($subscription->school_id, Status::ACTIVE);
             $tenant = Tenant::where('id', $this->school->sub_domain_key)->first();
 
             if (env('APP_SAAS', false) && $tenant && $tenant->tenancy_db_name) {
                 $this->subscriptionUpdateInTenant($subscription, $tenant->tenancy_db_name);
             } else {
+                // Update subscription status
+                $subscription->status = $request->status;
+                $subscription->save();
+
+                // Dispatch job for approved subscriptions
                 if($request->status == SubscriptionStatus::APPROVED) {
-                     \Log::info("TestJob ran successfully 1.");
+                     \Log::info("Subscription approved, dispatching SaasSchoolApproveJob.");
                      SaasSchoolApproveJob::dispatch($subscription);
-                }
-                else{
-                    $this->subscription->status = $request->status;
-                    $this->subscription->save();
                 }
             }
 
@@ -110,11 +122,11 @@ class SubscriptionRepository implements SubscriptionInterface
         }
 
         if ($this->package->duration == PricingDuration::DAYS) {
-            $this->expiryDate = date("Y-m-d", strtotime("+ " . $this->package->duration_number . " day"));
+            $this->expiryDate = date("Y-m-d H:i:s", strtotime("+ " . $this->package->duration_number . " day"));
         } elseif ($this->package->duration == PricingDuration::MONTHLY) {
-            $this->expiryDate = date("Y-m-d", strtotime("+ " . $this->package->duration_number . " month"));
+            $this->expiryDate = date("Y-m-d H:i:s", strtotime("+ " . $this->package->duration_number . " month"));
         } elseif ($this->package->duration == PricingDuration::YEARLY) {
-            $this->expiryDate = date("Y-m-d", strtotime("+ " . $this->package->duration_number . " year"));
+            $this->expiryDate = date("Y-m-d H:i:s", strtotime("+ " . $this->package->duration_number . " year"));
         }
     }
 

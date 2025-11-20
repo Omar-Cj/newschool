@@ -60,6 +60,24 @@
                         </div>
 
                         <div class="col-md-6 mb-3">
+                            <label for="number_of_branches" class="form-label">{{ ___('mainapp_schools.Number of Branches') }} <span class="fillable">*</span></label>
+                            <input class="form-control ot-input @error('number_of_branches') is-invalid @enderror"
+                                name="number_of_branches"
+                                type="number"
+                                id="number_of_branches"
+                                min="1"
+                                max="10"
+                                placeholder="{{ ___('mainapp_schools.Enter number of branches') }}"
+                                value="{{ old('number_of_branches', 1) }}">
+                            <small class="form-text text-muted">{{ ___('mainapp_schools.Specify how many branches to create for this school (1-10)') }}</small>
+                            @error('number_of_branches')
+                                <div id="validationServer04Feedback" class="invalid-feedback">
+                                    {{ $message }}
+                                </div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-6 mb-3">
                             <label for="exampleDataList" class="form-label">{{ ___('mainapp_common.phone') }} <span
                                     class="fillable">*</span></label>
                             <input class="form-control ot-input @error('phone') is-invalid @enderror" name="phone" type="text"

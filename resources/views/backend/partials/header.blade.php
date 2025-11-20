@@ -171,11 +171,18 @@
 
         <div class="header-controls">
 
-            @if(hasModule('MultiBranch') && isSuperAdmin() && !empty($branches))
+            {{-- Branch Dropdown Visibility:
+                - Super Admins (school_id = null): See all branches, can switch globally
+                - School Admins (role_id = 1, school_id != null): See their school's branches
+                - Other Users: No branch dropdown shown
+            --}}
+            @if(hasModule('MultiBranch') && (isSuperAdmin() || isSchoolAdmin()) && !empty($branches))
                 <div class="header-control-item">
-                    <select name="branch_id" id="branchId" class="nice-select niceSelect bordered_style wide no-border">
+                    <select name="branch_id" id="branchId" class="nice-select niceSelect bordered_style wide no-border" title="Branch: {{ $branches[auth()->user()->branch_id] ?? 'Select Branch' }} ({{ count($branches) }} total)">
                         @foreach($branches ?? [] as $id => $branch)
-                            <option value="{{ $id }}" {{ auth()->user()->branch_id == $id ? 'selected' : '' }}>{{ @$branch }}</option>
+                            <option value="{{ $id }}" {{ auth()->user()->branch_id == $id ? 'selected' : '' }}>
+                                {{ @$branch }} @if(count($branches) > 1)({{ $loop->iteration }}/{{ count($branches) }})@endif
+                            </option>
                         @endforeach
                     </select>
                 </div>

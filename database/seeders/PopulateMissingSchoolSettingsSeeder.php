@@ -24,11 +24,11 @@ class PopulateMissingSchoolSettingsSeeder extends Seeder
     public function run()
     {
         // School to populate settings for
-        $targetSchoolId = 2;
-        $targetBranchId = 3;
+        $targetSchoolId = 6;
+        $targetBranchId = 9;
 
         // Reference school with complete settings
-        $referenceSchoolId = 1;
+        $referenceSchoolId = 2;
 
         Log::info('PopulateMissingSchoolSettingsSeeder started', [
             'target_school_id' => $targetSchoolId,

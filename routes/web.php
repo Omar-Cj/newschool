@@ -126,6 +126,9 @@ Route::middleware(saasMiddleware())->group(function () {
             });
         });
 
+        // Subscription expired page (accessible without authentication)
+        Route::view('subscription-expired', 'errors.subscription-expired')->name('subscription.expired');
+
         Route::group(['middleware' => ['CheckSubscription']], function () {
 
             Route::get('/migrate-seed', function () {

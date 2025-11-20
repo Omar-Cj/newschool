@@ -41,6 +41,7 @@
     <link rel="stylesheet" href="{{ asset('backend') }}/assets/css/custom.css">
 
     @yield('css')
+    @stack('style')
 </head>
 
 <body class="{{ @findDirectionOfLang() }} default-theme" dir="{{ @findDirectionOfLang() }}">

@@ -62,6 +62,16 @@ class School extends Model
     }
 
     /**
+     * Get the subscriptions for this school.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function subscriptions()
+    {
+        return $this->hasMany(Subscription::class, 'school_id', 'id');
+    }
+
+    /**
      * Get all allowed features for this school with 24-hour caching.
      *
      * @return \Illuminate\Support\Collection

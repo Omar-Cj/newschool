@@ -78,6 +78,14 @@ return [
             'permission' => 0664,
         ],
 
+        'subscription-payments' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/subscription-payments.log'),
+            'level' => 'info',
+            'days' => 30,
+            'permission' => 0664,
+        ],
+
         'slack' => [
             'driver' => 'slack',
             'url' => env('LOG_SLACK_WEBHOOK_URL'),

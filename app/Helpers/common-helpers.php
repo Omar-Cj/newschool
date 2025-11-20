@@ -7,7 +7,7 @@ use App\Models\Examination\MarksGrade;
 use App\Models\Language;
 use App\Models\Setting;
 use App\Models\StudentInfo\SessionClassStudent;
-use App\Models\Subscription;
+use Modules\MainApp\Entities\Subscription;
 use App\Models\SystemNotification;
 use App\Models\Upload;
 use App\Models\WebsiteSetup\OnlineAdmissionSetting;
@@ -1091,6 +1091,30 @@ if (!function_exists('isSuperAdmin')) {
     }
 }
 
+if (!function_exists('isSchoolAdmin')) {
+    /**
+     * Check if current user is a school administrator
+     *
+     * School Admin Definition:
+     * - Has role_id = 1 (Super Admin/Admin role)
+     * - Has school_id NOT NULL (belongs to a specific school)
+     * - Can manage their school but not create/delete branches
+     *
+     * @return bool True if school admin with school context
+     */
+    function isSchoolAdmin(): bool
+    {
+        if (!auth()->check()) {
+            return false;
+        }
+
+        $user = auth()->user();
+
+        // School admin has role_id = 1 AND has a school_id (school context)
+        return $user->role_id === 1 && $user->school_id !== null;
+    }
+}
+
 
 if (!function_exists('admission_fields')) {
     function admission_fields()
@@ -1441,6 +1465,214 @@ if (!function_exists('activeBranch')) {
             });
         } catch (\Exception $e) {
             return 1; // Fallback to ID 1
+        }
+    }
+}
+
+/**
+ * Get student limit for a specific branch
+ *
+ * Returns the per-branch student limit from the active subscription package.
+ * In SaaS mode with prepaid packages, this limit applies to EACH branch individually.
+ *
+ * @param int|null $branchId Optional branch ID. If null, uses current user's branch.
+ * @return int Student limit for the branch (0 if no active subscription or unlimited)
+ */
+if (!function_exists('getBranchStudentLimit')) {
+    function getBranchStudentLimit($branchId = null): int
+    {
+        try {
+            // Get branch ID from parameter or current user
+            if ($branchId === null) {
+                $branchId = activeBranch();
+            }
+
+            // Check if branch belongs to a school (not main dashboard)
+            $branch = \Modules\MultiBranch\Entities\Branch::find($branchId);
+            if (!$branch || !$branch->school_id) {
+                return 0; // Unlimited for main dashboard branches
+            }
+
+            // Cache key includes branch_id for branch-specific caching
+            $cacheKey = "branch_student_limit_{$branchId}";
+
+            return \Cache::remember($cacheKey, 300, function () use ($branch, $branchId) {
+                // Query MainApp subscription (SaaS/Central DB) which stores package limits
+                // MainApp\Subscription has no global scopes, queries package subscription for school
+                $subscription = Subscription::where('school_id', $branch->school_id)
+                    ->orderBy('id', 'desc')
+                    ->first();
+
+                if (!$subscription) {
+                    \Log::warning('No subscription found for school', [
+                        'school_id' => $branch->school_id,
+                        'branch_id' => $branchId
+                    ]);
+                    return 0; // No subscription = no limit enforcement
+                }
+
+                // Log subscription details for debugging
+                \Log::info('Branch student limit check', [
+                    'branch_id' => $branchId,
+                    'school_id' => $branch->school_id,
+                    'subscription_id' => $subscription->id,
+                    'package_id' => $subscription->package_id,
+                    'student_limit' => $subscription->student_limit,
+                    'payment_type' => $subscription->payment_type,
+                    'status' => $subscription->status,
+                    'payment_status' => $subscription->payment_status
+                ]);
+
+                // Check if it's a prepaid package (has limits)
+                if ($subscription->payment_type == \Modules\MainApp\Enums\PackagePaymentType::PREPAID) {
+                    return $subscription->student_limit ?? 0;
+                }
+
+                // Postpaid/unlimited packages
+                return 99999999;
+            });
+        } catch (\Exception $e) {
+            \Log::error('Error getting branch student limit', [
+                'branch_id' => $branchId ?? null,
+                'error' => $e->getMessage()
+            ]);
+            return 0;
+        }
+    }
+}
+
+/**
+ * Get current student count for a specific branch
+ *
+ * Counts active students enrolled in the specified branch.
+ * Uses efficient query with proper tenant isolation.
+ *
+ * @param int|null $branchId Optional branch ID. If null, uses current user's branch.
+ * @return int Current number of active students in the branch
+ */
+if (!function_exists('getBranchCurrentStudentCount')) {
+    function getBranchCurrentStudentCount($branchId = null): int
+    {
+        try {
+            // Get branch ID from parameter or current user
+            if ($branchId === null) {
+                $branchId = activeBranch();
+            }
+
+            // Cache key includes branch_id for branch-specific caching
+            $cacheKey = "branch_student_count_{$branchId}";
+
+            return \Cache::remember($cacheKey, 300, function () use ($branchId) {
+                // Count active students through User model for proper branch filtering
+                // Students have role_id = 6 and must have the specified branch_id
+                $count = \App\Models\User::where('role_id', 6)
+                    ->where('branch_id', $branchId)
+                    ->whereHas('student', function ($query) {
+                        $query->where('status', \App\Enums\Status::ACTIVE);
+                    })
+                    ->count();
+
+                return $count;
+            });
+        } catch (\Exception $e) {
+            \Log::error('Error counting branch students', [
+                'branch_id' => $branchId ?? null,
+                'error' => $e->getMessage()
+            ]);
+            return 0;
+        }
+    }
+}
+
+/**
+ * Get remaining student slots for a specific branch
+ *
+ * Calculates how many more students can be enrolled in the branch
+ * based on the subscription limit and current enrollment.
+ *
+ * @param int|null $branchId Optional branch ID. If null, uses current user's branch.
+ * @return int Number of remaining slots (0 if at/over limit or unlimited)
+ */
+if (!function_exists('getBranchStudentSlotsRemaining')) {
+    function getBranchStudentSlotsRemaining($branchId = null): int
+    {
+        try {
+            // Get branch ID from parameter or current user
+            if ($branchId === null) {
+                $branchId = activeBranch();
+            }
+
+            // Check if branch belongs to a school (not main dashboard)
+            $branch = \Modules\MultiBranch\Entities\Branch::find($branchId);
+            if (!$branch || !$branch->school_id) {
+                return 99999999; // Unlimited for main dashboard branches
+            }
+
+            $limit = getBranchStudentLimit($branchId);
+            $currentCount = getBranchCurrentStudentCount($branchId);
+
+            // If limit is very high (postpaid/unlimited), return high number
+            if ($limit >= 99999999) {
+                return 99999999;
+            }
+
+            // Calculate remaining slots
+            $remaining = max(0, $limit - $currentCount);
+
+            return $remaining;
+        } catch (\Exception $e) {
+            \Log::error('Error calculating branch student slots remaining', [
+                'branch_id' => $branchId ?? null,
+                'error' => $e->getMessage()
+            ]);
+            return 0;
+        }
+    }
+}
+
+/**
+ * Get branch name by ID
+ *
+ * @param int $branchId Branch ID
+ * @return string Branch name or 'Main Branch' if not found
+ */
+if (!function_exists('getBranchName')) {
+    function getBranchName($branchId = null): string
+    {
+        try {
+            if ($branchId === null) {
+                $branchId = activeBranch();
+            }
+
+            // For now, return generic branch name
+            // TODO: Implement actual Branch model lookup when available
+            return $branchId == 1 ? 'Main Branch' : "Branch {$branchId}";
+        } catch (\Exception $e) {
+            return 'Unknown Branch';
+        }
+    }
+}
+
+/**
+ * Get active subscription package name
+ *
+ * @return string Package name or 'No Package' if not found
+ */
+if (!function_exists('getActivePackageName')) {
+    function getActivePackageName(): string
+    {
+        try {
+            $subscription = Subscription::active()->first();
+
+            if (!$subscription) {
+                return 'No Active Package';
+            }
+
+            // Try to get package name from subscription
+            // Adjust this based on your actual subscription-package relationship
+            return $subscription->package_name ?? 'Active Package';
+        } catch (\Exception $e) {
+            return 'Unknown Package';
         }
     }
 }

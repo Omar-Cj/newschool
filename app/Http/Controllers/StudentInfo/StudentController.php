@@ -121,6 +121,25 @@ class StudentController extends Controller
             ->where('is_mandatory_for_level', false)
             ->get();
 
+        // Per-Branch Student Limit Information (SaaS Mode)
+        if (env('APP_SAAS')) {
+            $branchId = auth()->user()->branch_id ?? 1;
+            $data['branch_id'] = $branchId;
+            $data['branch_name'] = getBranchName($branchId);
+            $data['branch_student_limit'] = getBranchStudentLimit($branchId);
+            $data['branch_current_count'] = getBranchCurrentStudentCount($branchId);
+            $data['branch_remaining_slots'] = getBranchStudentSlotsRemaining($branchId);
+            $data['package_name'] = getActivePackageName();
+        } else {
+            // Non-SaaS mode - unlimited
+            $data['branch_id'] = 1;
+            $data['branch_name'] = 'Main Branch';
+            $data['branch_student_limit'] = 0;
+            $data['branch_current_count'] = 0;
+            $data['branch_remaining_slots'] = 99999999;
+            $data['package_name'] = 'Unlimited';
+        }
+
         return view('backend.student-info.student.create', compact('data'));
     }
 
