@@ -48,32 +48,23 @@ class DashboardController extends Controller
 
     public function index(Request $request)
     {
-        // Legacy data for backward compatibility
-        $now      = now();
-        $lastYear = now()->subYear();
+        // Get revenue per school for bar chart
+        $schoolRevenue = DB::select("
+            SELECT
+                sc.name as school_name,
+                COALESCE(SUM(CASE WHEN sp.status = 1 THEN sp.amount ELSE 0 END), 0) as total_revenue
+            FROM schools sc
+            LEFT JOIN subscriptions s ON s.school_id = sc.id
+            LEFT JOIN subscription_payments sp ON sp.subscription_id = s.id
+            GROUP BY sc.id, sc.name
+            ORDER BY total_revenue DESC
+            LIMIT 20
+        ");
 
-        $monthlySummations = Subscription::select(
-            DB::raw('YEAR(created_at) as year'),
-            DB::raw('MONTH(created_at) as month'),
-            DB::raw('SUM(price) as total_amount')
-        )
-        ->whereBetween('created_at', [$lastYear, $now])
-        ->groupBy(DB::raw('YEAR(created_at)'), DB::raw('MONTH(created_at)'))
-        ->orderBy('year', 'asc')
-        ->orderBy('month', 'asc')
-        ->where('status', 1)
-        ->get();
-
-        $months  = [];
-        $incomes = [];
-
-        foreach ($monthlySummations as $month) {
-            $months[]  = date('"M Y"', strtotime($month['year']. '-'.$month['month']));
-            $incomes[] = $month['total_amount'];
-        }
-
-        $data['months']            = $months;
-        $data['incomes']           = $incomes;
+        $data['school_names'] = array_column($schoolRevenue, 'school_name');
+        $data['revenues'] = array_map(function($item) {
+            return (float) $item->total_revenue;
+        }, $schoolRevenue);
         $data['totalSchool']       = $this->schoolRepo->all()->count();
         $data['activeSchools']     = $this->schoolRepo->activeAll()->count();
         $data['inactiveSchools']   = $data['totalSchool'] - $data['activeSchools'];

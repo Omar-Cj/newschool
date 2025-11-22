@@ -12,7 +12,10 @@ class Shift extends BaseModel
     use HasFactory;
 
     protected $fillable = [
-        'name','status'
+        'name',
+        'status',
+        'school_id',
+        'branch_id'
     ];
 
     public function scopeActive($query)

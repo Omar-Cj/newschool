@@ -24,7 +24,7 @@ class ClassRoomUpdateRequest extends FormRequest
     public function rules()
     {
         return [
-            'room_no'   => 'required|max:10|unique:class_rooms,room_no,'.Request()->id,
+            'room_no'   => 'required|max:10|unique:class_rooms,room_no,' . $this->route('id') . ',id,school_id,' . auth()->user()->school_id,
             'capacity'  => 'required|max:10',
             'status'    => 'required'
         ];

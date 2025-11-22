@@ -14,6 +14,7 @@ class FeesType extends BaseModel
     use HasFactory;
 
     protected $fillable = [
+        'school_id',
         'name',
         'code',
         'description',

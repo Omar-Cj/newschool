@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Fees\Type;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class FeesTypeStoreRequest extends FormRequest
 {
@@ -24,8 +25,18 @@ class FeesTypeStoreRequest extends FormRequest
     public function rules()
     {
         return [
-            'name'                    => 'required|max:255|unique:fees_types',
-            'code'                    => 'nullable|max:50|unique:fees_types',
+            'name'                    => [
+                'required',
+                'max:255',
+                Rule::unique('fees_types', 'name')
+                    ->where('school_id', auth()->user()->school_id)
+            ],
+            'code'                    => [
+                'nullable',
+                'max:50',
+                Rule::unique('fees_types', 'code')
+                    ->where('school_id', auth()->user()->school_id)
+            ],
             'description'             => 'nullable|max:1000',
             'academic_level'          => 'required|in:all,kg,primary,secondary,high_school',
             'category'                => 'required|in:academic,transport,meal,accommodation,activity,other',

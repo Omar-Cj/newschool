@@ -12,7 +12,10 @@ class Section extends BaseModel
     use HasFactory;
 
     protected $fillable = [
-        'name','status'
+        'name',
+        'status',
+        'school_id',
+        'branch_id'
     ];
 
     protected $appends = ['section_tran'];

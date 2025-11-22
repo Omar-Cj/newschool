@@ -233,28 +233,49 @@
 <script>
     $(document).ready(function() {
 
-        // Revenue Trends Chart
+        // Revenue by School Bar Chart
         var revenueOptions = {
             chart: {
                 height: 380,
                 width: "100%",
-                type: "line",
+                type: "bar",
                 toolbar: {
                     show: true
                 }
             },
-            series: [
-                {
-                    name: "{{ ___('common.Revenue') }}",
-                    data: [ <?php echo implode(', ', $data['incomes']); ?> ]
+            series: [{
+                name: "{{ ___('common.Revenue') }}",
+                data: {!! json_encode($data['revenues'] ?? []) !!}
+            }],
+            plotOptions: {
+                bar: {
+                    borderRadius: 4,
+                    horizontal: false,
+                    columnWidth: '60%'
                 }
-            ],
-            stroke: {
-                width: 3,
-                curve: 'smooth'
+            },
+            dataLabels: {
+                enabled: false
             },
             xaxis: {
-                categories: [ <?php echo implode(', ', $data['months']); ?> ],
+                categories: {!! json_encode($data['school_names'] ?? []) !!},
+                labels: {
+                    rotate: -45,
+                    rotateAlways: true,
+                    style: {
+                        fontSize: '11px'
+                    }
+                }
+            },
+            yaxis: {
+                title: {
+                    text: "{{ ___('common.Revenue') }}"
+                },
+                labels: {
+                    formatter: function (val) {
+                        return val.toLocaleString();
+                    }
+                }
             },
             grid: {
                 borderColor: '#EFEFEF',
@@ -263,10 +284,11 @@
                 opacity: 1
             },
             colors: ['#5669FF'],
-            markers: {
-                size: 5,
-                hover: {
-                    size: 7
+            tooltip: {
+                y: {
+                    formatter: function (val) {
+                        return val.toLocaleString();
+                    }
                 }
             }
         };

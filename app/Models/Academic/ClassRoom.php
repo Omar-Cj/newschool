@@ -11,7 +11,9 @@ class ClassRoom extends BaseModel
     use HasFactory;
 
     protected $fillable = [
-        'room_no','capacity'
+        'school_id',
+        'room_no',
+        'capacity'
     ];
 
     public function scopeActive($query)

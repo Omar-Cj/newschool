@@ -56,7 +56,8 @@ class FeesTypeRepository implements FeesTypeInterface
     public function update($request, $id)
     {
         try {
-            $row                            = $this->model->findOrfail($id);
+            // Verify fee type belongs to current school (global scope handles this)
+            $row                            = $this->model->findOrFail($id);
             $row->name                      = $request->name;
             $row->code                      = $request->code;
             $row->description               = $request->description;

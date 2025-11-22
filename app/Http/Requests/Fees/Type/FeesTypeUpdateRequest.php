@@ -24,8 +24,8 @@ class FeesTypeUpdateRequest extends FormRequest
     public function rules()
     {
         return [
-            'name'                    => 'required|max:255|unique:fees_types,name,'.Request()->id,
-            'code'                    => 'nullable|max:50|unique:fees_types,code,'.Request()->id,
+            'name'                    => 'required|max:255',
+            'code'                    => 'nullable|max:50',
             'description'             => 'nullable|max:1000',
             'academic_level'          => 'required|in:all,kg,primary,secondary,high_school',
             'category'                => 'required|in:academic,transport,meal,accommodation,activity,other',

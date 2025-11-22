@@ -10,6 +10,14 @@ class StudentCategory extends BaseModel
 {
     use HasFactory;
 
+    protected $fillable = [
+        'name',
+        'status',
+        'school_id',
+        'branch_id',
+        'is_fee_exempt'
+    ];
+
     public function scopeActive($query)
     {
         return $query->where('status', \App\Enums\Status::ACTIVE);

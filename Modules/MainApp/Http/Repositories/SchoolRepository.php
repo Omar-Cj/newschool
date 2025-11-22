@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Session;
 use Modules\MainApp\Jobs\SaasSchoolApproveJob;
 use Modules\MainApp\Entities\Subscription;
 use Modules\MainApp\Services\SaaSSchoolService;
+use Modules\MainApp\Services\BranchDataSeederService;
 use Modules\MainApp\Http\Interfaces\SchoolInterface;
 
 class SchoolRepository implements SchoolInterface
@@ -121,6 +122,12 @@ class SchoolRepository implements SchoolInterface
 
             // Seed school settings automatically from reference school
             $this->seedSchoolSettings($school, $mainBranch);
+
+            // Seed default data for each branch (categories, fee types, sessions, etc.)
+            $branchDataSeeder = new BranchDataSeederService();
+            foreach ($branches as $branch) {
+                $branchDataSeeder->seedBranchData($school->id, $branch->id);
+            }
 
             \Log::info('Multi-branch school creation', [
                 'school_id' => $school->id,
