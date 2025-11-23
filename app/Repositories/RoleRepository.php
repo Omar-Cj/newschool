@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\Role;
+use App\Enums\RoleEnum;
 use Illuminate\Support\Str;
 use App\Interfaces\RoleInterface;
 
@@ -23,7 +24,14 @@ class RoleRepository implements RoleInterface
 
     public function all()
     {
-        return $this->model->active()->get();
+        $query = $this->model->active();
+
+        // Hide Main System Admin role from tenant context (schools)
+        if (auth()->check() && auth()->user()->school_id) {
+            $query->where('id', '!=', RoleEnum::MAIN_SYSTEM_ADMIN);
+        }
+
+        return $query->get();
     }
 
     public function getAll()

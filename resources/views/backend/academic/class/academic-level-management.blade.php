@@ -49,12 +49,6 @@
                             </div>
                             <div class="col-md-2">
                                 <div class="stat-item">
-                                    <span class="badge-basic-dark-text">{{ $data['statistics']['high_school'] ?? 0 }}</span>
-                                    <p>High School</p>
-                                </div>
-                            </div>
-                            <div class="col-md-2">
-                                <div class="stat-item">
                                     <span class="badge-basic-warning-text">{{ $data['statistics']['unassigned'] ?? 0 }}</span>
                                     <p>⚠️ Unassigned</p>
                                 </div>
@@ -142,9 +136,6 @@
                                             </option>
                                             <option value="secondary" {{ $class->academic_level == 'secondary' ? 'selected' : '' }}>
                                                 Secondary School (Form 1-4)
-                                            </option>
-                                            <option value="high_school" {{ $class->academic_level == 'high_school' ? 'selected' : '' }}>
-                                                High School (Grade 11-12)
                                             </option>
                                         </select>
                                         <input type="hidden" name="assignments[{{ $key }}][class_id]" value="{{ $class->id }}">

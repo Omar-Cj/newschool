@@ -73,7 +73,6 @@
                                         <option value="kg" {{ old('academic_level') == 'kg' ? 'selected' : '' }}>{{ ___('fees.kindergarten') }}</option>
                                         <option value="primary" {{ old('academic_level') == 'primary' ? 'selected' : '' }}>{{ ___('fees.primary') }}</option>
                                         <option value="secondary" {{ old('academic_level') == 'secondary' ? 'selected' : '' }}>{{ ___('fees.secondary') }}</option>
-                                        <option value="high_school" {{ old('academic_level') == 'high_school' ? 'selected' : '' }}>{{ ___('fees.high_school') }}</option>
                                     </select>
                                     @error('academic_level')
                                         <div id="academic_level_feedback" class="invalid-feedback">{{ $message }}</div>

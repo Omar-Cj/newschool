@@ -24,7 +24,7 @@ return new class extends Migration
             'class_routine_childrens',
             'session_class_students',
             'sessions',
-            'academic_level_configs',
+            // 'academic_level_configs', // Removed - this table is now global (system-wide)
             'time_schedules',
             'shifts',
 

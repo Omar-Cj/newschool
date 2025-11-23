@@ -872,7 +872,7 @@
                         <!-- second layer child menu list start  -->
 
                         <ul class="child-menu-list">
-                            @if (hasPermission('role_read'))
+                            @if (hasPermission('role_read') && !auth()->user()->school_id)
                                 <li class="sidebar-menu-item {{ set_menu(['roles*']) }}">
                                     <a href="{{ route('roles.index') }}">{{ ___('users_roles.roles') }}</a>
                                 </li>

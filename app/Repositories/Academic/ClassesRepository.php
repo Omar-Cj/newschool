@@ -44,9 +44,10 @@ class ClassesRepository implements ClassesInterface
     public function store($request)
     {
         try {
-            $classesStore              = new $this->classes;
-            $classesStore->name        = $request->name;
-            $classesStore->status      = $request->status;
+            $classesStore                  = new $this->classes;
+            $classesStore->name            = $request->name;
+            $classesStore->academic_level  = $request->academic_level;
+            $classesStore->status          = $request->status;
             $classesStore->save();
             return $this->responseWithSuccess(___('alert.created_successfully'), []);
         } catch (\Throwable $th) {
@@ -62,9 +63,10 @@ class ClassesRepository implements ClassesInterface
     public function update($request, $id)
     {
         try {
-            $classesUpdate              = $this->classes->findOrfail($id);
-            $classesUpdate->name        = $request->name;
-            $classesUpdate->status      = $request->status;
+            $classesUpdate                  = $this->classes->findOrfail($id);
+            $classesUpdate->name            = $request->name;
+            $classesUpdate->academic_level  = $request->academic_level;
+            $classesUpdate->status          = $request->status;
             $classesUpdate->save();
             return $this->responseWithSuccess(___('alert.updated_successfully'), []);
         } catch (\Throwable $th) {

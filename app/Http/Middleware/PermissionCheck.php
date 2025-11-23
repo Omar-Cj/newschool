@@ -10,6 +10,15 @@ use Illuminate\Support\Facades\Log;
 class PermissionCheck
 {
     /**
+     * Feature name mapping for singular to plural conversion
+     * Maps auto-derived feature names to actual package feature names
+     */
+    private $featureNameMap = [
+        'user' => 'users',
+        'role' => 'roles',
+    ];
+
+    /**
      * Handle an incoming request.
      *
      * @param  \Illuminate\Http\Request  $request
@@ -142,6 +151,9 @@ class PermissionCheck
             // Auto-detect feature name from permission
             // Remove common suffixes: _read, _create, _update, _delete
             $featureName = preg_replace('/_read|_create|_update|_delete$/', '', $permission);
+
+            // Apply feature name mapping (singular to plural conversion)
+            $featureName = $this->featureNameMap[$featureName] ?? $featureName;
         }
 
         // Check if feature exists in package

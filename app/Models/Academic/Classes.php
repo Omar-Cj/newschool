@@ -94,7 +94,6 @@ class Classes extends BaseModel
             'kg' => 'Kindergarten (KG-1 to KG-3)',
             'primary' => 'Primary School (Grade 1 to 8)',
             'secondary' => 'Secondary School (Form 1 to 4)',
-            'high_school' => 'High School (Grade 11-12)'
         ];
     }
 

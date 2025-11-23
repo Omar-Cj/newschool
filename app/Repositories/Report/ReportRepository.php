@@ -291,6 +291,7 @@ class ReportRepository
         if (auth()->check()) {
             $parameterValues['user_id'] = $parameterValues['user_id'] ?? auth()->id();
             $parameterValues['branch_id'] = $parameterValues['branch_id'] ?? (auth()->user()->branch_id ?? null);
+            $parameterValues['p_branch_id'] = $parameterValues['p_branch_id'] ?? (auth()->user()->branch_id ?? null);
             $parameterValues['p_school_id'] = $parameterValues['p_school_id'] ?? (auth()->user()->school_id ?? null);
         }
 
