@@ -26,15 +26,14 @@ class UserUpdateRequest extends FormRequest
     { 
         // dd(Request()->user_id);
         return [
-            'staff_id'     => 'required|unique:staff,staff_id,'.$this->id,
             'role'         => 'required',
             'designation'  => 'required',
             'department'   => 'required',
             'first_name'   => 'required|max:25',
             'email'        => 'required|unique:users,email,'.Request()->user_id,
             'gender'       => 'required',
-            'dob'          => 'required',
-            'phone'        => 'required|regex:/^([0-9\s\-\+\(\)]*)$/|max:11',
+            'dob'          => 'nullable|date',
+            'phone'        => 'nullable|regex:/^([0-9\s\-\+\(\)]*)$/|max:11',
             'status'       => 'required',
             'image'        => 'max:2048',
         ];

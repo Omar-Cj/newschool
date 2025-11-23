@@ -22,7 +22,6 @@ class Staff extends BaseModel
 
     protected $fillable = [
         'user_id',
-        'staff_id',
         'role_id',
         'designation_id',
         'department_id',

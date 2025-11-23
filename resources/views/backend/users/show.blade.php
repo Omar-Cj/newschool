@@ -57,14 +57,6 @@
                         <div class="form-item">
                             <div class="d-flex justify-content-between align-content-center">
                                 <div class="align-self-center">
-                                    <h2 class="title">{{ ___('staff.staff_id') }}</h2>
-                                    <p class="paragraph">{{ @$data->staff_id }}</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="form-item">
-                            <div class="d-flex justify-content-between align-content-center">
-                                <div class="align-self-center">
                                     <h2 class="title">{{ ___('common.roles') }}</h2>
                                     <p class="paragraph">{{ @$data->role->name }}</p>
                                 </div>

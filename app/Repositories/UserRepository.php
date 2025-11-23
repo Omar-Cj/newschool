@@ -124,7 +124,6 @@ class UserRepository implements UserInterface
 
             $staff                          = new $this->model;
             $staff->user_id                 = $user->id;
-            $staff->staff_id                = $request->staff_id;
             $staff->role_id                 = $request->role;
             $staff->designation_id          = $request->designation;
             $staff->department_id           = $request->department;
@@ -140,7 +139,7 @@ class UserRepository implements UserInterface
             $staff->status                  = $request->status;
             $staff->current_address         = $request->current_address;
             $staff->permanent_address       = $request->permanent_address;
-            $staff->basic_salary            = $request->basic_salary;
+            $staff->basic_salary            = $request->basic_salary ?: null;
             $staff->upload_id               = $user->upload_id;
 
             $staff->upload_documents        = $this->uploadDocuments($request);
@@ -183,7 +182,6 @@ class UserRepository implements UserInterface
             $user->save();
 
             $staff->user_id                 = $user->id;
-            $staff->staff_id                = $request->staff_id;
             $staff->role_id                 = $request->role;
             $staff->designation_id          = $request->designation;
             $staff->department_id           = $request->department;
@@ -199,7 +197,7 @@ class UserRepository implements UserInterface
             $staff->status                  = $request->status;
             $staff->current_address         = $request->current_address;
             $staff->permanent_address       = $request->permanent_address;
-            $staff->basic_salary            = $request->basic_salary;
+            $staff->basic_salary            = $request->basic_salary ?: null;
             $staff->upload_id               = $user->upload_id;
 
             $staff->upload_documents        = $this->uploadDocuments($request, $staff->upload_documents);

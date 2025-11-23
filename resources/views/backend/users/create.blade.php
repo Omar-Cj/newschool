@@ -26,18 +26,6 @@
                     <div class="row mb-3">
 
                         <div class="col-lg-3 col-md-6 mb-3">
-                            <label for="exampleDataList" class="form-label ">{{ ___('staff.staff_id') }} <span
-                                    class="fillable">*</span></label>
-                            <input class="form-control ot-input @error('staff_id') is-invalid @enderror" name="staff_id" value="{{ old('staff_id') }}"
-                                list="datalistOptions" id="exampleDataList" type="number"
-                                placeholder="{{ ___('staff.enter_staff_id') }}">
-                            @error('staff_id')
-                                <div id="validationServer04Feedback" class="invalid-feedback">
-                                    {{ $message }}
-                                </div>
-                            @enderror
-                        </div>
-                        <div class="col-lg-3 col-md-6 mb-3">
                             <label for="validationServer04"
                             class="form-label">{{ ___('common.roles') }} <span
                             class="fillable">*</span></label>
@@ -168,8 +156,7 @@
                             @enderror
                         </div>
                         <div class="col-lg-3 col-md-6 mb-3">
-                            <label for="exampleDataList" class="form-label ">{{ ___('staff.date_of_birth') }} <span
-                                    class="fillable">*</span></label>
+                            <label for="exampleDataList" class="form-label ">{{ ___('staff.date_of_birth') }}</label>
                             <input class="form-control ot-input @error('dob') is-invalid @enderror" name="dob" value="{{ old('dob') }}"
                                 list="datalistOptions" id="exampleDataList" type="date"
                                 placeholder="{{ ___('staff.enter_date_of_birth') }}">
@@ -191,8 +178,7 @@
                             @enderror
                         </div>
                         <div class="col-lg-3 col-md-6 mb-3">
-                            <label for="exampleDataList" class="form-label ">{{ ___('staff.phone') }} <span
-                                    class="fillable">*</span></label>
+                            <label for="exampleDataList" class="form-label ">{{ ___('staff.phone') }}</label>
                             <input class="form-control ot-input @error('phone') is-invalid @enderror" name="phone" value="{{ old('phone') }}"
                                 list="datalistOptions" id="exampleDataList"
                                 placeholder="{{ ___('staff.enter_phone') }}">
@@ -276,8 +262,7 @@
                             @enderror
                         </div>
                         <div class="col-lg-3 col-md-6 mb-3">
-                            <label for="exampleDataList" class="form-label ">{{ ___('staff.basic_salary') }} <span
-                                    class="fillable">*</span></label>
+                            <label for="exampleDataList" class="form-label ">{{ ___('staff.basic_salary') }}</label>
                             <input class="form-control ot-input @error('basic_salary') is-invalid @enderror" name="basic_salary" value="{{ old('basic_salary') }}"
                                 list="datalistOptions" id="exampleDataList" type="number"
                                 placeholder="{{ ___('staff.enter_basic_salary') }}">

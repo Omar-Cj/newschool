@@ -33,7 +33,6 @@ class GeneralTeacherSeeder extends Seeder
             'last_name' => 'Hassan',
             'specialization' => 'English',
             'department' => 'Languages',
-            'staff_id' => 1001,
             'gender' => 'Male',
             'phone' => '252634001001',
             'email' => 'ahmed.hassan@school.edu.so',
@@ -45,7 +44,6 @@ class GeneralTeacherSeeder extends Seeder
             'last_name' => 'Osman',
             'specialization' => 'Arabic',
             'department' => 'Languages',
-            'staff_id' => 1002,
             'gender' => 'Female',
             'phone' => '252634002002',
             'email' => 'fatima.osman@school.edu.so',
@@ -57,7 +55,6 @@ class GeneralTeacherSeeder extends Seeder
             'last_name' => 'Ali',
             'specialization' => 'Islamic Studies',
             'department' => 'Religious Studies',
-            'staff_id' => 1003,
             'gender' => 'Male',
             'phone' => '252634003003',
             'email' => 'ibrahim.ali@school.edu.so',
@@ -69,7 +66,6 @@ class GeneralTeacherSeeder extends Seeder
             'last_name' => 'Mohamed',
             'specialization' => 'Science',
             'department' => 'Sciences',
-            'staff_id' => 1004,
             'gender' => 'Female',
             'phone' => '252634004004',
             'email' => 'amina.mohamed@school.edu.so',
@@ -81,7 +77,6 @@ class GeneralTeacherSeeder extends Seeder
             'last_name' => 'Abdi',
             'specialization' => 'Social Studies',
             'department' => 'Social Sciences',
-            'staff_id' => 1005,
             'gender' => 'Male',
             'phone' => '252634005005',
             'email' => 'omar.abdi@school.edu.so',
@@ -93,7 +88,6 @@ class GeneralTeacherSeeder extends Seeder
             'last_name' => 'Yusuf',
             'specialization' => 'Mathematics',
             'department' => 'Mathematics',
-            'staff_id' => 1006,
             'gender' => 'Female',
             'phone' => '252634006006',
             'email' => 'khadija.yusuf@school.edu.so',
@@ -105,7 +99,6 @@ class GeneralTeacherSeeder extends Seeder
             'last_name' => 'Ibrahim',
             'specialization' => 'Somali',
             'department' => 'Languages',
-            'staff_id' => 1007,
             'gender' => 'Male',
             'phone' => '252634007007',
             'email' => 'yusuf.ibrahim@school.edu.so',
@@ -123,7 +116,6 @@ class GeneralTeacherSeeder extends Seeder
             'last_name' => 'Mohamed',
             'specialization' => 'English',
             'department' => 'Languages',
-            'staff_id' => 1008,
             'gender' => 'Male',
             'phone' => '252634008008',
             'email' => 'saeed.mohamed@school.edu.so',
@@ -135,7 +127,6 @@ class GeneralTeacherSeeder extends Seeder
             'last_name' => 'Ahmed',
             'specialization' => 'Mathematics',
             'department' => 'Mathematics',
-            'staff_id' => 1009,
             'gender' => 'Female',
             'phone' => '252634009009',
             'email' => 'hodan.ahmed@school.edu.so',
@@ -147,7 +138,6 @@ class GeneralTeacherSeeder extends Seeder
             'last_name' => 'Omar',
             'specialization' => 'Chemistry',
             'department' => 'Sciences',
-            'staff_id' => 1010,
             'gender' => 'Male',
             'phone' => '252634010010',
             'email' => 'hassan.omar@school.edu.so',
@@ -159,7 +149,6 @@ class GeneralTeacherSeeder extends Seeder
             'last_name' => 'Ismail',
             'specialization' => 'Physics',
             'department' => 'Sciences',
-            'staff_id' => 1011,
             'gender' => 'Female',
             'phone' => '252634011011',
             'email' => 'mariam.ismail@school.edu.so',
@@ -171,7 +160,6 @@ class GeneralTeacherSeeder extends Seeder
             'last_name' => 'Hassan',
             'specialization' => 'Biology',
             'department' => 'Sciences',
-            'staff_id' => 1012,
             'gender' => 'Male',
             'phone' => '252634012012',
             'email' => 'abdi.hassan@school.edu.so',
@@ -183,7 +171,6 @@ class GeneralTeacherSeeder extends Seeder
             'last_name' => 'Ali',
             'specialization' => 'Islamic Studies',
             'department' => 'Religious Studies',
-            'staff_id' => 1013,
             'gender' => 'Female',
             'phone' => '252634013013',
             'email' => 'sahra.ali@school.edu.so',
@@ -195,7 +182,6 @@ class GeneralTeacherSeeder extends Seeder
             'last_name' => 'Abdi',
             'specialization' => 'Somali',
             'department' => 'Languages',
-            'staff_id' => 1014,
             'gender' => 'Male',
             'phone' => '252634014014',
             'email' => 'ismail.abdi@school.edu.so',
@@ -207,7 +193,6 @@ class GeneralTeacherSeeder extends Seeder
             'last_name' => 'Omar',
             'specialization' => 'History',
             'department' => 'Social Sciences',
-            'staff_id' => 1015,
             'gender' => 'Female',
             'phone' => '252634015015',
             'email' => 'habiba.omar@school.edu.so',
@@ -219,7 +204,6 @@ class GeneralTeacherSeeder extends Seeder
             'last_name' => 'Mohamed',
             'specialization' => 'Geography',
             'department' => 'Social Sciences',
-            'staff_id' => 1016,
             'gender' => 'Male',
             'phone' => '252634016016',
             'email' => 'ali.mohamed@school.edu.so',
@@ -231,7 +215,6 @@ class GeneralTeacherSeeder extends Seeder
             'last_name' => 'Ahmed',
             'specialization' => 'Arabic',
             'department' => 'Languages',
-            'staff_id' => 1017,
             'gender' => 'Female',
             'phone' => '252634017017',
             'email' => 'zeinab.ahmed@school.edu.so',
@@ -250,7 +233,6 @@ class GeneralTeacherSeeder extends Seeder
             'specialization' => 'Administration',
             'department' => 'Administration',
             'designation' => 'Head Teacher',
-            'staff_id' => 1018,
             'gender' => 'Male',
             'phone' => '252634018018',
             'email' => 'mohamed.hassan@school.edu.so',
@@ -263,7 +245,6 @@ class GeneralTeacherSeeder extends Seeder
             'specialization' => 'Academic Coordination',
             'department' => 'Administration',
             'designation' => 'Deputy Head Teacher',
-            'staff_id' => 1019,
             'gender' => 'Female',
             'phone' => '252634019019',
             'email' => 'halima.ibrahim@school.edu.so',
@@ -276,7 +257,6 @@ class GeneralTeacherSeeder extends Seeder
             'specialization' => 'Academic Planning',
             'department' => 'Administration',
             'designation' => 'Academic Coordinator',
-            'staff_id' => 1020,
             'gender' => 'Male',
             'phone' => '252634020020',
             'email' => 'abdullahi.osman@school.edu.so',
@@ -366,11 +346,11 @@ class GeneralTeacherSeeder extends Seeder
 
         // Check for existing teachers
         if (!$isDryRun) {
-            $existingTeachers = Staff::whereIn('staff_id', array_column($teachersToSeed, 'staff_id'))->get();
+            $existingTeachers = Staff::whereIn('email', array_column($teachersToSeed, 'email'))->get();
             if ($existingTeachers->isNotEmpty() && !$replaceExisting) {
-                $this->warn('⚠️  Found ' . $existingTeachers->count() . ' existing teachers with matching staff IDs:');
+                $this->warn('⚠️  Found ' . $existingTeachers->count() . ' existing teachers with matching emails:');
                 foreach ($existingTeachers as $teacher) {
-                    $this->line("   - {$teacher->first_name} {$teacher->last_name} (ID: {$teacher->staff_id})");
+                    $this->line("   - {$teacher->first_name} {$teacher->last_name} ({$teacher->email})");
                 }
                 $this->line('   Use --replace-existing=true to replace them');
                 $this->line('');
@@ -402,17 +382,17 @@ class GeneralTeacherSeeder extends Seeder
             $existingTeacher = null;
             
             if (!$isDryRun) {
-                $existingTeacher = Staff::where('staff_id', $teacherData['staff_id'])->first();
+                $existingTeacher = Staff::where('email', $teacherData['email'])->first();
             }
 
             if ($existingTeacher && !$replaceExisting) {
-                $this->line("   ⏭️  Skipped: {$teacherData['first_name']} {$teacherData['last_name']} (ID: {$teacherData['staff_id']}) - already exists");
+                $this->line("   ⏭️  Skipped: {$teacherData['first_name']} {$teacherData['last_name']} ({$teacherData['email']}) - already exists");
                 $this->skippedCount++;
                 continue;
             }
 
             if ($isDryRun) {
-                $this->line("   📝 Would create: {$teacherData['first_name']} {$teacherData['last_name']} ({$teacherData['specialization']} Teacher, ID: {$teacherData['staff_id']})");
+                $this->line("   📝 Would create: {$teacherData['first_name']} {$teacherData['last_name']} ({$teacherData['specialization']} Teacher)");
                 $this->createdCount++;
                 continue;
             }
@@ -465,7 +445,7 @@ class GeneralTeacherSeeder extends Seeder
                     'upload_documents' => []
                 ]);
 
-                $this->line("   🔄 Replaced: {$teacherData['first_name']} {$teacherData['last_name']} ({$teacherData['specialization']}, ID: {$teacherData['staff_id']})");
+                $this->line("   🔄 Replaced: {$teacherData['first_name']} {$teacherData['last_name']} ({$teacherData['specialization']}, {$teacherData['email']})");
                 $this->replacedCount++;
             } else {
                 // Create new user
@@ -474,7 +454,6 @@ class GeneralTeacherSeeder extends Seeder
                 // Create new staff
                 Staff::create([
                     'user_id' => $user->id,
-                    'staff_id' => $teacherData['staff_id'],
                     'role_id' => $userData['role_id'],
                     'designation_id' => $designation->id,
                     'department_id' => $department->id,
@@ -494,7 +473,7 @@ class GeneralTeacherSeeder extends Seeder
                     'upload_documents' => []
                 ]);
 
-                $this->line("   ✅ Created: {$teacherData['first_name']} {$teacherData['last_name']} ({$teacherData['specialization']}, ID: {$teacherData['staff_id']})");
+                $this->line("   ✅ Created: {$teacherData['first_name']} {$teacherData['last_name']} ({$teacherData['specialization']}, {$teacherData['email']})");
                 $this->createdCount++;
             }
         }

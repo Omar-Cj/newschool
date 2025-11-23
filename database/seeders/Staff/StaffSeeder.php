@@ -82,7 +82,6 @@ class StaffSeeder extends Seeder
             $staff                          = new Staff();
             $staff->upload_id               = $upload->id;
             $staff->user_id                 = $user->id;
-            $staff->staff_id                = $staffId;
             $staff->role_id                 = 5;
             $staff->designation_id          = 2;
             $staff->department_id           = 2;

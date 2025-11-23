@@ -24,15 +24,14 @@ class UserStoreRequest extends FormRequest
     public function rules()
     {
         return [
-            'staff_id'     => 'required|unique:staff,staff_id',
             'role'         => 'required',
             'designation'  => 'required',
             'department'   => 'required',
             'first_name'   => 'required|max:25',
             'email'        => 'required|unique:users,email',
             'gender'       => 'required',
-            'dob'          => 'required',
-            'phone'        => 'required|regex:/^([0-9\s\-\+\(\)]*)$/|max:11',
+            'dob'          => 'nullable|date',
+            'phone'        => 'nullable|regex:/^([0-9\s\-\+\(\)]*)$/|max:11',
             'status'       => 'required',
             'image'        => 'max:2048',
         ];

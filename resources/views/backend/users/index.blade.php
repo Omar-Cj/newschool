@@ -36,7 +36,6 @@
                         <thead class="thead">
                             <tr>
                                 <th class="serial">{{ ___('common.sr_no.') }}</th>
-                                <th class="purchase">{{ ___('staff.staff_id') }}</th>
                                 <th class="purchase">{{ ___('common.name') }}</th>
                                 <th class="purchase">{{ ___('common.roles') }}</th>
                                 <th class="purchase">{{ ___('staff.departments') }}</th>
@@ -53,7 +52,6 @@
                             @forelse ($data['users'] as $key => $row)
                             <tr id="row_{{ $row->id }}">
                                 <td class="serial">{{ ++$key }}</td>
-                                <td class="serial">{{ $row->staff_id }}</td>
                                 <td>
                                     <div class="">
                                         <a href="{{ route('users.show',$row->id) }}">
