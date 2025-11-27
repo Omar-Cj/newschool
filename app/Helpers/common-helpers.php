@@ -7,7 +7,9 @@ use App\Models\Examination\MarksGrade;
 use App\Models\Language;
 use App\Models\Setting;
 use App\Models\StudentInfo\SessionClassStudent;
+use App\Services\SettingContextService;
 use Modules\MainApp\Entities\Subscription;
+use Modules\MainApp\Entities\Setting as MainSetting;
 use App\Models\SystemNotification;
 use App\Models\Upload;
 use App\Models\WebsiteSetup\OnlineAdmissionSetting;
@@ -31,13 +33,14 @@ function getPagination($ITEM)
 
 
 /**
- * Get setting value for the current school context
+ * Get setting value for the current context (main vs school)
  *
- * This helper respects school context through SchoolScope automatically applied to Setting model.
- * - School users (school_id NOT NULL): Only see their school's settings
- * - System Admin (school_id NULL): Sees all settings (no filtering applied)
+ * This helper uses SettingContextService to determine the appropriate settings context:
+ * - Unauthenticated users: Use main settings (login page, public pages)
+ * - System Admin (school_id NULL): Use main settings
+ * - School users (school_id NOT NULL): Use school-specific settings
  *
- * Cache keys include school_id to prevent cross-school data leakage
+ * Cache keys are context-aware to prevent cross-context data leakage
  *
  * @param string $name Setting name to retrieve
  * @return mixed|null Setting value or null if not found
@@ -45,26 +48,22 @@ function getPagination($ITEM)
 function setting($name)
 {
     try {
-        // Build school-aware cache key to prevent cross-school data leakage
-        // System Admin (NULL school_id) gets separate cache namespace
-        $schoolId = auth()->check() ? (auth()->user()->school_id ?? 'admin') : 'guest';
-        $cacheKey = "setting_{$name}_school_{$schoolId}";
+        // Resolve SettingContextService from container
+        $contextService = app(SettingContextService::class);
 
-        // Cache for 1 hour with school-specific key
-        return Cache::remember($cacheKey, 3600, function () use ($name) {
+        // Build context-aware cache key
+        $cacheKey = $contextService->buildCacheKey($name);
+
+        // Cache for 1 hour with context-specific key
+        return Cache::remember($cacheKey, 3600, function () use ($name, $contextService) {
             // Special handling for currency_symbol
             if ($name == 'currency_symbol') {
-                // SchoolScope automatically filters both queries by school_id
-                $currencyCode = Setting::where('name', 'currency_code')->first()?->value;
+                $currencyCode = $contextService->getSetting('currency_code');
                 return Currency::where('code', $currencyCode)->first()?->symbol;
             }
 
-            // SchoolScope automatically filters this query by authenticated user's school_id
-            // System Admin (school_id = NULL) will see all settings (no scope filtering)
-            // School users (school_id NOT NULL) will only see their school's settings
-            $setting_data = Setting::where('name', $name)->first();
-
-            return $setting_data?->value;
+            // Get setting based on context (main vs school)
+            return $contextService->getSetting($name);
         });
     } catch (\Throwable $th) {
         return null;
@@ -1349,6 +1348,72 @@ function generateStudentAvatar($firstName, $lastName, $size = '40px')
     // Generate avatar HTML
     return sprintf(
         '<div class="student-avatar d-inline-flex align-items-center justify-content-center rounded-circle fw-bold"
+              style="width: %s; height: %s; background-color: %s; color: %s; font-size: %s; min-width: %s; min-height: %s; font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, sans-serif;">
+            %s
+        </div>',
+        $size,
+        $size,
+        $selectedColor['bg'],
+        $selectedColor['text'],
+        $fontSize,
+        $size,
+        $size,
+        htmlspecialchars($initials)
+    );
+}
+
+/**
+ * Generate avatar HTML for users based on their full name
+ * Creates circular avatars with initials and consistent color backgrounds
+ *
+ * @param string $name User's full name
+ * @param string $size Size CSS value (e.g., '40px', '60px')
+ * @return string HTML markup for the avatar
+ */
+function generateUserAvatar($name, $size = '40px')
+{
+    // Color palette - professional colors
+    $colors = [
+        ['bg' => '#4A90E2', 'text' => '#FFFFFF'], // Blue
+        ['bg' => '#7ED321', 'text' => '#FFFFFF'], // Green
+        ['bg' => '#F5A623', 'text' => '#FFFFFF'], // Orange
+        ['bg' => '#BD10E0', 'text' => '#FFFFFF'], // Purple
+        ['bg' => '#50E3C2', 'text' => '#333333'], // Teal
+        ['bg' => '#9013FE', 'text' => '#FFFFFF'], // Violet
+    ];
+
+    // Clean and prepare name
+    $name = trim($name ?? '');
+
+    // Generate initials
+    $initials = '';
+    if (!empty($name)) {
+        $parts = preg_split('/\s+/', $name);
+        if (count($parts) >= 2) {
+            // First letter of first name + first letter of last name
+            $initials = strtoupper(substr($parts[0], 0, 1) . substr(end($parts), 0, 1));
+        } else {
+            // Single name - use first 2 letters
+            $initials = strtoupper(substr($name, 0, min(2, strlen($name))));
+        }
+    }
+
+    // Fallback if no proper name
+    if (empty($initials)) {
+        $initials = 'U'; // User
+    }
+
+    // Generate consistent color based on name hash
+    $colorIndex = !empty($name) ? abs(crc32($name)) % count($colors) : 0;
+    $selectedColor = $colors[$colorIndex];
+
+    // Calculate font size based on avatar size
+    $numericSize = (int) preg_replace('/[^0-9]/', '', $size);
+    $fontSize = max(($numericSize * 0.4), 12) . 'px';
+
+    // Generate avatar HTML
+    return sprintf(
+        '<div class="user-avatar d-inline-flex align-items-center justify-content-center rounded-circle fw-bold"
               style="width: %s; height: %s; background-color: %s; color: %s; font-size: %s; min-width: %s; min-height: %s; font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, sans-serif;">
             %s
         </div>',

@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Fees\Type;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class FeesTypeUpdateRequest extends FormRequest
 {
@@ -23,9 +24,26 @@ class FeesTypeUpdateRequest extends FormRequest
      */
     public function rules()
     {
+        $schoolId = auth()->user()->school_id;
+        $branchId = auth()->user()->branch_id;
+
         return [
-            'name'                    => 'required|max:255',
-            'code'                    => 'nullable|max:50',
+            'name'                    => [
+                'required',
+                'max:255',
+                Rule::unique('fees_types', 'name')
+                    ->where('school_id', $schoolId)
+                    ->where('branch_id', $branchId)
+                    ->ignore($this->route('id') ?? $this->id),
+            ],
+            'code'                    => [
+                'nullable',
+                'max:50',
+                Rule::unique('fees_types', 'code')
+                    ->where('school_id', $schoolId)
+                    ->where('branch_id', $branchId)
+                    ->ignore($this->route('id') ?? $this->id),
+            ],
             'description'             => 'nullable|max:1000',
             'academic_level'          => 'required|in:all,kg,primary,secondary,high_school',
             'category'                => 'required|in:academic,transport,meal,accommodation,activity,other',

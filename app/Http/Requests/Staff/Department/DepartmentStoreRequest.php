@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Staff\Department;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class DepartmentStoreRequest extends FormRequest
 {
@@ -23,9 +24,17 @@ class DepartmentStoreRequest extends FormRequest
      */
     public function rules()
     {
+        $schoolId = auth()->user()->school_id;
+        $branchId = auth()->user()->branch_id;
+
         return [
-            'name'          => 'required|unique:departments',
-            'status'        => 'required'
+            'name' => [
+                'required',
+                Rule::unique('departments', 'name')
+                    ->where('school_id', $schoolId)
+                    ->where('branch_id', $branchId),
+            ],
+            'status' => 'required'
         ];
     }
 }

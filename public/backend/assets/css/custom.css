@@ -391,3 +391,60 @@ input.form-check-input:checked {
 .sidebar_full_logo {
     max-height: 50px !important;
 }
+
+/* ===============================================
+   UI IMPROVEMENTS - Sidebar, Avatar, Login Logo
+   =============================================== */
+
+/* 1. SIDEBAR LOGO SIZE IMPROVEMENTS */
+.sidebar .sidebar-header .sidebar-logo .full-logo {
+    height: 60px !important;
+    max-width: 180px !important;
+}
+
+.sidebar .sidebar-header .sidebar-logo .half-logo {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+}
+
+/* Ensure half-logo shows when sidebar collapsed */
+.half-expand .sidebar .sidebar-header .sidebar-logo a .half-logo {
+    opacity: 1 !important;
+    visibility: visible !important;
+    height: auto !important;
+    width: 35px;
+    display: block !important;
+}
+
+/* 2. USER AVATAR STYLES */
+.user-avatar {
+    flex-shrink: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.profile-photo .user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+}
+
+/* 3. LOGIN PAGE LOGO */
+.auth-page .form-logo {
+    text-align: center;
+    width: 100%;
+}
+
+.auth-page .form-logo a {
+    display: inline-block;
+}
+
+.auth-page .form-logo img {
+    height: 80px !important;
+    max-width: 200px !important;
+    object-fit: contain;
+}
+
+.auth-page .form-container {
+    align-items: center !important;
+}

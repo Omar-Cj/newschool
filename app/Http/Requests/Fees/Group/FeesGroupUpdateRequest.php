@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Fees\Group;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class FeesGroupUpdateRequest extends FormRequest
 {
@@ -23,8 +24,18 @@ class FeesGroupUpdateRequest extends FormRequest
      */
     public function rules()
     {
+        $schoolId = auth()->user()->school_id;
+        $branchId = auth()->user()->branch_id;
+
         return [
-            'name'      => 'required|max:255|unique:fees_groups,name,'.Request()->id,
+            'name'      => [
+                'required',
+                'max:255',
+                Rule::unique('fees_groups', 'name')
+                    ->where('school_id', $schoolId)
+                    ->where('branch_id', $branchId)
+                    ->ignore($this->route('id') ?? $this->id),
+            ],
             'status'    => 'required'
         ];
     }

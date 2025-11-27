@@ -31,9 +31,10 @@ class SubscriptionController extends Controller
         $this->schoolRepo = $schoolRepo;
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $data['subscriptions'] = $this->repo->getAll();
+        $filters = $request->only(['filter', 'school_id', 'package_id']);
+        $data['subscriptions'] = $this->repo->getAll($filters);
         $data['title']         = ___('settings.Subscriptions');
         $data['schools']       = $this->schoolRepo->getAll();
         $data['packages']      = $this->packageRepo->all();

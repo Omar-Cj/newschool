@@ -34,7 +34,7 @@
                             <label for="validationServer04" class="form-label">{{ ___('mainapp_subscriptions.Package') }} <span class="fillable">*</span></label>
                             <select class="nice-select niceSelect bordered_style wide @error('package') is-invalid @enderror"
                             name="package" id="validationServer04"
-                            aria-describedby="validationServer04Feedback" @disabled(true)>
+                            aria-describedby="validationServer04Feedback">
                                 <option value="">{{ ___('mainapp_subscriptions.Select package') }}</option>
                                 @foreach ($data['packages'] as $item)
                                     <option {{ old('package', @$data['subscription']->package_id) == $item->id ? 'selected':'' }} value="{{ $item->id }}">{{ $item->name }}</option>

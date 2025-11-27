@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Staff\Designation;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class DesignationStoreRequest extends FormRequest
 {
@@ -23,9 +24,18 @@ class DesignationStoreRequest extends FormRequest
      */
     public function rules()
     {
+        $schoolId = auth()->user()->school_id;
+        $branchId = auth()->user()->branch_id;
+
         return [
-            'name'      => 'required|max:255|unique:designations',
-            'status'    => 'required'
+            'name' => [
+                'required',
+                'max:255',
+                Rule::unique('designations', 'name')
+                    ->where('school_id', $schoolId)
+                    ->where('branch_id', $branchId),
+            ],
+            'status' => 'required'
         ];
     }
 }

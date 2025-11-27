@@ -24,6 +24,7 @@ class BusStoreRequest extends FormRequest
      */
     public function rules()
     {
+        $schoolId = auth()->user()->school_id;
         $branchId = auth()->user()->branch_id ?? 1;
 
         return [
@@ -31,8 +32,9 @@ class BusStoreRequest extends FormRequest
                 'required',
                 'string',
                 'max:255',
-                Rule::unique('buses')->where(function ($query) use ($branchId) {
-                    return $query->where('branch_id', $branchId);
+                Rule::unique('buses')->where(function ($query) use ($schoolId, $branchId) {
+                    return $query->where('school_id', $schoolId)
+                                 ->where('branch_id', $branchId);
                 })
             ],
             'bus_number'   => 'nullable|string|max:100',

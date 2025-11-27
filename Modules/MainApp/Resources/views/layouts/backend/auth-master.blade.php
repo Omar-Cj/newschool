@@ -24,6 +24,7 @@
         <link rel="stylesheet" href="{{ asset('backend') }}/assets/css/metisMenu.min.css">
         <!-- Custom CSS  start -->
         <link rel="stylesheet" href="{{ asset('backend') }}/assets/css/style.css">
+        <link rel="stylesheet" href="{{ asset('backend') }}/assets/css/custom.css">
     </head>
 </head>
 
@@ -32,8 +33,8 @@
     <main class="auth-page">
         <section class="auth-container">
             <div class="form-wrapper pv-80 ph-100 bg-white d-flex justify-content-center align-items-center flex-column">
-                <div class="form-container d-flex justify-content-center align-items-start flex-column">
-                    <div class="form-logo mb-40">
+                <div class="form-container d-flex justify-content-center align-items-center flex-column">
+                    <div class="form-logo mb-40 text-center w-100">
                         <a href="{{ url('/') }}">
                             <img id="sidebar_full_logo" class="full-logo setting-image logo_dark" src="{{  @globalAsset(setting('dark_logo'), '154X38.webp')  }}" alt="" />
                             <img id="sidebar_full_logo" class="full-logo setting-image logo_lite" src="{{ @globalAsset(setting('light_logo'), '154X38.webp')  }}" alt="" />

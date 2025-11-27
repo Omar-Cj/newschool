@@ -120,13 +120,18 @@ class SchoolRepository implements SchoolInterface
             $mainBranch = $branches->first();
             $this->createSchoolAdminUser($school, $request, $mainBranch);
 
-            // Seed school settings automatically from reference school
-            $this->seedSchoolSettings($school, $mainBranch);
-
-            // Seed default data for each branch (categories, fee types, sessions, etc.)
+            // Seed default data for each branch FIRST (categories, fee types, sessions, etc.)
+            // IMPORTANT: Sessions must be created before seedSchoolSettings() runs,
+            // otherwise the 'session' setting will be skipped (lines 381-383 in seedSchoolSettings)
             $branchDataSeeder = new BranchDataSeederService();
             foreach ($branches as $branch) {
                 $branchDataSeeder->seedBranchData($school->id, $branch->id);
+            }
+
+            // Seed school settings for ALL branches AFTER sessions exist
+            // IMPORTANT: Each branch needs its own set of settings for proper multi-branch operation
+            foreach ($branches as $branch) {
+                $this->seedSchoolSettings($school, $branch);
             }
 
             \Log::info('Multi-branch school creation', [
@@ -242,6 +247,27 @@ class SchoolRepository implements SchoolInterface
         DB::beginTransaction();
         try {
             $row = $this->model->find($id);
+
+            if (!$row) {
+                return $this->responseWithError(___('alert.school_not_found'), []);
+            }
+
+            // Check for related data before deletion
+            $subscriptionCount = $row->subscriptions()->count();
+
+            // Build error message if there are related records
+            $relatedData = [];
+
+            if ($subscriptionCount > 0) {
+                $relatedData[] = "{$subscriptionCount} subscription(s)";
+            }
+
+            if (!empty($relatedData)) {
+                $errorMessage = "Cannot delete this school. It has " . implode(' and ', $relatedData) . " associated with it. Please remove or reassign these records first.";
+                DB::rollback();
+                return $this->responseWithError($errorMessage, []);
+            }
+
             $row->delete();
 
             $tenant = Tenant::where('id', $row->sub_domain_key)->first();

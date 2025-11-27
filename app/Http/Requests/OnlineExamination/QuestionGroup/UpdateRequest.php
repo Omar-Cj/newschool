@@ -3,6 +3,7 @@
 namespace App\Http\Requests\OnlineExamination\QuestionGroup;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateRequest extends FormRequest
 {
@@ -23,8 +24,18 @@ class UpdateRequest extends FormRequest
      */
     public function rules()
     {
+        $schoolId = auth()->user()->school_id;
+        $branchId = auth()->user()->branch_id;
+
         return [
-            'name'   => 'required|max:255|unique:question_groups,name,'.Request()->id,
+            'name'   => [
+                'required',
+                'max:255',
+                Rule::unique('question_groups', 'name')
+                    ->where('school_id', $schoolId)
+                    ->where('branch_id', $branchId)
+                    ->ignore(Request()->id)
+            ],
             'status' => 'required'
         ];
     }

@@ -169,6 +169,19 @@
 
 .feature-item .form-check-input {
     margin-top: 0.15rem;
+    border: 2px solid #6c757d;
+    width: 1.2em;
+    height: 1.2em;
+}
+
+.feature-item .form-check-input:checked {
+    background-color: #28a745;
+    border-color: #28a745;
+}
+
+.feature-item .form-check-input:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
 }
 
 .feature-item .form-check-label {

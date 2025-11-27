@@ -42,15 +42,64 @@ class SubscriptionRepository implements SubscriptionInterface
         return $this->model->active()->get();
     }
 
-    public function getAll()
+    public function getAll(array $filters = [])
     {
-        return $this->model
+        $query = $this->model
             ->with([
                 'school:id,name,email,phone',
                 'package:id,name'
-            ])
-            ->latest()
-            ->paginate(Settings::PAGINATE);
+            ]);
+
+        // Apply quick filter
+        if (!empty($filters['filter'])) {
+            $now = now();
+            switch ($filters['filter']) {
+                case 'active':
+                    $query->where('status', SubscriptionStatus::APPROVED)
+                          ->where(function ($q) use ($now) {
+                              $q->whereNull('expiry_date')
+                                ->orWhere('expiry_date', '>', $now);
+                          });
+                    break;
+                case 'expiring':
+                    $query->where('status', SubscriptionStatus::APPROVED)
+                          ->whereNotNull('expiry_date')
+                          ->where('expiry_date', '>', $now)
+                          ->where('expiry_date', '<=', $now->copy()->addDays(30));
+                    break;
+                case 'grace':
+                    $query->where('status', SubscriptionStatus::APPROVED)
+                          ->whereNotNull('expiry_date')
+                          ->whereNotNull('grace_expiry_date')
+                          ->where('expiry_date', '<', $now)
+                          ->where('grace_expiry_date', '>=', $now);
+                    break;
+                case 'expired':
+                    $query->where(function ($q) use ($now) {
+                        $q->where(function ($sub) use ($now) {
+                            $sub->whereNotNull('grace_expiry_date')
+                                ->where('grace_expiry_date', '<', $now);
+                        })->orWhere(function ($sub) use ($now) {
+                            $sub->whereNull('grace_expiry_date')
+                                ->whereNotNull('expiry_date')
+                                ->where('expiry_date', '<', $now);
+                        });
+                    });
+                    break;
+            }
+        }
+
+        // Apply school filter
+        if (!empty($filters['school_id'])) {
+            $query->where('school_id', $filters['school_id']);
+        }
+
+        // Apply package filter
+        if (!empty($filters['package_id'])) {
+            $query->where('package_id', $filters['package_id']);
+        }
+
+        return $query->latest()->paginate(Settings::PAGINATE);
     }
 
     public function show($id)

@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Religion;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class ReligionStoreRequest extends FormRequest
 {
@@ -23,8 +24,17 @@ class ReligionStoreRequest extends FormRequest
      */
     public function rules()
     {
+        $schoolId = auth()->user()->school_id;
+        $branchId = auth()->user()->branch_id;
+
         return [
-            'name'   => 'required|max:255|unique:religions',
+            'name'   => [
+                'required',
+                'max:255',
+                Rule::unique('religions', 'name')
+                    ->where('school_id', $schoolId)
+                    ->where('branch_id', $branchId)
+            ],
             'status' => 'required'
         ];
     }

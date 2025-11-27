@@ -120,6 +120,31 @@ class PackageRepository implements PackageInterface
     {
         try {
             $row = $this->model->find($id);
+
+            if (!$row) {
+                return $this->responseWithError(___('alert.package_not_found'), []);
+            }
+
+            // Check for related data before deletion
+            $schoolCount = \Modules\MainApp\Entities\School::where('package_id', $row->id)->count();
+            $subscriptionCount = \Modules\MainApp\Entities\Subscription::where('package_id', $row->id)->count();
+
+            // Build error message if there are related records
+            $relatedData = [];
+
+            if ($schoolCount > 0) {
+                $relatedData[] = "{$schoolCount} school(s)";
+            }
+
+            if ($subscriptionCount > 0) {
+                $relatedData[] = "{$subscriptionCount} subscription(s)";
+            }
+
+            if (!empty($relatedData)) {
+                $errorMessage = "Cannot delete this package. It is currently used by " . implode(' and ', $relatedData) . ". Please reassign these records to another package first.";
+                return $this->responseWithError($errorMessage, []);
+            }
+
             $row->delete();
             return $this->responseWithSuccess(___('alert.deleted_successfully'), []);
         } catch (\Throwable $th) {

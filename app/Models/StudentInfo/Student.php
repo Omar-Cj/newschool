@@ -59,6 +59,7 @@ class Student extends BaseModel
 
     protected $casts = [
         'upload_documents' => 'array',
+        'bus_id' => 'integer',
     ];
 
     public function routeEnroll()
@@ -74,6 +75,15 @@ class Student extends BaseModel
     public function getFullNameAttribute()
     {
         return "{$this->first_name} {$this->last_name}";
+    }
+
+    /**
+     * Set bus_id attribute - convert empty strings to NULL
+     * Ensures optional foreign key is properly handled
+     */
+    public function setBusIdAttribute($value)
+    {
+        $this->attributes['bus_id'] = !empty($value) && $value !== '' ? $value : null;
     }
 
     public function upload()

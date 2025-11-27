@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Fees\Collect;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class FeesCollectStoreRequest extends FormRequest
 {
@@ -23,8 +24,17 @@ class FeesCollectStoreRequest extends FormRequest
      */
     public function rules()
     {
+        $schoolId = auth()->user()->school_id;
+        $branchId = auth()->user()->branch_id;
+
         return [
-            'name'      => 'required|max:255|unique:fees_collects',
+            'name'      => [
+                'required',
+                'max:255',
+                Rule::unique('fees_collects', 'name')
+                    ->where('school_id', $schoolId)
+                    ->where('branch_id', $branchId),
+            ],
             'code'      => 'required|max:255',
             'status'    => 'required'
         ];

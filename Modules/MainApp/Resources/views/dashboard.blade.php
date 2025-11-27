@@ -167,7 +167,7 @@
             <div class="ot_crm_summeryBox mb-24">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h4 class="mb-0">{{ ___('common.Subscriptions Expiring Soon') }}</h4>
-                    <a href="{{ route('reports.outstanding-payments') }}" class="btn btn-sm btn-warning">
+                    <a href="{{ route('reports.outstanding-payments') }}" class="btn btn-sm btn-primary">
                         {{ ___('common.View All') }}
                     </a>
                 </div>

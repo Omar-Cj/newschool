@@ -27,6 +27,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register()
     {
+        // Bind MainSettingInterface to MainSettingRepository
+        $this->app->bind(
+            \App\Interfaces\MainSettingInterface::class,
+            \App\Repositories\MainSettingRepository::class
+        );
 
         // $this->app['events']->listen(TenancyBootstrapped::class, function ($event) {
         // view()->composer('*', function ($view) {

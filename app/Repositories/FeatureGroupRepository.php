@@ -299,14 +299,40 @@ class FeatureGroupRepository
 
     /**
      * Delete a feature group (alias for deleteGroup).
+     * Returns array with status and message for controller compatibility.
      *
      * @param int $id
-     * @return bool
-     * @throws \Exception
+     * @return array{status: bool, message: string}
      */
-    public function delete(int $id): bool
+    public function delete(int $id): array
     {
-        return $this->deleteGroup($id);
+        try {
+            $featureGroup = FeatureGroup::findOrFail($id);
+
+            // Check if group has features
+            $featureCount = $featureGroup->permissionFeatures()->count();
+            if ($featureCount > 0) {
+                return [
+                    'status' => false,
+                    'message' => "Cannot delete this feature group. It contains {$featureCount} feature(s). Please remove or reassign the features first."
+                ];
+            }
+
+            DB::beginTransaction();
+            $featureGroup->delete();
+            DB::commit();
+
+            return [
+                'status' => true,
+                'message' => ___('alert.deleted_successfully')
+            ];
+        } catch (Exception $e) {
+            DB::rollBack();
+            return [
+                'status' => false,
+                'message' => "Failed to delete feature group: " . $e->getMessage()
+            ];
+        }
     }
 
     /**

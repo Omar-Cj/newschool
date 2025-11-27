@@ -66,11 +66,11 @@ class PaymentCollectionExport implements
                 'amount' => number_format((float) $row->amount, 2),
                 'payment_method' => $row->payment_method,
                 'status' => $row->status,
-                'approved_by' => $row->approved_by ?? 'N/A',
+                'approved_by' => $row->approver_name ?? 'N/A',
                 'approved_at' => $row->approved_at ? Carbon::parse($row->approved_at)->format('d M Y H:i') : 'N/A',
                 'invoice_number' => $row->invoice_number ?? 'N/A',
                 'transaction_id' => $row->transaction_id ?? 'N/A',
-                'package' => $row->subscription_package ?? 'N/A',
+                'package' => $row->package_name ?? 'N/A',
                 'subscription_expiry' => $row->subscription_expiry ? Carbon::parse($row->subscription_expiry)->format('d M Y') : 'N/A',
             ];
         });

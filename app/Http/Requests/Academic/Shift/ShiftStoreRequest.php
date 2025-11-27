@@ -25,15 +25,16 @@ class ShiftStoreRequest extends FormRequest
     public function rules()
     {
         $schoolId = $this->user()->school_id;
+        $branchId = $this->user()->branch_id;
 
         return [
             'name' => [
                 'required',
                 'string',
                 'max:255',
-                Rule::unique('shifts')->where(function ($query) use ($schoolId) {
-                    return $query->where('school_id', $schoolId);
-                }),
+                Rule::unique('shifts', 'name')
+                    ->where('school_id', $schoolId)
+                    ->where('branch_id', $branchId),
             ],
             'status' => 'required'
         ];

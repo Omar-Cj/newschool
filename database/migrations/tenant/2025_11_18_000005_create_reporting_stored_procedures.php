@@ -106,6 +106,8 @@ return new class extends Migration
                 SELECT
                     sp.id,
                     sch.name as school_name,
+                    sch.email as school_email,
+                    sch.phone as school_phone,
                     sch.sub_domain_key,
                     sp.payment_date,
                     sp.amount,
@@ -117,12 +119,12 @@ return new class extends Migration
                         ELSE 'Unknown'
                     END as status,
                     sp.status as status_code,
-                    u.name as approved_by,
+                    u.name as approver_name,
                     sp.approved_at,
                     sp.invoice_number,
                     sp.transaction_id,
                     sp.reference_number,
-                    s.name as subscription_package,
+                    s.name as package_name,
                     s.expiry_date as subscription_expiry
                 FROM subscription_payments sp
                 INNER JOIN schools sch ON sp.school_id = sch.id

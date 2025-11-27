@@ -29,7 +29,7 @@
                             <select name="status" id="status" class="form-select">
                                 <option value="">{{ ___('mainapp_common.All') }}</option>
                                 @foreach($data['statusOptions'] as $value => $label)
-                                    <option value="{{ $value }}" {{ request('status') == $value ? 'selected' : '' }}>
+                                    <option value="{{ $value }}" {{ request()->filled('status') && request('status') == $value ? 'selected' : '' }}>
                                         {{ $label }}
                                     </option>
                                 @endforeach
@@ -48,11 +48,11 @@
                         </div>
                         <div class="col-md-2">
                             <label for="start_date" class="form-label">{{ ___('mainapp_common.Start Date') }}</label>
-                            <input type="date" name="start_date" id="start_date" class="form-control" value="{{ request('start_date') }}">
+                            <input type="date" name="start_date" id="start_date" class="form-control" value="{{ request('start_date', \Carbon\Carbon::now()->startOfMonth()->format('Y-m-d')) }}">
                         </div>
                         <div class="col-md-2">
                             <label for="end_date" class="form-label">{{ ___('mainapp_common.End Date') }}</label>
-                            <input type="date" name="end_date" id="end_date" class="form-control" value="{{ request('end_date') }}">
+                            <input type="date" name="end_date" id="end_date" class="form-control" value="{{ request('end_date', \Carbon\Carbon::now()->format('Y-m-d')) }}">
                         </div>
                         <div class="col-md-2 d-flex align-items-end">
                             <button type="submit" class="btn btn-primary me-2">{{ ___('mainapp_common.Filter') }}</button>

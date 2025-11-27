@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Academic\ClassRoom;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class ClassRoomUpdateRequest extends FormRequest
 {
@@ -23,8 +24,19 @@ class ClassRoomUpdateRequest extends FormRequest
      */
     public function rules()
     {
+        $schoolId = $this->user()->school_id;
+        $branchId = $this->user()->branch_id;
+
         return [
-            'room_no'   => 'required|max:10|unique:class_rooms,room_no,' . $this->route('id') . ',id,school_id,' . auth()->user()->school_id,
+            'room_no' => [
+                'required',
+                'string',
+                'max:10',
+                Rule::unique('class_rooms', 'room_no')
+                    ->where('school_id', $schoolId)
+                    ->where('branch_id', $branchId)
+                    ->ignore($this->route('id')),
+            ],
             'capacity'  => 'required|max:10',
             'status'    => 'required'
         ];

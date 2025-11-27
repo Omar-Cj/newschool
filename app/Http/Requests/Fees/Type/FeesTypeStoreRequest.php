@@ -24,18 +24,23 @@ class FeesTypeStoreRequest extends FormRequest
      */
     public function rules()
     {
+        $schoolId = auth()->user()->school_id;
+        $branchId = auth()->user()->branch_id;
+
         return [
             'name'                    => [
                 'required',
                 'max:255',
                 Rule::unique('fees_types', 'name')
-                    ->where('school_id', auth()->user()->school_id)
+                    ->where('school_id', $schoolId)
+                    ->where('branch_id', $branchId)
             ],
             'code'                    => [
                 'nullable',
                 'max:50',
                 Rule::unique('fees_types', 'code')
-                    ->where('school_id', auth()->user()->school_id)
+                    ->where('school_id', $schoolId)
+                    ->where('branch_id', $branchId)
             ],
             'description'             => 'nullable|max:1000',
             'academic_level'          => 'required|in:all,kg,primary,secondary,high_school',

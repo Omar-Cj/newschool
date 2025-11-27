@@ -76,7 +76,7 @@
                                     class="fillable">*</span></label>
                             <input class="form-control ot-input @error('phone') is-invalid @enderror" name="phone"
                                 list="datalistOptions" id="exampleDataList"
-                                placeholder="{{ ___('mainapp_common.Enter phone') }}" value="{{ old('phone', @$data['school']->phone) }}" disabled>
+                                placeholder="{{ ___('mainapp_common.Enter phone') }}" value="{{ old('phone', @$data['school']->phone) }}">
                             @error('phone')
                                 <div id="validationServer04Feedback" class="invalid-feedback">
                                     {{ $message }}
@@ -89,7 +89,7 @@
                                     class="fillable">*</span></label>
                             <input class="form-control ot-input @error('email') is-invalid @enderror" name="email" type="email"
                                 list="datalistOptions" id="exampleDataList"
-                                placeholder="{{ ___('mainapp_common.Enter email') }}" value="{{ old('email', @$data['school']->email) }}" disabled>
+                                placeholder="{{ ___('mainapp_common.Enter email') }}" value="{{ old('email', @$data['school']->email) }}">
                             @error('email')
                                 <div id="validationServer04Feedback" class="invalid-feedback">
                                     {{ $message }}
@@ -132,7 +132,7 @@
                                     class="fillable">*</span></label>
                             <input class="form-control ot-input @error('address') is-invalid @enderror" name="address"
                                 list="datalistOptions" id="exampleDataList"
-                                placeholder="{{ ___('mainapp_common.Enter address') }}" value="{{ old('address', @$data['school']->address) }}" disabled>
+                                placeholder="{{ ___('mainapp_common.Enter address') }}" value="{{ old('address', @$data['school']->address) }}">
                             @error('address')
                                 <div id="validationServer04Feedback" class="invalid-feedback">
                                     {{ $message }}

@@ -62,12 +62,8 @@ class SubscriptionPaymentController extends Controller
     {
         $filters = $request->only(['status', 'school_id', 'start_date', 'end_date', 'payment_method']);
 
-        // Get payments based on filters or just pending
-        if (empty(array_filter($filters))) {
-            $data['payments'] = $this->paymentRepo->getAllPendingPayments();
-        } else {
-            $data['payments'] = $this->paymentRepo->getAllPayments($filters);
-        }
+        // Always use getAllPayments with filters - this respects "All" status selection
+        $data['payments'] = $this->paymentRepo->getAllPayments($filters);
 
         $data['title'] = ___('settings.Subscription Payments');
         $data['schools'] = $this->schoolRepo->getAll();

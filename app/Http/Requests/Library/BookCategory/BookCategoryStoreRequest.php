@@ -4,6 +4,7 @@ namespace App\Http\Requests\Library\BookCategory;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class BookCategoryStoreRequest extends FormRequest
 {
@@ -24,9 +25,17 @@ class BookCategoryStoreRequest extends FormRequest
      */
     public function rules(Request $r)
     {
+        $schoolId = auth()->user()->school_id;
+        $branchId = auth()->user()->branch_id;
+
         return [
-            'name'        => 'required|unique:book_categories,name',
-            'status'      => 'required'
+            'name' => [
+                'required',
+                Rule::unique('book_categories', 'name')
+                    ->where('school_id', $schoolId)
+                    ->where('branch_id', $branchId),
+            ],
+            'status' => 'required'
         ];
     }
 }

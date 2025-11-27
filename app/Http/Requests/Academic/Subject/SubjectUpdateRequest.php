@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Academic\Subject;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class SubjectUpdateRequest extends FormRequest
 {
@@ -23,18 +24,30 @@ class SubjectUpdateRequest extends FormRequest
      */
     public function rules()
     {
+        $schoolId = $this->user()->school_id;
+        $branchId = $this->user()->branch_id;
+
         return [
-            'name' => 'required|unique:subjects,name,'.$this->id.',id,type,'.$this->type,
-            'type' => 'required',
-            'type'   => 'required|max:10',
-            'status' => 'required|max:10'
+            'name' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('subjects', 'name')
+                    ->where('school_id', $schoolId)
+                    ->where('branch_id', $branchId)
+                    ->where('type', $this->type)
+                    ->ignore($this->id),
+            ],
+            'type' => 'required|max:10',
+            'status' => 'required|max:10',
+            'code' => 'max:50'
         ];
     }
 
     public function messages()
     {
         return [
-            'name.unique' => 'The combination of name and type must be unique.',
+            'name.unique' => 'The combination of name, type, school, and branch must be unique.',
         ];
     }
 }

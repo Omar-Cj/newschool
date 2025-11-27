@@ -117,6 +117,7 @@ class PackageController extends Controller
             $success[0] = $result['message'];
             $success[1] = 'error';
             $success[2] = ___('alert.oops');
+            $success[3] = ___('alert.OK');
             return response()->json($success);
         }
     }

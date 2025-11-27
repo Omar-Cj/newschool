@@ -24,15 +24,19 @@
         <div class="card mb-3">
             <div class="card-body">
                 <div class="row">
-                    <div class="col-md-6">
+                    <div class="col-md-3">
                         <h5><i class="fa-solid fa-school"></i> {{ $data['school']->name }}</h5>
+                    </div>
+                    <div class="col-md-3">
                         <p class="mb-1"><strong>{{ ___('mainapp_common.Email') }}:</strong> {{ $data['school']->email }}</p>
                         <p class="mb-1"><strong>{{ ___('mainapp_common.Phone') }}:</strong> {{ $data['school']->phone }}</p>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-3">
                         @if($data['school']->package)
                             <p class="mb-1"><strong>{{ ___('mainapp_subscriptions.Current Package') }}:</strong> {{ $data['school']->package->name }}</p>
                         @endif
+                    </div>
+                    <div class="col-md-3">
                         @if($data['school']->subscriptions->first())
                             <p class="mb-1">
                                 <strong>{{ ___('mainapp_subscriptions.Expiry Date') }}:</strong>

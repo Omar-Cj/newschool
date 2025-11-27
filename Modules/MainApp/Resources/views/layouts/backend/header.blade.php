@@ -45,7 +45,11 @@
                     <button class="profile-navigate mt-0 p-0" type="button" id="profile_expand" data-bs-toggle="dropdown"
                         aria-expanded="false">
                         <div class="profile-photo user-card">
-                            <img src="{{ @globalAsset(Auth::user()->upload->path, '40X40.webp') }}" alt="{{ Auth::user()->name }}">
+                            @if(Auth::user()->upload && Auth::user()->upload->path && file_exists(public_path(Auth::user()->upload->path)))
+                                <img src="{{ @globalAsset(Auth::user()->upload->path, '40X40.webp') }}" alt="{{ Auth::user()->name }}">
+                            @else
+                                {!! generateUserAvatar(Auth::user()->name, '40px') !!}
+                            @endif
                         </div>
                         <div class="profile-info md-none">
                             <h6>{{ Auth::user()->name }}</h6>

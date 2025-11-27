@@ -59,6 +59,15 @@
             width: 60%;
             text-align: right;
         }
+        .two-column-section {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 25px;
+        }
+        .two-column-section .section {
+            flex: 1;
+            margin-bottom: 0;
+        }
         .amount-section {
             background-color: #f8f9fa;
             padding: 20px;
@@ -104,46 +113,49 @@
             </div>
         </div>
 
-        <!-- School Information -->
-        <div class="section">
-            <div class="section-title">School Information</div>
-            <div class="info-row">
-                <div class="info-label">School Name:</div>
-                <div class="info-value">{{ $data['payment']->school->name }}</div>
+        <!-- School Information and Payment Details Side by Side -->
+        <div class="two-column-section">
+            <!-- School Information -->
+            <div class="section">
+                <div class="section-title">School Information</div>
+                <div class="info-row">
+                    <div class="info-label">School Name:</div>
+                    <div class="info-value">{{ $data['payment']->school->name }}</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Email:</div>
+                    <div class="info-value">{{ $data['payment']->school->email }}</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Phone:</div>
+                    <div class="info-value">{{ $data['payment']->school->phone }}</div>
+                </div>
             </div>
-            <div class="info-row">
-                <div class="info-label">Email:</div>
-                <div class="info-value">{{ $data['payment']->school->email }}</div>
-            </div>
-            <div class="info-row">
-                <div class="info-label">Phone:</div>
-                <div class="info-value">{{ $data['payment']->school->phone }}</div>
-            </div>
-        </div>
 
-        <!-- Payment Details -->
-        <div class="section">
-            <div class="section-title">Payment Details</div>
-            <div class="info-row">
-                <div class="info-label">Payment Date:</div>
-                <div class="info-value">{{ dateFormat($data['payment']->payment_date) }}</div>
+            <!-- Payment Details -->
+            <div class="section">
+                <div class="section-title">Payment Details</div>
+                <div class="info-row">
+                    <div class="info-label">Payment Date:</div>
+                    <div class="info-value">{{ dateFormat($data['payment']->payment_date) }}</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Payment Method:</div>
+                    <div class="info-value">{{ $data['payment']->getPaymentMethodLabel() }}</div>
+                </div>
+                @if($data['payment']->reference_number)
+                <div class="info-row">
+                    <div class="info-label">Reference Number:</div>
+                    <div class="info-value">{{ $data['payment']->reference_number }}</div>
+                </div>
+                @endif
+                @if($data['payment']->transaction_id)
+                <div class="info-row">
+                    <div class="info-label">Transaction ID:</div>
+                    <div class="info-value">{{ $data['payment']->transaction_id }}</div>
+                </div>
+                @endif
             </div>
-            <div class="info-row">
-                <div class="info-label">Payment Method:</div>
-                <div class="info-value">{{ $data['payment']->getPaymentMethodLabel() }}</div>
-            </div>
-            @if($data['payment']->reference_number)
-            <div class="info-row">
-                <div class="info-label">Reference Number:</div>
-                <div class="info-value">{{ $data['payment']->reference_number }}</div>
-            </div>
-            @endif
-            @if($data['payment']->transaction_id)
-            <div class="info-row">
-                <div class="info-label">Transaction ID:</div>
-                <div class="info-value">{{ $data['payment']->transaction_id }}</div>
-            </div>
-            @endif
         </div>
 
         <!-- Subscription Details -->

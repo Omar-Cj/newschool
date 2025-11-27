@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Library\Book;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class BookUpdateRequest extends FormRequest
 {
@@ -23,8 +24,17 @@ class BookUpdateRequest extends FormRequest
      */
     public function rules()
     {
+        $schoolId = auth()->user()->school_id;
+        $branchId = auth()->user()->branch_id;
+
         return [
-            'name'            => 'required|unique:books,name,' . $this->id,
+            'name' => [
+                'required',
+                Rule::unique('books', 'name')
+                    ->where('school_id', $schoolId)
+                    ->where('branch_id', $branchId)
+                    ->ignore($this->id),
+            ],
             'category'        => 'required',
             'code'            => 'required',
             'publisher_name'  => 'required',

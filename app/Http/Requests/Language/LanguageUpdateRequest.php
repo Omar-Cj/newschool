@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Language;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class LanguageUpdateRequest extends FormRequest
 {
@@ -23,8 +24,17 @@ class LanguageUpdateRequest extends FormRequest
      */
     public function rules()
     {
+        $schoolId = auth()->user()->school_id;
+        $branchId = auth()->user()->branch_id;
+
         return [
-            'name'     => 'required|unique:languages,name,'.Request()->id,
+            'name'     => [
+                'required',
+                Rule::unique('languages', 'name')
+                    ->where('school_id', $schoolId)
+                    ->where('branch_id', $branchId)
+                    ->ignore(Request()->id)
+            ],
             'code'     => 'required',
             'flagIcon' => 'required'
         ];

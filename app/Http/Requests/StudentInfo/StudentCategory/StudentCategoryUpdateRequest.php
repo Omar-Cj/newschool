@@ -25,16 +25,16 @@ class StudentCategoryUpdateRequest extends FormRequest
     public function rules()
     {
         $schoolId = $this->user()->school_id;
+        $branchId = $this->user()->branch_id;
 
         return [
             'name' => [
                 'required',
                 'string',
                 'max:255',
-                Rule::unique('student_categories')
-                    ->where(function ($query) use ($schoolId) {
-                        return $query->where('school_id', $schoolId);
-                    })
+                Rule::unique('student_categories', 'name')
+                    ->where('school_id', $schoolId)
+                    ->where('branch_id', $branchId)
                     ->ignore(Request()->id),
             ],
             'status' => 'required'

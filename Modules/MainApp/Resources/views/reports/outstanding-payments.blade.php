@@ -7,21 +7,341 @@
 <style>
     /* Print styles */
     @media print {
+        /* Hide non-essential elements */
         .sidebar, .header, .footer, .page-header, .breadcrumb,
         form, .btn, .card-header .d-flex.gap-2, .no-print,
-        .ot_crm_summeryBox, .card-header {
+        .ot_crm_summeryBox, .card-header, .action, .dropdown {
             display: none !important;
         }
-        .print-header { display: block !important; }
-        .page-content { padding: 0 !important; margin: 0 !important; }
-        .card { border: none !important; box-shadow: none !important; }
-        .card-body { padding: 0 !important; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { border: 1px solid #000 !important; padding: 8px !important; }
-        .badge { border: 1px solid #000; }
+
+        /* Page setup */
+        @page {
+            size: landscape;
+            margin: 15mm 15mm 0 15mm;
+        }
+
+        body {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            font-size: 9pt !important;
+            color: #333;
+            line-height: 1.3;
+            padding-bottom: 15mm;
+        }
+
+        /* SOLUTION FOR ISSUE #2: Add container padding */
+        .page-content {
+            padding: 0 20mm !important; /* Add horizontal padding */
+            margin: 0 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+        }
+
+        .card {
+            border: none !important;
+            box-shadow: none !important;
+            page-break-inside: avoid;
+        }
+
+        .card-body {
+            padding: 0 !important;
+            overflow: visible !important;
+        }
+
+        /* Print Header - Professional Design */
+        .print-header {
+            display: flex !important;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 3px solid #00C48C;
+        }
+
+        .print-header img {
+            max-height: 70px;
+            max-width: 100px;
+        }
+
+        .print-header h2 {
+            flex: 1;
+            text-align: center;
+            font-size: 20pt;
+            font-weight: bold;
+            color: #2c3e50;
+            margin: 0;
+            letter-spacing: 0.5px;
+        }
+
+        .print-header p {
+            font-size: 8pt;
+            color: #7f8c8d;
+            margin: 0;
+        }
+
+        /* Metadata Section - NEW */
+        .print-metadata {
+            background-color: #ecf0f1;
+            padding: 8px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            border: 1px solid #bdc3c7;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .print-metadata-item {
+            display: flex;
+            padding: 2px 0;
+            border-bottom: none;
+        }
+
+        .print-metadata-label {
+            font-weight: 600;
+            color: #00C48C;
+            min-width: 100px;
+            flex-shrink: 0;
+            font-size: 8pt;
+        }
+
+        .print-metadata-value {
+            color: #34495e;
+            font-weight: 500;
+            font-size: 8pt;
+        }
+
+        /* Table Styling - Refined */
+        .table-responsive {
+            overflow: visible !important;
+            page-break-before: avoid !important;
+        }
+
+        table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            font-size: 7pt !important;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            table-layout: fixed !important;
+            page-break-before: avoid !important;
+        }
+
+        thead {
+            display: table-header-group !important;
+            background-color: #00C48C !important;
+        }
+
+        th {
+            padding: 8px 8px !important;
+            text-align: left;
+            font-weight: 600 !important;
+            color: #ffffff !important;
+            background-color: #00C48C !important;
+            border: 1px solid #00B87A !important;
+            font-size: 7pt !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.3px !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        /* Hide action column in print */
+        th.action, td.action {
+            display: none !important;
+        }
+
+        td {
+            padding: 7px !important;
+            border: 1px solid #d5d8dc !important;
+            font-size: 7pt !important;
+            color: #2c3e50;
+            vertical-align: top !important;
+        }
+
+        tbody tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        /* Row colors for print - matching PDF status colors */
+        .table-danger {
+            background-color: #ffe5e5 !important;
+        }
+        .table-warning {
+            background-color: #fff4e5 !important;
+        }
+        .table-info {
+            background-color: #fff9e5 !important;
+        }
+
+        /* Prevent table rows from breaking across pages */
+        tr {
+            page-break-inside: avoid !important;
+        }
+
+        tfoot {
+            display: table-footer-group !important;
+        }
+
+        /* Summary Section - Enhanced */
+        .summary-section {
+            display: block !important;
+            margin: 5px 0;
+            padding: 5px 0;
+            background: #f8f9fa;
+            border-radius: 5px;
+            page-break-inside: avoid;
+        }
+
+        .summary-grid {
+            display: table;
+            width: 100%;
+        }
+
+        .summary-cell {
+            display: table-cell;
+            padding: 8px;
+            text-align: center;
+            border-right: 1px solid #dee2e6;
+        }
+
+        .summary-label {
+            font-size: 8pt;
+            color: #666;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+
+        .summary-value {
+            font-size: 18pt;
+            font-weight: bold;
+            color: #333;
+        }
+
+        /* Badge styling for print */
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 7pt;
+            font-weight: bold;
+            border: 1px solid #000;
+        }
+
+        .badge-success, .bg-success {
+            background: #28a745 !important;
+            color: white !important;
+            -webkit-print-color-adjust: exact !important;
+        }
+
+        .badge-danger, .bg-danger {
+            background: #dc3545 !important;
+            color: white !important;
+            -webkit-print-color-adjust: exact !important;
+        }
+
+        .badge-warning, .bg-warning {
+            background: #ffc107 !important;
+            color: #000 !important;
+            -webkit-print-color-adjust: exact !important;
+        }
+
+        .badge-info, .bg-info {
+            background: #17a2b8 !important;
+            color: white !important;
+            -webkit-print-color-adjust: exact !important;
+        }
+
+        .text-muted {
+            color: #6c757d !important;
+        }
+
+        .text-success {
+            color: #28a745 !important;
+        }
+
+        .text-danger {
+            color: #dc3545 !important;
+        }
+
+        /* Print Summary Section - Matches PDF design */
+        .print-summary-section {
+            display: block !important;
+            margin: 5px 0 !important;
+            padding: 8px !important;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 5px;
+            page-break-inside: avoid;
+            page-break-after: avoid !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        .print-summary-title {
+            font-size: 10pt;
+            color: #666;
+            text-transform: uppercase;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 10px !important;
+        }
+
+        .print-summary-grid {
+            display: table;
+            width: 100%;
+        }
+
+        .print-summary-row {
+            display: table-row;
+        }
+
+        .print-summary-cell {
+            display: table-cell;
+            padding: 8px;
+            width: 25%;
+            text-align: center;
+            border-right: 1px solid #dee2e6;
+        }
+
+        .print-summary-cell:last-child {
+            border-right: none;
+        }
+
+        .print-summary-label {
+            font-size: 8pt;
+            color: #666;
+            text-transform: uppercase;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .print-summary-value {
+            font-size: 18pt;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .print-summary-value.danger {
+            color: #dc3545;
+        }
+
+        .print-summary-value.warning {
+            color: #ffc107;
+        }
+
+        .print-summary-value.success {
+            color: #00C48C;
+        }
+
+        .print-growth-indicator {
+            font-size: 8pt;
+            margin-top: 5px;
+            color: #666;
+        }
     }
     @media screen {
         .print-header { display: none !important; }
+        .print-metadata { display: none !important; }
+        .print-summary-section { display: none !important; }
     }
 </style>
 @endpush
@@ -30,10 +350,60 @@
     <div class="page-content">
 
         {{-- Print Header (visible only when printing) --}}
-        <div class="print-header text-center mb-4">
-            <img src="{{ @globalAsset(setting('dark_logo'), '154X38.webp') }}" alt="Logo" style="max-height: 60px;">
+        <div class="print-header">
+            @if(setting('dark_logo'))
+            <img src="{{ @globalAsset(setting('dark_logo'), '154X38.webp') }}" alt="Logo">
+            @endif
             <h2>{{ $data['title'] }}</h2>
-            <p class="text-muted">{{ ___('mainapp_common.Generated') }}: {{ now()->format('Y-m-d H:i') }}</p>
+        </div>
+
+        {{-- Print Metadata Section (visible only when printing) --}}
+        <div class="print-metadata">
+            <div class="print-metadata-item">
+                <span class="print-metadata-label">{{ ___('mainapp_common.Generated') }}:</span>
+                <span class="print-metadata-value">{{ now()->format('F d, Y - h:i A') }}</span>
+            </div>
+            <div class="print-metadata-item">
+                <span class="print-metadata-label">{{ ___('mainapp_common.Generated By') }}:</span>
+                <span class="print-metadata-value">{{ auth()->user()->name ?? 'System' }}</span>
+            </div>
+            <div class="print-metadata-item">
+                <span class="print-metadata-label">{{ ___('mainapp_subscriptions.Total Schools') }}:</span>
+                <span class="print-metadata-value">{{ count($data['schools'] ?? []) }}</span>
+            </div>
+            <div class="print-metadata-item">
+                <span class="print-metadata-label">{{ ___('mainapp_common.status') }}:</span>
+                <span class="print-metadata-value">{{ ___('mainapp_subscriptions.Outstanding Payments') }}</span>
+            </div>
+        </div>
+
+        {{-- Print Summary Section (visible only when printing) --}}
+        <div class="print-summary-section">
+            <div class="print-summary-title">{{ ___('mainapp_subscriptions.Outstanding Payments Overview') }}</div>
+            <div class="print-summary-grid">
+                <div class="print-summary-row">
+                    <div class="print-summary-cell">
+                        <div class="print-summary-label">{{ ___('mainapp_subscriptions.Total Schools') }}</div>
+                        <div class="print-summary-value">{{ number_format(count($data['schools'] ?? [])) }}</div>
+                        <div class="print-growth-indicator">{{ ___('mainapp_subscriptions.With Outstanding') }}</div>
+                    </div>
+                    <div class="print-summary-cell">
+                        <div class="print-summary-label">{{ ___('mainapp_subscriptions.Total Outstanding') }}</div>
+                        <div class="print-summary-value danger">${{ number_format($data['totalOutstanding'] ?? 0, 2) }}</div>
+                        <div class="print-growth-indicator">{{ ___('mainapp_subscriptions.Total Amount Due') }}</div>
+                    </div>
+                    <div class="print-summary-cell">
+                        <div class="print-summary-label">{{ ___('mainapp_subscriptions.Overdue') }}</div>
+                        <div class="print-summary-value warning">{{ number_format($data['overdueCount'] ?? 0) }}</div>
+                        <div class="print-growth-indicator">{{ ___('mainapp_subscriptions.Schools') }}</div>
+                    </div>
+                    <div class="print-summary-cell">
+                        <div class="print-summary-label">{{ ___('mainapp_subscriptions.In Grace Period') }}</div>
+                        <div class="print-summary-value success">{{ number_format($data['graceCount'] ?? 0) }}</div>
+                        <div class="print-growth-indicator">{{ ___('mainapp_subscriptions.Schools') }}</div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         {{-- breadcrumb Area Start --}}

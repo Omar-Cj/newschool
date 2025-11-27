@@ -210,8 +210,7 @@
                                     </td>
 
                                     <td class="action">
-                                        @if ($row->status != App\Enums\SubscriptionStatus::REJECT)
-                                            <div class="dropdown dropdown-action">
+                                        <div class="dropdown dropdown-action">
                                                 <button type="button" class="btn-dropdown" data-bs-toggle="dropdown"
                                                     aria-expanded="false">
                                                     <i class="fa-solid fa-ellipsis"></i>
@@ -233,10 +232,16 @@
                                                             {{ ___('mainapp_common.Payment History') }}
                                                         </a>
                                                     </li>
+                                                    <li>
+                                                        <a class="dropdown-item"
+                                                            href="{{ route('subscription-payments.create', $row->school_id) }}">
+                                                            <span class="icon mr-8"><i class="fa-solid fa-money-bill"></i></span>
+                                                            {{ ___('mainapp_common.Record Payment') }}
+                                                        </a>
+                                                    </li>
                                                     @endif
                                                 </ul>
                                             </div>
-                                        @endif
                                     </td>
                                 </tr>
                                 @empty
