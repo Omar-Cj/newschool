@@ -132,19 +132,21 @@ class PaymentTransaction extends BaseModel
     }
 
     /**
-     * Generate unique transaction number (school-scoped for multi-tenancy)
+     * Generate unique transaction number (school and branch-scoped for multi-tenancy)
      *
-     * CRITICAL: Each school has independent transaction number sequences
+     * CRITICAL: Each school AND branch has independent transaction number sequences
      * Format: PAY-YYYY-XXXXXX (e.g., PAY-2025-000001)
      *
+     * @param int|null $branchId Optional branch ID (defaults to current authenticated user's branch)
      * @return string The generated transaction number
-     * @throws \Exception If school context is unavailable
+     * @throws \Exception If school or branch context is unavailable
      */
-    public static function generateTransactionNumber(): string
+    public static function generateTransactionNumber(?int $branchId = null): string
     {
-        return \DB::transaction(function () {
-            // Get school ID from authenticated user
+        return \DB::transaction(function () use ($branchId) {
+            // Get school ID and branch ID from authenticated user
             $schoolId = auth()->user()->school_id ?? null;
+            $branchId = $branchId ?? auth()->user()->branch_id ?? null;
 
             if (!$schoolId) {
                 \Log::error('Cannot generate transaction number without school context', [
@@ -154,11 +156,21 @@ class PaymentTransaction extends BaseModel
                 throw new \Exception('School context required for transaction number generation');
             }
 
+            if (!$branchId) {
+                \Log::error('Cannot generate transaction number without branch context', [
+                    'user_id' => auth()->id(),
+                    'school_id' => $schoolId,
+                    'authenticated' => auth()->check()
+                ]);
+                throw new \Exception('Branch context required for transaction number generation');
+            }
+
             $prefix = 'PAY-' . date('Y') . '-';
 
-            // Get maximum sequence number from existing transaction_numbers for this school
+            // Get maximum sequence number from existing transaction_numbers for this school AND branch
             // Use lockForUpdate to ensure thread safety
             $maxSequenceNum = static::where('school_id', $schoolId)
+                ->where('branch_id', $branchId)
                 ->lockForUpdate()
                 ->get()
                 ->map(function ($transaction) use ($prefix) {
@@ -169,16 +181,17 @@ class PaymentTransaction extends BaseModel
                 })
                 ->max();
 
-            // If no records exist for this school, start from 1
+            // If no records exist for this school/branch, start from 1
             $nextSequence = ($maxSequenceNum ?? 0) + 1;
 
             // Generate the transaction number in the requested format
             $transactionNumber = $prefix . str_pad($nextSequence, 6, '0', STR_PAD_LEFT);
 
-            \Log::info('Generated new transaction number (school-scoped)', [
+            \Log::info('Generated new transaction number (school and branch-scoped)', [
                 'transaction_number' => $transactionNumber,
                 'sequence' => $nextSequence,
                 'school_id' => $schoolId,
+                'branch_id' => $branchId,
                 'max_existing_sequence' => $maxSequenceNum,
                 'user_id' => auth()->id()
             ]);

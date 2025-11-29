@@ -84,7 +84,7 @@ class SubjectAssignRepository implements SubjectAssignInterface
         $row = $this->model->find($id);
         $subjects = [];
         $disabled = false;
-        $redirect = true;
+        $redirect = false;
         foreach ($row->subjectTeacher as $key => $value) {
             $result = ExamAssign::where('session_id',$row->session_id)
                 ->where('classes_id',$row->classes_id)

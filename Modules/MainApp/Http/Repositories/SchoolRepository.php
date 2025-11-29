@@ -363,9 +363,10 @@ class SchoolRepository implements SchoolInterface
                 return;
             }
 
-            // 3. Get target school's active session (if exists)
+            // 3. Get target school's active session for this specific branch
             $activeSession = DB::table('sessions')
                 ->where('school_id', $school->id)
+                ->where('branch_id', $branch->id)
                 ->where('status', 1)
                 ->orderBy('id', 'desc')
                 ->first();

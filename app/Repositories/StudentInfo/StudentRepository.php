@@ -295,16 +295,20 @@ class StudentRepository implements StudentInterface
 
             // Auto-subscribe to mandatory services for enhanced fee processing system
             try {
-                $student = $this->model->find($row->id);
+                // Use the already created student row with fresh relationships loaded
+                // Pass class_id directly to avoid intermittent issues with sessionStudentDetails relationship
+                $row->load(['sessionStudentDetails.class']);
                 $subscriptions = $this->serviceManager->autoSubscribeMandatoryServices(
-                    $student, 
-                    setting('session')
+                    $row,
+                    setting('session'),
+                    ['class_id' => $request->class]  // Pass class_id directly for reliable academic level detection
                 );
 
                 Log::info('Student registered with service auto-subscription', [
-                    'student_id' => $student->id,
-                    'student_name' => $student->full_name,
-                    'academic_level' => $student->getAcademicLevel(),
+                    'student_id' => $row->id,
+                    'student_name' => $row->full_name,
+                    'academic_level' => $row->getAcademicLevel(),
+                    'class_id_passed' => $request->class,
                     'mandatory_services_count' => $subscriptions->count(),
                     'total_fees' => $subscriptions->sum('final_amount')
                 ]);

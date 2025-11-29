@@ -126,7 +126,8 @@ class Student extends BaseModel
 
     public function sessionStudentDetails()
     {
-        return $this->belongsTo(SessionClassStudent::class, 'id', 'student_id');
+        return $this->hasOne(SessionClassStudent::class, 'student_id', 'id')
+                    ->where('session_id', setting('session'));
     }
 
     public function studentCategory()

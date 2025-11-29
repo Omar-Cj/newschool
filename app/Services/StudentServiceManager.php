@@ -172,10 +172,39 @@ class StudentServiceManager
 
     /**
      * Auto-subscribe student to mandatory services for their academic level
+     *
+     * @param Student $student The student to subscribe
+     * @param int|null $academicYearId The academic year ID
+     * @param array $options Options including 'class_id' for reliable academic level detection
+     * @return Collection The created subscriptions
      */
     public function autoSubscribeMandatoryServices(Student $student, $academicYearId = null, array $options = []): Collection
     {
-        $academicLevel = $this->determineAcademicLevel($student);
+        // ENHANCED: Use class_id from options for reliable academic level detection
+        // This fixes intermittent issues when sessionStudentDetails relationship doesn't load properly
+        if (isset($options['class_id'])) {
+            $class = \App\Models\Academic\Classes::find($options['class_id']);
+            if ($class && $class->academic_level) {
+                $academicLevel = $class->academic_level;
+                Log::debug('Academic level determined from passed class_id', [
+                    'student_id' => $student->id,
+                    'class_id' => $options['class_id'],
+                    'class_name' => $class->name,
+                    'academic_level' => $academicLevel
+                ]);
+            } else {
+                // Fallback to student's own method if class doesn't have academic_level
+                $academicLevel = $this->determineAcademicLevel($student);
+                Log::debug('Academic level determined from student (class has no academic_level)', [
+                    'student_id' => $student->id,
+                    'class_id' => $options['class_id'],
+                    'academic_level' => $academicLevel
+                ]);
+            }
+        } else {
+            $academicLevel = $this->determineAcademicLevel($student);
+        }
+
         $academicYearId = $academicYearId ?? session('academic_year_id');
         
         $mandatoryServices = FeesType::active()

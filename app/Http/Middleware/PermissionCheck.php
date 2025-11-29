@@ -156,8 +156,30 @@ class PermissionCheck
             $featureName = $this->featureNameMap[$featureName] ?? $featureName;
         }
 
+        // DEBUG LOGGING - COMPREHENSIVE
+        Log::info('🔍 PERMISSION_CHECK_DEBUG', [
+            'permission' => $permission,
+            'featureName' => $featureName,
+            'hasPermission' => $hasPermission,
+            'user_id' => $user->id,
+            'role_id' => $user->role_id,
+            'school_id' => $user->school_id,
+            'user_permissions_count' => count($user->permissions ?? []),
+            'user_permissions_sample' => array_slice($user->permissions ?? [], 0, 10),
+            'has_school_relation' => $user->school !== null,
+            'school_package_id' => $user->school?->package_id,
+            'route' => $request->path(),
+        ]);
+
         // Check if feature exists in package
         $hasFeature = hasFeature($featureName);
+
+        Log::info('🔍 FEATURE_CHECK_RESULT', [
+            'featureName' => $featureName,
+            'hasFeature' => $hasFeature,
+            'hasPermission' => $hasPermission,
+            'will_pass' => ($hasFeature && $hasPermission),
+        ]);
 
         // Both required for school admins (AND logic)
         if ($hasFeature && $hasPermission) {
@@ -166,10 +188,12 @@ class PermissionCheck
 
         // Deny access with specific message
         if (!$hasFeature) {
+            Log::warning('❌ DENIED: Feature not in package', ['featureName' => $featureName]);
             return abort(403, 'Access Denied - Feature not included in your package');
         }
 
         if (!$hasPermission) {
+            Log::warning('❌ DENIED: Permission not in role', ['permission' => $permission]);
             return abort(403, 'Access Denied - Insufficient permissions for your role');
         }
 

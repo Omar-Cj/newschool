@@ -22,22 +22,39 @@ class ExamTypeController extends Controller
         $data['title']              = ___('examination.exam_type');
         $data['exam_types'] = $this->repo->getPaginateAll();
 
-        return view('backend.online-examination.type.index', compact('data'));
-        
+        // Determine view based on route - use online-examination views for online routes
+        $viewPrefix = request()->routeIs('online-exam-type.*')
+            ? 'backend.online-examination.type'
+            : 'backend.examination.type';
+
+        return view($viewPrefix . '.index', compact('data'));
+
     }
 
     public function create()
     {
         $data['title']              = ___('examination.exam_type');
-        return view('backend.online-examination.type.create', compact('data'));
-        
+
+        // Determine view based on route - use online-examination views for online routes
+        $viewPrefix = request()->routeIs('online-exam-type.*')
+            ? 'backend.online-examination.type'
+            : 'backend.examination.type';
+
+        return view($viewPrefix . '.create', compact('data'));
+
     }
 
     public function store(ExamTypeStoreRequest $request)
     {
         $result = $this->repo->store($request);
+
+        // Redirect to correct route based on context
+        $redirectRoute = request()->routeIs('online-exam-type.*')
+            ? 'online-exam-type.index'
+            : 'exam-type.index';
+
         if($result['status']){
-            return redirect()->route('online-exam-type.index')->with('success', $result['message']);
+            return redirect()->route($redirectRoute)->with('success', $result['message']);
         }
         return back()->with('danger', $result['message']);
     }
@@ -46,14 +63,26 @@ class ExamTypeController extends Controller
     {
         $data['exam_type']        = $this->repo->show($id);
         $data['title']       = ___('examination.exam_type');
-        return view('backend.online-examination.type.edit', compact('data'));
+
+        // Determine view based on route - use online-examination views for online routes
+        $viewPrefix = request()->routeIs('online-exam-type.*')
+            ? 'backend.online-examination.type'
+            : 'backend.examination.type';
+
+        return view($viewPrefix . '.edit', compact('data'));
     }
 
     public function update(ExamTypeUpdateRequest $request, $id)
     {
         $result = $this->repo->update($request, $id);
+
+        // Redirect to correct route based on context
+        $redirectRoute = request()->routeIs('online-exam-type.*')
+            ? 'online-exam-type.index'
+            : 'exam-type.index';
+
         if($result['status']){
-            return redirect()->route('online-exam-type.index')->with('success', $result['message']);
+            return redirect()->route($redirectRoute)->with('success', $result['message']);
         }
         return back()->with('danger', $result['message']);
     }
