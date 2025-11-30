@@ -25,15 +25,31 @@ class BranchRepository implements BranchInterface
         $this->userModel = $user;
     }
 
+    /**
+     * Get all branches with role-based filtering.
+     *
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
     public function all()
     {
-        return $this->model->all();
+        return $this->model
+            ->forCurrentUserRole()
+            ->get();
     }
 
 
+    /**
+     * Get paginated branches with role-based filtering.
+     *
+     * @param int $limit Number of items per page
+     * @return \Illuminate\Pagination\LengthAwarePaginator
+     */
     public function paginate($limit = 10)
     {
-        return $this->model->latest('id')->paginate($limit);
+        return $this->model
+            ->forCurrentUserRole()  // Apply role-based filtering
+            ->latest('id')
+            ->paginate($limit);
     }
 
 
@@ -76,9 +92,20 @@ class BranchRepository implements BranchInterface
         return true;
     }
 
+    /**
+     * Show a specific branch with role-based access control.
+     *
+     * Security: ADMIN users can only view their assigned branch.
+     *
+     * @param int $id Branch ID
+     * @return Branch
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     */
     public function show($id)
     {
-        return $this->model->findOrFail($id);
+        return $this->model
+            ->forCurrentUserRole()  // Apply same role filtering
+            ->findOrFail($id);
     }
 
     public function delete($id)

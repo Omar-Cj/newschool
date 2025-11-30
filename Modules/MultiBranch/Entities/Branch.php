@@ -89,6 +89,45 @@ class Branch extends BaseModel
     }
 
     /**
+     * Scope to filter branches based on user's role and permissions.
+     *
+     * Role-based behavior:
+     * - MAIN_SYSTEM_ADMIN (role_id=0): No filtering (SchoolScope handles this)
+     * - SUPERADMIN (role_id=1): No filtering (sees all school branches)
+     * - ADMIN (role_id=2): Filter to user's assigned branch only
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeForCurrentUserRole($query)
+    {
+        $user = auth()->user();
+
+        // No user authenticated - return empty result for safety
+        if (!$user) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        // MAIN_SYSTEM_ADMIN (role_id = 0) - no additional filtering
+        if ($user->role_id === \App\Enums\RoleEnum::MAIN_SYSTEM_ADMIN) {
+            return $query;
+        }
+
+        // SUPERADMIN (role_id = 1) - see all branches of their school
+        if ($user->role_id === \App\Enums\RoleEnum::SUPERADMIN) {
+            return $query;
+        }
+
+        // ADMIN (role_id = 2) and other roles - filter to assigned branch only
+        if ($user->branch_id) {
+            return $query->where('branches.id', $user->branch_id);
+        }
+
+        // Defensive: User has no branch_id - return empty result
+        return $query->whereRaw('1 = 0');
+    }
+
+    /**
      * Check if branch is active
      */
     public function isActive(): bool

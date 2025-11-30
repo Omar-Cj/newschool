@@ -388,9 +388,10 @@
                                         <li class="sidebar-menu-item {{ set_menu(['fees-generation.index', 'fees-generation.create', 'fees-generation.show']) }}">
                                             <a href="{{ route('fees-generation.index') }}">{{ ___('fees.fee_generation') }}</a>
                                         </li>
-                                        <li class="sidebar-menu-item {{ set_menu(['fees-generation.service-reports*']) }}">
+                                        {{-- Service Reports menu item temporarily hidden --}}
+                                        {{-- <li class="sidebar-menu-item {{ set_menu(['fees-generation.service-reports*']) }}">
                                             <a href="{{ route('fees-generation.service-reports') }}">{{ ___('fees.service_reports') }}</a>
-                                        </li>
+                                        </li> --}}
                                     </ul>
                                 </li>
                             @endif

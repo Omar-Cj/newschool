@@ -150,4 +150,14 @@ class User extends Authenticatable
 
         return $notification_channels;
     }
+
+    /**
+     * Get the branch that the user belongs to.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function branch()
+    {
+        return $this->belongsTo(\Modules\MultiBranch\Entities\Branch::class, 'branch_id', 'id');
+    }
 }
