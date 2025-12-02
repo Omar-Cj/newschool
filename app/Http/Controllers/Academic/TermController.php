@@ -11,6 +11,7 @@ use App\Services\Academic\TermService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class TermController extends Controller
 {
@@ -70,9 +71,23 @@ class TermController extends Controller
      */
     public function storeDefinition(Request $request)
     {
+        $schoolId = auth()->user()->school_id;
+
         $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:100',
-            'code' => 'nullable|string|max:20|unique:term_definitions,code',
+            'name' => [
+                'required',
+                'string',
+                'max:100',
+                Rule::unique('term_definitions', 'name')
+                    ->where('school_id', $schoolId),
+            ],
+            'code' => [
+                'nullable',
+                'string',
+                'max:20',
+                Rule::unique('term_definitions', 'code')
+                    ->where('school_id', $schoolId),
+            ],
             'sequence' => 'required|integer|min:1',
             'typical_duration_weeks' => 'required|integer|min:1|max:52',
             'typical_start_month' => 'nullable|integer|min:1|max:12',
@@ -126,9 +141,25 @@ class TermController extends Controller
      */
     public function updateDefinition(Request $request, $id)
     {
+        $schoolId = auth()->user()->school_id;
+
         $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:100',
-            'code' => 'nullable|string|max:20|unique:term_definitions,code,' . $id,
+            'name' => [
+                'required',
+                'string',
+                'max:100',
+                Rule::unique('term_definitions', 'name')
+                    ->where('school_id', $schoolId)
+                    ->ignore($id),
+            ],
+            'code' => [
+                'nullable',
+                'string',
+                'max:20',
+                Rule::unique('term_definitions', 'code')
+                    ->where('school_id', $schoolId)
+                    ->ignore($id),
+            ],
             'sequence' => 'required|integer|min:1',
             'typical_duration_weeks' => 'required|integer|min:1|max:52',
             'typical_start_month' => 'nullable|integer|min:1|max:12',

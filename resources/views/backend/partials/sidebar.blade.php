@@ -418,7 +418,7 @@
                         hasPermission('marks_register_read') ||
                         hasPermission('exam_entry_read') ||
                         hasPermission('exam_setting_read')) &&
-                        hasAnyFeature(['exam_type', 'marks_grade', 'exam_entry', 'terms_create', 'terms_read', 'terms_update', 'terms_delete', 'exam_assign', 'marks_register', 'exam_setting']))
+                        hasAnyFeature(['exam_type', 'marks_grade', 'exam_entry', 'terms', 'exam_assign', 'marks_register', 'exam_setting']))
                     <li
                         class="sidebar-menu-item {{ set_menu(['exam-type*', 'marks-grade*', 'exam-assign*', 'marks-register*', 'examination-settings*', 'terms*', 'exam-entry*']) }}">
                         <a class="parent-item-content has-arrow">
@@ -426,7 +426,7 @@
                             <span class="on-half-expanded">{{ ___('settings.examination') }}</span>
                         </a>
                         <ul class="child-menu-list">
-                            @if (auth()->user()->school_id ? (hasAnyFeature(['terms_create', 'terms_read', 'terms_update', 'terms_delete']) && hasPermission('terms_read')) : hasPermission('terms_read'))
+                            @if (auth()->user()->school_id ? (hasFeature('terms') && hasPermission('terms_read')) : hasPermission('terms_read'))
                                 <li class="sidebar-menu-item {{ set_menu(['terms*']) }}">
                                     <a href="{{ route('terms.index') }}">
                                         {{ ___('academic.terms') }}
