@@ -483,6 +483,10 @@ class SchoolRepository implements SchoolInterface
             case 'footer_text':
                 return '© ' . now()->year . ' ' . $school->name . '. All rights reserved.';
 
+            case 'use_enhanced_fee_system':
+                // Always enable enhanced fee system for new schools (uses student services/subscriptions)
+                return '1';
+
             // For all other non-sensitive settings, copy from reference school
             default:
                 return $referenceValue;

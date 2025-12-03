@@ -144,5 +144,11 @@ class SettingSeeder extends Seeder
             'value' => '"!1m18!1m12!1m3!1d3650.776241229233!2d90.40412657620105!3d23.790981078642808!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3755c72b14773d9d%3A0x21df6643cbfa879f!2sSookh!5e0!3m2!1sen!2sbd!4v1711600654298!5m2!1sen!2sbd"',
         ]);
 
+        // Enable enhanced fee system by default (uses student services/subscriptions instead of fee groups)
+        Setting::create([
+            'name'  => 'use_enhanced_fee_system',
+            'value' => '1',
+        ]);
+
     }
 }

@@ -79,6 +79,12 @@
         </main>
     </div>
 
+    <!-- Global Site Configuration for JavaScript -->
+    <script>
+        window.siteBaseUrl = "{{ url('/') }}";
+        window.csrfToken = "{{ csrf_token() }}";
+    </script>
+
     {{-- Load jQuery first - required dependency for Bootstrap and other scripts --}}
     <script src="{{ global_asset('backend') }}/assets/js/jquery-3.6.0.min.js"></script>
     <script src="{{ global_asset('backend') }}/assets/js/popper.min.js"></script>

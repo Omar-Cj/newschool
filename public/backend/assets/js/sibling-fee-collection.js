@@ -3,6 +3,14 @@
  * Handles family payment functionality with sibling consolidation
  */
 
+/**
+ * Get the base URL for API calls
+ * Uses window.siteBaseUrl set by Laravel, falls back to empty string for relative URLs
+ */
+function getApiBaseUrl() {
+    return window.siteBaseUrl || '';
+}
+
 // Prevent duplicate class declaration
 if (typeof window.SiblingFeeCollectionManager === 'undefined') {
 
@@ -178,7 +186,7 @@ class SiblingFeeCollectionManager {
             footerEl.style.display = 'none';
 
             // Fetch sibling data
-            const response = await fetch(`/~omar/schooltemplate/public/index.php/fees/siblings/${studentId}/data`, {
+            const response = await fetch(getApiBaseUrl() + `/fees/siblings/${studentId}/data`, {
                 method: 'GET',
                 headers: {
                     'Accept': 'application/json',
@@ -267,7 +275,7 @@ class SiblingFeeCollectionManager {
         console.log('Loading journals for family payment modal...');
 
         // Make AJAX call to same route as individual modal for consistency
-        fetch('/~omar/schooltemplate/public/index.php/admin/journals-dropdown', {
+        fetch(getApiBaseUrl() + '/admin/journals-dropdown', {
             method: 'GET',
             headers: {
                 'Accept': 'application/json',
@@ -640,7 +648,7 @@ class SiblingFeeCollectionManager {
         }
 
         try {
-            const response = await fetch('/~omar/schooltemplate/public/index.php/fees/siblings/calculate-distribution', {
+            const response = await fetch(getApiBaseUrl() + '/fees/siblings/calculate-distribution', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -822,7 +830,7 @@ class SiblingFeeCollectionManager {
 
             const paymentData = this.collectPaymentData();
 
-            const response = await fetch('/~omar/schooltemplate/public/index.php/fees/siblings/validate', {
+            const response = await fetch(getApiBaseUrl() + '/fees/siblings/validate', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -887,7 +895,7 @@ class SiblingFeeCollectionManager {
 
             const paymentData = this.collectPaymentData();
 
-            const response = await fetch('/~omar/schooltemplate/public/index.php/fees/siblings/process', {
+            const response = await fetch(getApiBaseUrl() + '/fees/siblings/process', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1112,7 +1120,7 @@ class SiblingFeeCollectionManager {
         console.log('Checking siblings for family link visibility, student ID:', studentId);
 
         try {
-            const response = await fetch(`/~omar/schooltemplate/public/index.php/fees/siblings/${studentId}/data`, {
+            const response = await fetch(getApiBaseUrl() + `/fees/siblings/${studentId}/data`, {
                 method: 'GET',
                 headers: {
                     'Accept': 'application/json',
