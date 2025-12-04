@@ -23,6 +23,12 @@ class UpdateRequest extends FormRequest
      */
     public function rules()
     {
+        // Get Super Admin ID for email uniqueness exclusion
+        $superAdmin = \App\Models\User::where('school_id', Request()->id)
+            ->where('role_id', 1) // SUPERADMIN
+            ->first();
+        $superAdminId = $superAdmin ? $superAdmin->id : 0;
+
         return [
             // 'sub_domain_key' => 'required|max:255|unique:schools,sub_domain_key,'.Request()->id,
             'name'           => 'required|max:255|unique:schools,name,'.Request()->id,
@@ -31,6 +37,19 @@ class UpdateRequest extends FormRequest
             // 'phone'          => 'required',
             // 'email'          => 'required',
             'status'         => 'required',
+            // Super Admin fields (optional)
+            'admin_email'    => 'nullable|email|max:255|unique:users,email,' . $superAdminId,
+            'admin_password' => 'nullable|min:8|confirmed',
+        ];
+    }
+
+    public function messages()
+    {
+        return [
+            'admin_email.unique' => 'This email is already in use by another user.',
+            'admin_email.email' => 'Please enter a valid email address.',
+            'admin_password.min' => 'Password must be at least 8 characters.',
+            'admin_password.confirmed' => 'Password confirmation does not match.',
         ];
     }
 }

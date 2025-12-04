@@ -229,16 +229,75 @@ class SchoolRepository implements SchoolInterface
 
     public function update($request, $id)
     {
+        DB::beginTransaction();
         try {
-
-            $row                 = $this->model->findOrfail($id);
-            $row->name           = $request->name;
-            $row->status         = $request->status;
+            // Update school
+            $row         = $this->model->findOrfail($id);
+            $row->name   = $request->name;
+            $row->status = $request->status;
             $row->save();
 
+            // Update Super Admin credentials if provided
+            $this->updateSuperAdmin($request, $id);
+
+            DB::commit();
             return $this->responseWithSuccess(___('alert.updated_successfully'), []);
         } catch (\Throwable $th) {
+            DB::rollback();
+            \Log::error('School update error', [
+                'school_id' => $id,
+                'error' => $th->getMessage(),
+                'trace' => $th->getTraceAsString()
+            ]);
             return $this->responseWithError(___('alert.something_went_wrong_please_try_again'), []);
+        }
+    }
+
+    /**
+     * Update Super Admin email and/or password
+     *
+     * @param \Illuminate\Http\Request $request
+     * @param int $schoolId
+     * @return void
+     */
+    protected function updateSuperAdmin($request, int $schoolId): void
+    {
+        $superAdmin = User::where('school_id', $schoolId)
+            ->where('role_id', 1)
+            ->first();
+
+        if (!$superAdmin) {
+            \Log::warning('No Super Admin found for school', ['school_id' => $schoolId]);
+            return;
+        }
+
+        $fieldsChanged = [];
+
+        // Update email if provided and different
+        if ($request->filled('admin_email') && $superAdmin->email !== $request->admin_email) {
+            $superAdmin->email = $request->admin_email;
+            $superAdmin->username = $request->admin_email; // Keep username in sync
+            $fieldsChanged[] = 'email';
+        }
+
+        // Update password if provided
+        if ($request->filled('admin_password')) {
+            $superAdmin->password = Hash::make($request->admin_password);
+            $fieldsChanged[] = 'password';
+        }
+
+        if (!empty($fieldsChanged)) {
+            $superAdmin->save();
+
+            // Audit logging
+            \Log::info('AUDIT: Super Admin credentials updated', [
+                'school_id' => $schoolId,
+                'super_admin_id' => $superAdmin->id,
+                'updated_by' => auth()->id() ?? 'system',
+                'fields_changed' => $fieldsChanged,
+                'ip_address' => request()->ip(),
+                'timestamp' => now()->toIso8601String()
+            ]);
         }
     }
 

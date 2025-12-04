@@ -179,6 +179,24 @@ class UserRepository implements UserInterface
             }
 
             $user->permissions        = $role->permissions;
+
+            // Handle password update if provided
+            if ($request->filled('password')) {
+                $user->password = Hash::make($request->password);
+
+                // Audit logging for password change
+                \Log::info('AUDIT: Staff password updated', [
+                    'staff_id' => $staff->id,
+                    'user_id' => $user->id,
+                    'updated_by' => auth()->id(),
+                    'updater_role' => auth()->user()->role_id,
+                    'updater_branch_id' => auth()->user()->branch_id,
+                    'staff_branch_id' => $user->branch_id,
+                    'ip_address' => request()->ip(),
+                    'timestamp' => now()->toIso8601String()
+                ]);
+            }
+
             $user->save();
 
             $staff->user_id                 = $user->id;

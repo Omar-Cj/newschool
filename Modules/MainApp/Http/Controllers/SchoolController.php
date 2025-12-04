@@ -58,6 +58,12 @@ class SchoolController extends Controller
         $data['school']   = $this->repo->show($id);
         $data['title']    = ___('settings.Edit school');
         $data['packages'] = $this->packageRepo->all();
+
+        // Get the Super Admin for this school
+        $data['superAdmin'] = \App\Models\User::where('school_id', $id)
+            ->where('role_id', 1)
+            ->first();
+
         return view('mainapp::school.edit', compact('data'));
     }
 

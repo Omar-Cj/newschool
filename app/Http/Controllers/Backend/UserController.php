@@ -88,6 +88,7 @@ class UserController extends Controller
         $data['designations']  = $this->designation->all();
         $data['departments']   = $this->department->all();
         $data['genders']       = $this->gender->all();
+        $data['canEditPassword'] = $this->canEditStaffPassword($data['user']);
         // dd($data);
         return view('backend.users.edit', compact('data'));
     }
@@ -100,6 +101,15 @@ class UserController extends Controller
 
     public function update(UserUpdateRequest $request, $id)
     {
+        // Authorization check for password updates
+        if ($request->filled('password')) {
+            $staff = $this->user->show($id);
+            if (!$this->canEditStaffPassword($staff)) {
+                return redirect()->route('users.index')
+                    ->with('danger', ___('alert.unauthorized_password_update'));
+            }
+        }
+
         $result = $this->user->update($request, $id);
         if ($result) {
             return redirect()->route('users.index')->with('success', ___('alert.user_updated_successfully'));
@@ -176,5 +186,44 @@ class UserController extends Controller
         $user->permissions = $request->permissions;
         $user->save();
         return back()->with('success', ___('alert.permission_updated_successfully'));
+    }
+
+    /**
+     * Check if current user can edit the target staff member's password
+     *
+     * Authorization Rules:
+     * - Super Admin (role_id=1): Can edit ANY staff password in their school
+     * - Branch Admin (role_id=2): Can edit ONLY their branch's staff passwords
+     *
+     * @param mixed $staff Staff model instance
+     * @return bool
+     */
+    protected function canEditStaffPassword($staff): bool
+    {
+        $currentUser = auth()->user();
+
+        if (!$currentUser) {
+            return false;
+        }
+
+        // Get the staff's user record
+        $staffUser = User::find($staff->user_id);
+
+        if (!$staffUser) {
+            return false;
+        }
+
+        // Super Admin (role_id = 1) - can edit any staff in their school
+        if ($currentUser->role_id === 1) {
+            return $currentUser->school_id === $staffUser->school_id;
+        }
+
+        // Branch Admin (role_id = 2) - only their branch
+        if ($currentUser->role_id === 2) {
+            return $currentUser->school_id === $staffUser->school_id
+                && $currentUser->branch_id === $staffUser->branch_id;
+        }
+
+        return false;
     }
 }

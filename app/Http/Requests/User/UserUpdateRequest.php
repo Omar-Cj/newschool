@@ -23,7 +23,7 @@ class UserUpdateRequest extends FormRequest
      * @return array<string, mixed>
      */
     public function rules()
-    { 
+    {
         // dd(Request()->user_id);
         return [
             'role'         => 'required',
@@ -36,6 +36,21 @@ class UserUpdateRequest extends FormRequest
             'phone'        => 'nullable|regex:/^([0-9\s\-\+\(\)]*)$/|max:11',
             'status'       => 'required',
             'image'        => 'max:2048',
+            // Password fields - optional
+            'password'     => 'nullable|min:8|confirmed',
+        ];
+    }
+
+    /**
+     * Get custom validation messages
+     *
+     * @return array<string, string>
+     */
+    public function messages()
+    {
+        return [
+            'password.min' => 'Password must be at least 8 characters.',
+            'password.confirmed' => 'Password confirmation does not match.',
         ];
     }
 }

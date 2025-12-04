@@ -140,6 +140,63 @@
                             @enderror
                         </div>
 
+                        {{-- Super Admin Credentials Section --}}
+                        @if(isset($data['superAdmin']))
+                        <div class="col-md-12 mb-3">
+                            <hr>
+                            <h5 class="text-primary mb-3">
+                                <i class="fa-solid fa-user-shield"></i>
+                                {{ ___('mainapp_common.Super Admin Credentials') }}
+                            </h5>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="admin_email" class="form-label">
+                                {{ ___('mainapp_common.Super Admin Email') }}
+                            </label>
+                            <input type="email"
+                                   class="form-control ot-input @error('admin_email') is-invalid @enderror"
+                                   name="admin_email"
+                                   id="admin_email"
+                                   placeholder="{{ ___('mainapp_common.Enter super admin email') }}"
+                                   value="{{ old('admin_email', @$data['superAdmin']->email) }}">
+                            @error('admin_email')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                            <small class="text-muted">
+                                {{ ___('mainapp_common.Leave blank to keep current email') }}
+                            </small>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="admin_password" class="form-label">
+                                {{ ___('mainapp_common.New Password') }}
+                            </label>
+                            <input type="password"
+                                   class="form-control ot-input @error('admin_password') is-invalid @enderror"
+                                   name="admin_password"
+                                   id="admin_password"
+                                   placeholder="{{ ___('mainapp_common.Enter new password') }}">
+                            @error('admin_password')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                            <small class="text-muted">
+                                {{ ___('mainapp_common.Leave blank to keep current password') }}
+                            </small>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="admin_password_confirmation" class="form-label">
+                                {{ ___('mainapp_common.Confirm Password') }}
+                            </label>
+                            <input type="password"
+                                   class="form-control ot-input"
+                                   name="admin_password_confirmation"
+                                   id="admin_password_confirmation"
+                                   placeholder="{{ ___('mainapp_common.Confirm new password') }}">
+                        </div>
+                        @endif
+
                         <div class="col-md-12 mt-24">
                             <div class="text-end">
                                 <button class="btn btn-lg ot-btn-primary"><span><i class="fa-solid fa-save"></i>

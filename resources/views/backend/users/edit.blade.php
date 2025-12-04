@@ -280,6 +280,60 @@
                             @enderror
                         </div>
 
+                        {{-- Password Update Section - Only shown if user has permission --}}
+                        @if(isset($data['canEditPassword']) && $data['canEditPassword'])
+                        <div class="col-lg-12 mb-3 mt-4">
+                            <hr>
+                            <h5 class="text-primary mb-3">
+                                <i class="fa-solid fa-key"></i>
+                                {{ ___('staff.password_update') }}
+                            </h5>
+                            <p class="text-muted small">
+                                {{ ___('staff.password_update_hint') }}
+                            </p>
+                        </div>
+
+                        <div class="col-lg-6 col-md-6 mb-3">
+                            <label for="password" class="form-label">
+                                {{ ___('staff.new_password') }}
+                            </label>
+                            <div class="input-group">
+                                <input type="password"
+                                       class="form-control ot-input @error('password') is-invalid @enderror"
+                                       name="password"
+                                       id="password"
+                                       placeholder="{{ ___('staff.enter_new_password') }}"
+                                       autocomplete="new-password">
+                                <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('password')">
+                                    <i class="fa-solid fa-eye" id="password-toggle-icon"></i>
+                                </button>
+                            </div>
+                            @error('password')
+                                <div class="invalid-feedback d-block">{{ $message }}</div>
+                            @enderror
+                            <small class="text-muted">
+                                {{ ___('staff.leave_blank_to_keep_current') }}
+                            </small>
+                        </div>
+
+                        <div class="col-lg-6 col-md-6 mb-3">
+                            <label for="password_confirmation" class="form-label">
+                                {{ ___('staff.confirm_password') }}
+                            </label>
+                            <div class="input-group">
+                                <input type="password"
+                                       class="form-control ot-input"
+                                       name="password_confirmation"
+                                       id="password_confirmation"
+                                       placeholder="{{ ___('staff.confirm_new_password') }}"
+                                       autocomplete="new-password">
+                                <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('password_confirmation')">
+                                    <i class="fa-solid fa-eye" id="password_confirmation-toggle-icon"></i>
+                                </button>
+                            </div>
+                        </div>
+                        @endif
+
 
 
 
@@ -376,3 +430,22 @@
         </div>
     </div>
 @endsection
+
+@push('script')
+<script>
+function togglePasswordVisibility(fieldId) {
+    const field = document.getElementById(fieldId);
+    const icon = document.getElementById(fieldId + '-toggle-icon');
+
+    if (field.type === 'password') {
+        field.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+    } else {
+        field.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+    }
+}
+</script>
+@endpush
