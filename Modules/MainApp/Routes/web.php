@@ -18,7 +18,6 @@ use Modules\MainApp\Http\Controllers\DashboardController;
 use Modules\MainApp\Http\Controllers\MyProfileController;
 use Modules\MainApp\Http\Controllers\TestimonialController;
 use Modules\MainApp\Http\Controllers\SubscriptionController;
-use Modules\MainApp\Http\Middleware\AccessFromCentralDomains;
 use Modules\MainApp\Http\Controllers\AuthenticationController;
 
 /*
@@ -45,7 +44,6 @@ if (true) { // Single database multi-tenant architecture
 
     Route::middleware([
         'web',
-        AccessFromCentralDomains::class,
     ])->group(function () {
 
         // Commented out to prevent conflict with main app routes
@@ -220,20 +218,6 @@ if (true) { // Single database multi-tenant architecture
         });
     });
 }
-else
-{
-    $subdomainParts = getSubdomainName();
-    if (@$subdomainParts[1] == env('APP_MAIN_APP_URL') && Schema::hasTable('schools')) {
-        $school = School::where('sub_domain_key', $subdomainParts[0])->first();
-        if (!$school || $school->status == Status::INACTIVE) {
-            abort(404);
-        }
-    }
-}
-
-
-
-
 
 
 
