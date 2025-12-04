@@ -422,6 +422,24 @@ class SchoolRepository implements SchoolInterface
                 return;
             }
 
+            // 2b. Required settings that must exist for all new schools
+            // These are added even if they don't exist in the reference school
+            $requiredDefaults = [
+                'use_enhanced_fee_system' => '1', // Always enable enhanced fee system for new schools
+            ];
+
+            // Merge required defaults with reference settings (only adds if not already present)
+            foreach ($requiredDefaults as $settingName => $defaultValue) {
+                if (!isset($referenceSettings[$settingName])) {
+                    $referenceSettings[$settingName] = (object) ['value' => $defaultValue];
+                    \Log::info('Added required default setting', [
+                        'setting' => $settingName,
+                        'value' => $defaultValue,
+                        'school_id' => $school->id
+                    ]);
+                }
+            }
+
             // 3. Get target school's active session for this specific branch
             $activeSession = DB::table('sessions')
                 ->where('school_id', $school->id)
